@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log/slog"
 )
 
 var version = "0.1.0"
@@ -12,9 +12,10 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Println("nina", version)
+		slog.Info("nina version", "version", version)
+
 		return
 	}
 
-	fmt.Println("Nina")
+	slog.Info("Nina")
 }
