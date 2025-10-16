@@ -2,7 +2,10 @@ APP_NAME := nina
 BIN := bin/$(APP_NAME)
 GO := go
 
-.PHONY: build run test fmt vet tidy lint lint-fix tools clean
+.PHONY: init build run test fmt vet tidy generate lint lint-fix tools clean
+
+init:
+	go mod download
 
 build:
 	$(GO) build -o $(BIN) ./cmd/nina
@@ -22,11 +25,14 @@ vet:
  tidy:
 	$(GO) mod tidy
 
-lint:
-	golangci-lint run
+generate:
+	go generate ./...
 
-lint-fix:
-	golangci-lint run --fix
+lint:
+	@if [ ! -f custom-gcl ]; then \
+		golangci-lint custom; \
+	fi
+	./custom-gcl run --fix
 
 clean:
 	rm -rf bin
