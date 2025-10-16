@@ -122,9 +122,9 @@ jobs:
       - name: Get versions and install golangci-lint
         id: versions
         run: |
-          echo "go_version=$(go version)" >> $GITHUB_OUTPUT
+          echo "go_version=$(go version)" >> "$GITHUB_OUTPUT"
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-          echo "gcl_version=$(golangci-lint --version)" >> $GITHUB_OUTPUT
+          echo "gcl_version=$(golangci-lint --version)" >> "$GITHUB_OUTPUT"
       - name: Cache custom-gcl
         id: cache-custom-gcl
         uses: actions/cache@v4
