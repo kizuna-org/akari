@@ -124,8 +124,7 @@ jobs:
         run: |
           echo "go_version=$(go version)" >> "$GITHUB_OUTPUT"
           apt install -y golangci-lint
-          echo "gcl_version=$(golangci-lint --version)" >> "$GITHUB_OUTPUT"
-          golangci-lint --version
+          echo "gcl_version=$(golangci-lint --version | sed 's/,/./g')" >> "$GITHUB_OUTPUT"
       - name: Cache custom-gcl
         id: cache-custom-gcl
         uses: actions/cache@v4
