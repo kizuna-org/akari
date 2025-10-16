@@ -1,0 +1,233 @@
+name: Main CI
+
+on:
+  pull_request:
+    branches:
+      - "main"
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  all-status-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - ci-req-check
+      - yaml-lint
+      - action-lint
+      - dotenv-lint
+      - golang-build-check
+      - golang-vet-check
+      - golang-fmt-check
+      - golang-lint-check
+      - golang-test-comment-check
+      - golang-test-check
+      - golang-generate-check
+    steps:
+      - name: All status check
+        run: echo "All status check passed"
+
+  ci-req-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check all-status-check
+        run: |
+          diff \
+            <(yq ".jobs | del(.all-status-check) | keys.[]" .github/workflows/ci.yml) \
+            <(yq ".jobs.all-status-check.needs.[]" .github/workflows/ci.yml)
+
+  yaml-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: reviewdog/action-yamllint@v1.19.0
+        with:
+          level: warning
+          yamllint_flags: "-c .yamllint ."
+          fail_on_error: true
+
+  action-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: reviewdog/action-actionlint@v1.57.0
+        with:
+          level: warning
+          fail_on_error: true
+
+  dotenv-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dotenv-linter/action-dotenv-linter@9c9a09ba60235ae0b92b2e2ed8f4268ac76d075f # v2.23.0
+        with:
+          dotenv_linter_flags: --skip UnorderedKey
+          fail_on_error: true
+
+  golang-build-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup-golang
+      - name: Run go build
+        run: make build
+
+  golang-vet-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup-golang
+      - name: Run go vet
+        run: make vet
+
+  golang-fmt-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup-golang
+      - name: Run go fmt
+        run: make fmt
+      - name: Check diff
+        run: |
+          if [[ $(git status --porcelain) ]]; then
+            git diff
+            exit 1
+          fi
+
+  golang-lint-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup-golang
+        id: setup-go
+      - name: Get versions and install golangci-lint
+        id: versions
+        run: |
+          echo "go_version=$(go version)" >> "$GITHUB_OUTPUT"
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+          echo "gcl_version=$(golangci-lint --version | sed 's/,/./g')" >> "$GITHUB_OUTPUT"
+      - name: Cache custom-gcl
+        id: cache-custom-gcl
+        uses: actions/cache@v4
+        with:
+          path: ./custom-gcl
+          key: ${{ runner.os }}-${{ steps.versions.outputs.go_version }}-${{ steps.versions.outputs.gcl_version }}-${{ hashFiles('.custom-gcl.yml') }}
+      - name: Run `make lint`
+        run: |
+          make lint
+
+  golang-test-comment-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup-golang
+      - name: Run go test
+        id: golang-test
+        run: |
+          set +e
+          TEST_OUT=$(go test ./... -coverpkg=./...)
+          TEST_EXIT_CODE=$?
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          {
+            echo "comment<<$EOF"
+            printf "# Test coverage\n\n"
+            if [ "$TEST_EXIT_CODE" -eq 0 ]; then
+              printf ":white_check_mark: All tests passed successfully.\n\n"
+              printf "| Status | Package | Time | Coverage |\n"
+              printf "|--------|---------|------|----------|\n"
+              echo "$TEST_OUT" | sed -E "s/^\?\s+/?:/g; s/^ok\s+/ok:/g; s/^\s/:/g; s/\s+/ /g; s/coverage:/::/g; s/([0-9.]+)s\s::/\:\1s\:/g; s/ of statements//g;" | sed  -e "s/in .\/...//g" | awk -F'[:]' '{ print "| " $1 " | " $2 " | " $3 " |" $4 " |"}'
+            else
+              printf ":red_circle: Some tests failed.\n\n"
+              printf "<details>\n"
+              printf "<summary>go test result</summary>\n"
+              printf "\n\`\`\`\n\n"
+              echo "$TEST_OUT"
+              printf "\n\`\`\`\n\n"
+              printf "</details>\n"
+            fi
+            echo "$EOF"
+          } >> "$GITHUB_ENV"
+          exit "$TEST_EXIT_CODE"
+        continue-on-error: true
+      - name: Create PR comment
+        uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31 # v2.9.0
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          number: ${{ github.event.pull_request.number }}
+          header: golang-test
+          message: ${{ env.comment }}
+      - name: Error check
+        if: ${{ steps.golang-test.outcome != 'success' }}
+        run: exit 1
+
+  golang-test-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        run: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup-golang
+      - name: Set up gotestfmt
+        uses: gotesttools/gotestfmt-action@8b4478c7019be847373babde9300210e7de34bfb # v2.5.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run go test
+        id: golang-test
+        run: |
+          set +e
+          TEST_OUT=$(go test -json -v ./... 2>&1)
+          TEST_EXIT=$?
+          echo "$TEST_OUT" | tee /tmp/gotest.log | gotestfmt
+          exit "$TEST_EXIT"
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: test-log-${{ matrix.run }}
+          path: /tmp/gotest.log
+          if-no-files-found: error
+      - name: Error check
+        if: ${{ steps.golang-test.outcome != 'success' }}
+        run: exit 1
+
+  golang-generate-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/setup-golang
+      - name: Run go generate
+        id: golang-generate
+        run: |
+          make generate
+          if ! git diff --quiet; then
+            git diff
+            exit 1
+          fi

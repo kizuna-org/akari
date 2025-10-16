@@ -1,0 +1,20 @@
+version: "2"
+linters:
+  default: all
+  disable:
+    - depguard
+    - wrapcheck
+    - ireturn
+    - err113
+    - shironerr113
+  settings:
+    custom:
+      shironerr113:
+        type: "module"
+    revive:
+      rules:
+        - name: package-comments
+          disabled: true
+    varnamelen:
+      ignore-decls:
+        - i int
