@@ -1,3 +1,3 @@
 module github.com/kizuna-org/nina
 
-go 1.22.5
+go 1.24
