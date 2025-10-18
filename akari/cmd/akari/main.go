@@ -20,7 +20,7 @@ var version = "0.1.0"
 
 func setupLogger(envMode config.EnvMode) {
 	var handler slog.Handler
-	
+
 	switch envMode {
 	case config.EnvModeDevelopment:
 		opts := &slog.HandlerOptions{
@@ -38,7 +38,7 @@ func setupLogger(envMode config.EnvMode) {
 		}
 		handler = slog.NewTextHandler(os.Stdout, opts)
 	}
-	
+
 	slog.SetDefault(slog.New(handler))
 }
 
@@ -86,7 +86,7 @@ func main() {
 			}
 		}),
 	)
-	
+
 	ctx := context.Background()
 	if err := app.Start(ctx); err != nil {
 		slog.Error("Failed to start application", "error", err)
