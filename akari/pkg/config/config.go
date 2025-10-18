@@ -89,9 +89,9 @@ func (c *configRepositoryImpl) determineEnvMode() (EnvMode, string) {
 	switch env {
 	case "test":
 		envFile = os.Getenv("TEST_ENV")
-		if envFile == "" {
-			// envFile = "../../.env.test"
-		}
+		// if envFile == "" {
+		//	envFile = "../../.env.test"
+		// }
 
 		envMode = EnvModeTest
 	case "production":

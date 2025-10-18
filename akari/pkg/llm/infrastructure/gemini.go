@@ -140,6 +140,7 @@ func (m *GeminiModelImpl) SendChatMessage(
 }
 
 func (m *GeminiModelImpl) createConfig(systemPrompt string, functions []Function) *genai.GenerateContentConfig {
+	//nolint:exhaustruct
 	config := &genai.GenerateContentConfig{
 		Temperature: genai.Ptr[float32](temperature),
 		SystemInstruction: &genai.Content{

@@ -11,43 +11,43 @@ import (
 	"go.uber.org/fx"
 )
 
-var Module = fx.Module("akari",
-	// Configuration
-	fx.Provide(
-		config.NewConfigRepository,
-	),
+func NewModule() fx.Option {
+	return fx.Module("akari",
+		// Configuration
+		fx.Provide(
+			config.NewConfigRepository,
+		),
 
-	// Infrastructure
-	fx.Provide(
-		infrastructure.NewGeminiModel,
-	),
+		// Infrastructure
+		fx.Provide(
+			infrastructure.NewGeminiModel,
+		),
 
-	// Repository
-	fx.Provide(
-		repository.NewGeminiRepository,
-	),
+		// Repository
+		fx.Provide(
+			repository.NewGeminiRepository,
+		),
 
-	// Service
-	fx.Provide(
-		service.NewGeminiService,
-	),
+		// Service
+		fx.Provide(
+			service.NewGeminiService,
+		),
 
-	// Usecase
-	fx.Provide(
-		interactor.NewLLMInteractor,
-	),
+		// Usecase
+		fx.Provide(
+			interactor.NewLLMInteractor,
+		),
 
-	// Logger
-	fx.Provide(
-		func() *slog.Logger {
-			return slog.Default()
-		},
-	),
-)
+		// Logger
+		fx.Provide(
+			slog.Default,
+		),
+	)
+}
 
 func NewApp() *fx.App {
 	return fx.New(
-		Module,
+		NewModule(),
 		fx.NopLogger,
 	)
 }

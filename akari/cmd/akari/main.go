@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"flag"
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -24,17 +23,30 @@ func setupLogger(envMode config.EnvMode) {
 	switch envMode {
 	case config.EnvModeDevelopment:
 		opts := &slog.HandlerOptions{
-			Level: slog.LevelDebug,
+			Level:      slog.LevelDebug,
+			AddSource:  false,
+			ReplaceAttr: nil,
 		}
 		handler = slog.NewTextHandler(os.Stdout, opts)
 	case config.EnvModeProduction:
 		opts := &slog.HandlerOptions{
-			Level: slog.LevelInfo,
+			Level:      slog.LevelInfo,
+			AddSource:  false,
+			ReplaceAttr: nil,
 		}
 		handler = slog.NewJSONHandler(os.Stdout, opts)
+	case config.EnvModeTest:
+		opts := &slog.HandlerOptions{
+			Level:      slog.LevelDebug,
+			AddSource:  false,
+			ReplaceAttr: nil,
+		}
+		handler = slog.NewTextHandler(os.Stdout, opts)
 	default:
 		opts := &slog.HandlerOptions{
-			Level: slog.LevelInfo,
+			Level:      slog.LevelInfo,
+			AddSource:  false,
+			ReplaceAttr: nil,
 		}
 		handler = slog.NewTextHandler(os.Stdout, opts)
 	}
@@ -53,22 +65,27 @@ func main() {
 
 	if *showVersion {
 		slog.Info("akari version", "version", version)
+
 		return
 	}
 
-	fmt.Print("You: ")
+	slog.Info("You: ")
+
 	scanner := bufio.NewScanner(os.Stdin)
 	if !scanner.Scan() {
 		slog.Error("Failed to read input")
+
 		return
 	}
+
 	userMessage := scanner.Text()
 
 	app := fx.New(
-		di.Module,
+		di.NewModule(),
 		fx.NopLogger,
 		fx.Invoke(func(llmInteractor interactor.LLMInteractor) {
 			ctx := context.Background()
+
 			slog.Info("Akari started")
 
 			systemPrompt := "You are a helpful AI assistant."
@@ -78,11 +95,12 @@ func main() {
 			messages, _, err := llmInteractor.SendChatMessage(ctx, systemPrompt, history, userMessage, functions)
 			if err != nil {
 				slog.Error("Failed to send message to LLM", "error", err)
+
 				return
 			}
 
 			if len(messages) > 0 {
-				fmt.Printf("AI: %s\n", *messages[0])
+				slog.Info("AI", "response", *messages[0])
 			}
 		}),
 	)
@@ -90,6 +108,7 @@ func main() {
 	ctx := context.Background()
 	if err := app.Start(ctx); err != nil {
 		slog.Error("Failed to start application", "error", err)
+
 		return
 	}
 
