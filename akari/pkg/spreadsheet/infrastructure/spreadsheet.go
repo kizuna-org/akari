@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 )
@@ -54,7 +55,15 @@ func (c *SpreadsheetClient) Update(ctx context.Context, spreadsheetId, range_ st
 	}
 
 	valueRange := &sheets.ValueRange{
-		Values: interfaceValues,
+		Values:         interfaceValues,
+		MajorDimension: "",
+		Range:          "",
+		ServerResponse: googleapi.ServerResponse{
+			HTTPStatusCode: 0,
+			Header:         nil,
+		},
+		ForceSendFields: nil,
+		NullFields:      nil,
 	}
 
 	_, err := c.service.Spreadsheets.Values.Update(spreadsheetId, range_, valueRange).
@@ -79,7 +88,15 @@ func (c *SpreadsheetClient) Append(ctx context.Context, spreadsheetId, range_ st
 	}
 
 	valueRange := &sheets.ValueRange{
-		Values: interfaceValues,
+		Values:         interfaceValues,
+		MajorDimension: "",
+		Range:          "",
+		ServerResponse: googleapi.ServerResponse{
+			HTTPStatusCode: 0,
+			Header:         nil,
+		},
+		ForceSendFields: nil,
+		NullFields:      nil,
 	}
 
 	_, err := c.service.Spreadsheets.Values.Append(spreadsheetId, range_, valueRange).
@@ -107,7 +124,11 @@ func (c *SpreadsheetClient) Clear(ctx context.Context, spreadsheetId, range_ str
 	return nil
 }
 
-func (c *SpreadsheetClient) BatchGet(ctx context.Context, spreadsheetId string, ranges []string) (map[string][][]string, error) {
+func (c *SpreadsheetClient) BatchGet(
+	ctx context.Context,
+	spreadsheetId string,
+	ranges []string,
+) (map[string][][]string, error) {
 	resp, err := c.service.Spreadsheets.Values.BatchGet(spreadsheetId).
 		Ranges(ranges...).
 		Context(ctx).
@@ -137,9 +158,9 @@ func (c *SpreadsheetClient) BatchGet(ctx context.Context, spreadsheetId string, 
 }
 
 func (c *SpreadsheetClient) BatchUpdate(ctx context.Context, spreadsheetID string, data map[string][][]string) error {
-	var valueRanges []*sheets.ValueRange
+	valueRanges := make([]*sheets.ValueRange, 0, len(data))
 
-	for rangeStr, values := range data {
+	for range_, values := range data {
 		interfaceValues := make([][]any, len(values))
 		for i, row := range values {
 			interfaceValues[i] = make([]any, len(row))
@@ -149,14 +170,26 @@ func (c *SpreadsheetClient) BatchUpdate(ctx context.Context, spreadsheetID strin
 		}
 
 		valueRanges = append(valueRanges, &sheets.ValueRange{
-			Range:  rangeStr,
-			Values: interfaceValues,
+			Range:          range_,
+			Values:         interfaceValues,
+			MajorDimension: "",
+			ServerResponse: googleapi.ServerResponse{
+				HTTPStatusCode: 0,
+				Header:         nil,
+			},
+			ForceSendFields: nil,
+			NullFields:      nil,
 		})
 	}
 
 	batchUpdateRequest := &sheets.BatchUpdateValuesRequest{
-		ValueInputOption: "RAW",
-		Data:             valueRanges,
+		ValueInputOption:             "RAW",
+		Data:                         valueRanges,
+		IncludeValuesInResponse:      false,
+		ResponseDateTimeRenderOption: "",
+		ResponseValueRenderOption:    "",
+		ForceSendFields:              nil,
+		NullFields:                   nil,
 	}
 
 	_, err := c.service.Spreadsheets.Values.BatchUpdate(spreadsheetID, batchUpdateRequest).

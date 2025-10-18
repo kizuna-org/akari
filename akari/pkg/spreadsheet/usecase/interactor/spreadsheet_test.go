@@ -14,7 +14,9 @@ type MockSpreadsheetRepository struct {
 }
 
 func NewMockSpreadsheetRepository() *MockSpreadsheetRepository {
-	return &MockSpreadsheetRepository{}
+	return &MockSpreadsheetRepository{
+		gridData: nil,
+	}
 }
 
 func (m *MockSpreadsheetRepository) Read(ctx context.Context, cellRange entity.CellRange) (*entity.GridData, error) {
@@ -55,12 +57,14 @@ func (m *MockSpreadsheetRepository) Append(ctx context.Context, gridData *entity
 	return nil
 }
 
-func TestGridDataOperations(t *testing.T) {
+func TestCreateGrid(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	mockRepo := NewMockSpreadsheetRepository()
 	interactor := interactor.NewSpreadsheetInteractor(mockRepo)
 
 	t.Run("CreateGrid", func(t *testing.T) {
+		t.Parallel()
 		req := &dto.GridDataRequest{
 			SpreadsheetId: "test-sheet-id",
 			SheetName:     "Sheet1",
@@ -81,8 +85,16 @@ func TestGridDataOperations(t *testing.T) {
 			t.Error("Grid data was not created")
 		}
 	})
+}
+
+func TestReadGrid(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	mockRepo := NewMockSpreadsheetRepository()
+	interactor := interactor.NewSpreadsheetInteractor(mockRepo)
 
 	t.Run("ReadGrid", func(t *testing.T) {
+		t.Parallel()
 		mockRepo.gridData = &entity.GridData{
 			CellRange: entity.CellRange{
 				SheetData: entity.SheetData{
@@ -102,6 +114,7 @@ func TestGridDataOperations(t *testing.T) {
 			SpreadsheetId: "test-sheet-id",
 			SheetName:     "Sheet1",
 			Range:         "A1:C3",
+			Values:        nil,
 		}
 
 		resp, err := interactor.ReadGrid(ctx, req)
@@ -113,8 +126,16 @@ func TestGridDataOperations(t *testing.T) {
 			t.Errorf("Expected 3 rows, got %d", len(resp.Values))
 		}
 	})
+}
+
+func TestUpdate(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	mockRepo := NewMockSpreadsheetRepository()
+	interactor := interactor.NewSpreadsheetInteractor(mockRepo)
 
 	t.Run("Update", func(t *testing.T) {
+		t.Parallel()
 		req := &dto.GridDataRequest{
 			SpreadsheetId: "test-sheet-id",
 			SheetName:     "Sheet1",
@@ -130,8 +151,16 @@ func TestGridDataOperations(t *testing.T) {
 			t.Errorf("Update failed: %v", err)
 		}
 	})
+}
+
+func TestDelete(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	mockRepo := NewMockSpreadsheetRepository()
+	interactor := interactor.NewSpreadsheetInteractor(mockRepo)
 
 	t.Run("Delete", func(t *testing.T) {
+		t.Parallel()
 		req := &dto.DeleteRequest{
 			SpreadsheetId: "test-sheet-id",
 			SheetName:     "Sheet1",
@@ -147,8 +176,16 @@ func TestGridDataOperations(t *testing.T) {
 			t.Error("Grid data was not deleted")
 		}
 	})
+}
+
+func TestAppend(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	mockRepo := NewMockSpreadsheetRepository()
+	interactor := interactor.NewSpreadsheetInteractor(mockRepo)
 
 	t.Run("Append", func(t *testing.T) {
+		t.Parallel()
 		mockRepo.gridData = &entity.GridData{
 			CellRange: entity.CellRange{
 				SheetData: entity.SheetData{

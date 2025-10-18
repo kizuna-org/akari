@@ -7,6 +7,8 @@ import (
 	"github.com/kizuna-org/akari/pkg/spreadsheet/domain/entity"
 )
 
+const rangePartsCount = 2
+
 type SpreadsheetService struct{}
 
 func NewSpreadsheetService() *SpreadsheetService {
@@ -26,16 +28,16 @@ func (s *SpreadsheetService) ValidateGridData(gridData *entity.GridData) error {
 	return nil
 }
 
-func (s *SpreadsheetService) BuildRange(sheetName, rangeStr string) string {
-	if rangeStr == "" {
+func (s *SpreadsheetService) BuildRange(sheetName, range_ string) string {
+	if range_ == "" {
 		return sheetName
 	}
-	return fmt.Sprintf("%s!%s", sheetName, rangeStr)
+	return fmt.Sprintf("%s!%s", sheetName, range_)
 }
 
-func (s *SpreadsheetService) ParseRange(fullRange string) (sheetName, rangeStr string) {
+func (s *SpreadsheetService) ParseRange(fullRange string) (string, string) {
 	parts := strings.Split(fullRange, "!")
-	if len(parts) == 2 {
+	if len(parts) == rangePartsCount {
 		return parts[0], parts[1]
 	}
 	return fullRange, ""
