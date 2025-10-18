@@ -4,11 +4,15 @@ description: Setup Golang
 runs:
   using: composite
   steps:
+    - name: Get current directory
+      id: get-current-directory
+      shell: bash
+      run: echo "current-directory=$(pwd)" >> $GITHUB_OUTPUT
     - name: Set up Go
       uses: actions/setup-go@v6
       with:
-        go-version-file: go.mod
-        cache-dependency-path: go.mod
+        go-version-file: ${{ steps.get-current-directory.outputs.current-directory }}/go.mod
+        cache-dependency-path: ${{ steps.get-current-directory.outputs.current-directory }}/go.mod
     - name: Download Go modules
       shell: bash
       run: go mod download
