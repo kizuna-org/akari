@@ -107,6 +107,7 @@ jobs:
       - name: Check diff
         run: |
           if [[ $(git status --porcelain) ]]; then
+            git status --porcelain
             git diff
             exit 1
           fi
