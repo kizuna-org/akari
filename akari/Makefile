@@ -6,11 +6,14 @@ GO := go
 
 init:
 	go mod download
+	if [ ! -f .env ]; then \
+		cp .env.example .env; \
+	fi
 
-build:
+build: init generate
 	$(GO) build -o $(BIN) ./cmd/akari
 
-run:
+run: init generate
 	$(GO) run ./cmd/akari
 
  test:
@@ -25,7 +28,7 @@ vet:
  tidy:
 	$(GO) mod tidy
 
-generate:
+generate: init
 	go generate ./...
 
 lint:

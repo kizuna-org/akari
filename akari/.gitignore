@@ -28,3 +28,4 @@ go.work
 
 custom-gcl
 bin/
+.env
