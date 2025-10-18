@@ -2,26 +2,32 @@ package interactor
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/kizuna-org/akari/pkg/spreadsheet/domain/entity"
-	"github.com/kizuna-org/akari/pkg/spreadsheet/domain/repository"
 	"github.com/kizuna-org/akari/pkg/spreadsheet/domain/service"
 	"github.com/kizuna-org/akari/pkg/spreadsheet/usecase/dto"
 )
 
-type SpreadsheetInteractor struct {
-	repo    repository.SpreadsheetRepository
-	service *service.SpreadsheetService
+type SpreadsheetInteractor interface {
+	Read(ctx context.Context, req *dto.GridDataRequest) (*dto.GridDataResponse, error)
+	Create(ctx context.Context, req *dto.GridDataRequest) error
+	Update(ctx context.Context, req *dto.GridDataRequest) error
+	Delete(ctx context.Context, req *dto.DeleteRequest) error
+	Append(ctx context.Context, req *dto.GridDataRequest) error
 }
 
-func NewSpreadsheetInteractor(repo repository.SpreadsheetRepository) *SpreadsheetInteractor {
-	return &SpreadsheetInteractor{
-		repo:    repo,
-		service: service.NewSpreadsheetService(),
+type SpreadsheetInteractorImpl struct {
+	repo service.SpreadsheetRepository
+}
+
+func NewSpreadsheetInteractor(repo service.SpreadsheetRepository) SpreadsheetInteractor {
+	return &SpreadsheetInteractorImpl{
+		repo: repo,
 	}
 }
 
-func (i *SpreadsheetInteractor) ReadGrid(ctx context.Context, req *dto.GridDataRequest) (*dto.GridDataResponse, error) {
+func (i *SpreadsheetInteractorImpl) Read(ctx context.Context, req *dto.GridDataRequest) (*dto.GridDataResponse, error) {
 	cellRange := entity.CellRange{
 		SheetData: entity.SheetData{
 			SpreadsheetId: req.SpreadsheetId,
@@ -43,7 +49,11 @@ func (i *SpreadsheetInteractor) ReadGrid(ctx context.Context, req *dto.GridDataR
 	}, nil
 }
 
-func (i *SpreadsheetInteractor) Create(ctx context.Context, req *dto.GridDataRequest) error {
+func (i *SpreadsheetInteractorImpl) Create(ctx context.Context, req *dto.GridDataRequest) error {
+	if err := i.validateGridDataRequest(req); err != nil {
+		return err
+	}
+
 	gridData := &entity.GridData{
 		CellRange: entity.CellRange{
 			SheetData: entity.SheetData{
@@ -53,16 +63,16 @@ func (i *SpreadsheetInteractor) Create(ctx context.Context, req *dto.GridDataReq
 			Range: req.Range,
 		},
 		Values: req.Values,
-	}
-
-	if err := i.service.ValidateGridData(gridData); err != nil {
-		return err
 	}
 
 	return i.repo.Create(ctx, gridData)
 }
 
-func (i *SpreadsheetInteractor) Update(ctx context.Context, req *dto.GridDataRequest) error {
+func (i *SpreadsheetInteractorImpl) Update(ctx context.Context, req *dto.GridDataRequest) error {
+	if err := i.validateGridDataRequest(req); err != nil {
+		return err
+	}
+
 	gridData := &entity.GridData{
 		CellRange: entity.CellRange{
 			SheetData: entity.SheetData{
@@ -74,14 +84,10 @@ func (i *SpreadsheetInteractor) Update(ctx context.Context, req *dto.GridDataReq
 		Values: req.Values,
 	}
 
-	if err := i.service.ValidateGridData(gridData); err != nil {
-		return err
-	}
-
 	return i.repo.Update(ctx, gridData)
 }
 
-func (i *SpreadsheetInteractor) Delete(ctx context.Context, req *dto.DeleteRequest) error {
+func (i *SpreadsheetInteractorImpl) Delete(ctx context.Context, req *dto.DeleteRequest) error {
 	cellRange := entity.CellRange{
 		SheetData: entity.SheetData{
 			SpreadsheetId: req.SpreadsheetId,
@@ -93,7 +99,11 @@ func (i *SpreadsheetInteractor) Delete(ctx context.Context, req *dto.DeleteReque
 	return i.repo.Delete(ctx, cellRange)
 }
 
-func (i *SpreadsheetInteractor) Append(ctx context.Context, req *dto.GridDataRequest) error {
+func (i *SpreadsheetInteractorImpl) Append(ctx context.Context, req *dto.GridDataRequest) error {
+	if err := i.validateGridDataRequest(req); err != nil {
+		return err
+	}
+
 	gridData := &entity.GridData{
 		CellRange: entity.CellRange{
 			SheetData: entity.SheetData{
@@ -105,9 +115,18 @@ func (i *SpreadsheetInteractor) Append(ctx context.Context, req *dto.GridDataReq
 		Values: req.Values,
 	}
 
-	if err := i.service.ValidateGridData(gridData); err != nil {
-		return err
-	}
-
 	return i.repo.Append(ctx, gridData)
+}
+
+func (i *SpreadsheetInteractorImpl) validateGridDataRequest(req *dto.GridDataRequest) error {
+	if req.SpreadsheetId == "" {
+		return fmt.Errorf("spreadsheet ID is required")
+	}
+	if req.SheetName == "" {
+		return fmt.Errorf("sheet name is required")
+	}
+	if len(req.Values) == 0 {
+		return fmt.Errorf("values cannot be empty")
+	}
+	return nil
 }

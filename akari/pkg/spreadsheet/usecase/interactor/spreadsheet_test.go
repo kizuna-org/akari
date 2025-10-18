@@ -117,7 +117,7 @@ func TestReadGrid(t *testing.T) {
 			Values:        nil,
 		}
 
-		resp, err := interactor.ReadGrid(ctx, req)
+		resp, err := interactor.Read(ctx, req)
 		if err != nil {
 			t.Errorf("Read failed: %v", err)
 		}

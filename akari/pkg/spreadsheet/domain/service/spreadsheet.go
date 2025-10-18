@@ -1,44 +1,117 @@
 package service
 
 import (
-	"fmt"
-	"strings"
+	"context"
 
 	"github.com/kizuna-org/akari/pkg/spreadsheet/domain/entity"
 )
 
-const rangePartsCount = 2
+type SpreadsheetRepository interface {
+	Read(ctx context.Context, cellRange entity.CellRange) (*entity.GridData, error)
+	Create(ctx context.Context, gridData *entity.GridData) error
+	Update(ctx context.Context, gridData *entity.GridData) error
+	Delete(ctx context.Context, cellRange entity.CellRange) error
 
-type SpreadsheetService struct{}
-
-func NewSpreadsheetService() *SpreadsheetService {
-	return &SpreadsheetService{}
+	Clear(ctx context.Context, cellRange entity.CellRange) error
+	Append(ctx context.Context, gridData *entity.GridData) error
 }
 
-func (s *SpreadsheetService) ValidateGridData(gridData *entity.GridData) error {
-	if gridData.SpreadsheetId == "" {
-		return fmt.Errorf("spreadsheet ID is required")
-	}
-	if gridData.SheetName == "" {
-		return fmt.Errorf("sheet name is required")
-	}
-	if len(gridData.Values) == 0 {
-		return fmt.Errorf("values cannot be empty")
-	}
-	return nil
+type SpreadsheetService interface {
+	Read(ctx context.Context, spreadsheetId, sheetName, range_ string) (*entity.GridData, error)
+	Create(ctx context.Context, spreadsheetId, sheetName, range_ string, values [][]string) error
+	Update(ctx context.Context, spreadsheetId, sheetName, range_ string, values [][]string) error
+	Delete(ctx context.Context, spreadsheetId, sheetName, range_ string) error
+	Clear(ctx context.Context, spreadsheetId, sheetName, range_ string) error
+	Append(ctx context.Context, spreadsheetId, sheetName, range_ string, values [][]string) error
 }
 
-func (s *SpreadsheetService) BuildRange(sheetName, range_ string) string {
-	if range_ == "" {
-		return sheetName
-	}
-	return fmt.Sprintf("%s!%s", sheetName, range_)
+type SpreadsheetServiceImpl struct {
+	repo SpreadsheetRepository
 }
 
-func (s *SpreadsheetService) ParseRange(fullRange string) (string, string) {
-	parts := strings.Split(fullRange, "!")
-	if len(parts) == rangePartsCount {
-		return parts[0], parts[1]
+func NewSpreadsheetService(repo SpreadsheetRepository) SpreadsheetService {
+	return &SpreadsheetServiceImpl{
+		repo: repo,
 	}
-	return fullRange, ""
+}
+
+func (s *SpreadsheetServiceImpl) Read(ctx context.Context, spreadsheetId, sheetName, range_ string) (*entity.GridData, error) {
+	cellRange := entity.CellRange{
+		SheetData: entity.SheetData{
+			SpreadsheetId: spreadsheetId,
+			SheetName:     sheetName,
+		},
+		Range: range_,
+	}
+
+	return s.repo.Read(ctx, cellRange)
+}
+
+func (s *SpreadsheetServiceImpl) Create(ctx context.Context, spreadsheetId, sheetName, range_ string, values [][]string) error {
+	gridData := &entity.GridData{
+		CellRange: entity.CellRange{
+			SheetData: entity.SheetData{
+				SpreadsheetId: spreadsheetId,
+				SheetName:     sheetName,
+			},
+			Range: range_,
+		},
+		Values: values,
+	}
+
+	return s.repo.Create(ctx, gridData)
+}
+
+func (s *SpreadsheetServiceImpl) Update(ctx context.Context, spreadsheetId, sheetName, range_ string, values [][]string) error {
+	gridData := &entity.GridData{
+		CellRange: entity.CellRange{
+			SheetData: entity.SheetData{
+				SpreadsheetId: spreadsheetId,
+				SheetName:     sheetName,
+			},
+			Range: range_,
+		},
+		Values: values,
+	}
+
+	return s.repo.Update(ctx, gridData)
+}
+
+func (s *SpreadsheetServiceImpl) Delete(ctx context.Context, spreadsheetId, sheetName, range_ string) error {
+	cellRange := entity.CellRange{
+		SheetData: entity.SheetData{
+			SpreadsheetId: spreadsheetId,
+			SheetName:     sheetName,
+		},
+		Range: range_,
+	}
+
+	return s.repo.Delete(ctx, cellRange)
+}
+
+func (s *SpreadsheetServiceImpl) Clear(ctx context.Context, spreadsheetId, sheetName, range_ string) error {
+	cellRange := entity.CellRange{
+		SheetData: entity.SheetData{
+			SpreadsheetId: spreadsheetId,
+			SheetName:     sheetName,
+		},
+		Range: range_,
+	}
+
+	return s.repo.Clear(ctx, cellRange)
+}
+
+func (s *SpreadsheetServiceImpl) Append(ctx context.Context, spreadsheetId, sheetName, range_ string, values [][]string) error {
+	gridData := &entity.GridData{
+		CellRange: entity.CellRange{
+			SheetData: entity.SheetData{
+				SpreadsheetId: spreadsheetId,
+				SheetName:     sheetName,
+			},
+			Range: range_,
+		},
+		Values: values,
+	}
+
+	return s.repo.Append(ctx, gridData)
 }

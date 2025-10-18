@@ -1,21 +1,21 @@
 package dto
 
 type GridDataRequest struct {
-	SpreadsheetId string     `json:"spreadsheetId"`
-	SheetName     string     `json:"sheetName"`
-	Range         string     `json:"range,omitempty"`
-	Values        [][]string `json:"values,omitempty"`
+	SpreadsheetId string
+	SheetName     string
+	Range         string
+	Values        [][]string
 }
 
 type GridDataResponse struct {
-	SpreadsheetID string     `json:"spreadsheetId"`
-	SheetName     string     `json:"sheetName"`
-	Range         string     `json:"range"`
-	Values        [][]string `json:"values"`
+	SpreadsheetID string
+	SheetName     string
+	Range         string
+	Values        [][]string
 }
 
 type DeleteRequest struct {
-	SpreadsheetId string `json:"spreadsheetId"`
-	SheetName     string `json:"sheetName"`
-	Range         string `json:"range"`
+	SpreadsheetId string
+	SheetName     string
+	Range         string
 }

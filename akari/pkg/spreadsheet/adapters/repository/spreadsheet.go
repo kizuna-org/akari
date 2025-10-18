@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kizuna-org/akari/pkg/spreadsheet/domain/entity"
-	"github.com/kizuna-org/akari/pkg/spreadsheet/domain/repository"
+	"github.com/kizuna-org/akari/pkg/spreadsheet/domain/service"
 	"github.com/kizuna-org/akari/pkg/spreadsheet/infrastructure"
 )
 
@@ -13,7 +13,7 @@ type SpreadsheetRepository struct {
 	client *infrastructure.SpreadsheetClient
 }
 
-func NewSpreadsheetRepository(client *infrastructure.SpreadsheetClient) repository.SpreadsheetRepository {
+func NewSpreadsheetRepository(client *infrastructure.SpreadsheetClient) service.SpreadsheetRepository {
 	return &SpreadsheetRepository{
 		client: client,
 	}
