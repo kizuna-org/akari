@@ -18,7 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs:
-      - ci-req-check
       - yaml-lint
       - action-lint
       - dotenv-lint
@@ -29,20 +28,18 @@ jobs:
       - golang-test-comment-check
       - golang-test-check
       - golang-generate-check
-    steps:
-      - name: All status check
-        run: echo "All status check passed"
-
-  ci-req-check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ./
     steps:
       - uses: actions/checkout@v5
       - name: Check all-status-check
         run: |
           diff \
-            <(yq ".jobs | del(.all-status-check) | keys.[]" .github/workflows/ci.yml) \
-            <(yq ".jobs.all-status-check.needs.[]" .github/workflows/ci.yml)
+            <(yq ".jobs | del(.all-status-check) | keys.[]" .github/workflows/akari-ci.yml) \
+            <(yq ".jobs.all-status-check.needs.[]" .github/workflows/akari-ci.yml)
+      - name: All status check
+        run: echo "All status check passed"
 
   yaml-lint:
     runs-on: ubuntu-latest
