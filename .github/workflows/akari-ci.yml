@@ -9,6 +9,10 @@ permissions:
   pull-requests: write
   contents: read
 
+defaults:
+  run:
+    working-directory: ./akari
+
 jobs:
   all-status-check:
     runs-on: ubuntu-latest
