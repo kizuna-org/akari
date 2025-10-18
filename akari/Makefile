@@ -1,4 +1,4 @@
-APP_NAME := nina
+APP_NAME := akari
 BIN := bin/$(APP_NAME)
 GO := go
 
@@ -8,10 +8,10 @@ init:
 	go mod download
 
 build:
-	$(GO) build -o $(BIN) ./cmd/nina
+	$(GO) build -o $(BIN) ./cmd/akari
 
 run:
-	$(GO) run ./cmd/nina
+	$(GO) run ./cmd/akari
 
  test:
 	$(GO) test ./...
