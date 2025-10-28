@@ -3,39 +3,37 @@ package interactor
 import (
 	"context"
 
-	"github.com/kizuna-org/akari/pkg/llm/adapter/repository"
-	"github.com/kizuna-org/akari/pkg/llm/domain/service"
-	"google.golang.org/genai"
+	"github.com/kizuna-org/akari/pkg/llm/domain"
 )
 
 type LLMInteractor interface {
 	SendChatMessage(
 		ctx context.Context,
 		systemPrompt string,
-		history []*genai.Content,
+		history []*domain.Content,
 		message string,
-		functions []repository.AkariFunction,
-	) ([]*string, []*genai.Part, error)
+		functions []domain.Function,
+	) ([]*string, []*domain.Part, error)
 }
 
 type LLMInteractorImpl struct {
-	geminiService service.GeminiService
+	geminiRepository domain.GeminiRepository
 }
 
 func NewLLMInteractor(
-	geminiService service.GeminiService,
+	geminiRepository domain.GeminiRepository,
 ) LLMInteractor {
 	return &LLMInteractorImpl{
-		geminiService: geminiService,
+		geminiRepository: geminiRepository,
 	}
 }
 
 func (l *LLMInteractorImpl) SendChatMessage(
 	ctx context.Context,
 	systemPrompt string,
-	history []*genai.Content,
+	history []*domain.Content,
 	message string,
-	functions []repository.AkariFunction,
-) ([]*string, []*genai.Part, error) {
-	return l.geminiService.SendChatMessage(ctx, systemPrompt, history, message, functions)
+	functions []domain.Function,
+) ([]*string, []*domain.Part, error) {
+	return l.geminiRepository.SendChatMessage(ctx, systemPrompt, history, message, functions)
 }

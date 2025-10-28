@@ -9,10 +9,9 @@ import (
 
 	"github.com/kizuna-org/akari/internal/di"
 	"github.com/kizuna-org/akari/pkg/config"
-	"github.com/kizuna-org/akari/pkg/llm/adapter/repository"
+	"github.com/kizuna-org/akari/pkg/llm/domain"
 	"github.com/kizuna-org/akari/pkg/llm/usecase/interactor"
 	"go.uber.org/fx"
-	"google.golang.org/genai"
 )
 
 var version = "0.1.0"
@@ -89,8 +88,8 @@ func main() {
 			slog.Info("Akari started")
 
 			systemPrompt := "You are a helpful AI assistant."
-			history := []*genai.Content{}
-			functions := []repository.AkariFunction{}
+			history := []*domain.Content{}
+			functions := []domain.Function{}
 
 			messages, _, err := llmInteractor.SendChatMessage(ctx, systemPrompt, history, userMessage, functions)
 			if err != nil {
