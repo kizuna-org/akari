@@ -34,5 +34,5 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	golang.org/x/text v0.30.0 // indirect
-	google.golang.org/genai v1.32.0
+	google.golang.org/genai v1.33.0
 )
