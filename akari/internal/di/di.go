@@ -1,18 +1,22 @@
 package di
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 
 	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/pkg/config"
+	"github.com/kizuna-org/akari/pkg/database/infrastructure/postgres"
+	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
 	discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
 	"github.com/kizuna-org/akari/pkg/discord/handler"
 	discordInfra "github.com/kizuna-org/akari/pkg/discord/infrastructure"
 	discordInteractor "github.com/kizuna-org/akari/pkg/discord/usecase/interactor"
 	"github.com/kizuna-org/akari/pkg/llm/infrastructure/gemini"
-	"github.com/kizuna-org/akari/pkg/llm/usecase/interactor"
+	llmInteractor "github.com/kizuna-org/akari/pkg/llm/usecase/interactor"
 	"go.uber.org/fx"
 )
 
@@ -27,21 +31,24 @@ func NewModule() fx.Option {
 		fx.Provide(
 			newEntClient,
 			gemini.NewRepository,
+			postgres.NewRepository,
 			newDiscordClient,
 		),
 
 		// Usecase
 		fx.Provide(
+			llmInteractor.NewLLMInteractor,
+			databaseInteractor.NewDatabaseInteractor,
 			discordRepository.NewDiscordRepository,
 		),
 
-		// Logger
+		// Service
 		fx.Provide(
 			discordService.NewDiscordService,
 		),
 
+		// Interactor
 		fx.Provide(
-			interactor.NewLLMInteractor,
 			discordInteractor.NewDiscordInteractor,
 		),
 
@@ -52,6 +59,9 @@ func NewModule() fx.Option {
 		fx.Provide(
 			slog.Default,
 		),
+
+		// Lifecycle hooks
+		fx.Invoke(registerDatabaseHooks),
 	)
 }
 
@@ -65,6 +75,29 @@ func newDiscordClient(configRepo config.ConfigRepository) (*discordInfra.Discord
 	cfg := configRepo.GetConfig()
 
 	return discordInfra.NewDiscordClient(cfg.Discord.Token)
+}
+
+func registerDatabaseHooks(lc fx.Lifecycle, interactor databaseInteractor.DatabaseInteractor, logger *slog.Logger) {
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			logger.Info("connecting to database")
+			if err := interactor.Connect(ctx); err != nil {
+				return fmt.Errorf("failed to connect to database: %w", err)
+			}
+			logger.Info("database connected successfully")
+
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			logger.Info("disconnecting from database")
+			if err := interactor.Disconnect(); err != nil {
+				return fmt.Errorf("failed to disconnect from database: %w", err)
+			}
+			logger.Info("database disconnected successfully")
+
+			return nil
+		},
+	})
 }
 
 func NewApp() *fx.App {
