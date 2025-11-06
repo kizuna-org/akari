@@ -10,7 +10,7 @@ locals {
 }
 
 env "local" {
-  src = "ent://internal/ent/schema"
+  src = "ent://ent/schema"
   dev = "docker://postgres/17/dev?search_path=public"
   url = local.envfile["DATABASE_URL"]
   migration {
@@ -24,7 +24,7 @@ env "local" {
 }
 
 env "test" {
-  src = "ent://internal/ent/schema"
+  src = "ent://ent/schema"
   dev = "docker://postgres/17/dev?search_path=public"
   url = local.envfile_test["DATABASE_URL"]
   migration {
@@ -38,7 +38,7 @@ env "test" {
 }
 
 env "dev" {
-  src = "ent://internal/ent/schema"
+  src = "ent://ent/schema"
   url = getenv("DATABASE_URL")
   migration {
     dir = "file://internal/database/migrations"

@@ -47,7 +47,7 @@ migrate-new:
 	fi
 	atlas migrate diff $(NAME) \
 		--dir "file://internal/database/migrations" \
-		--to "ent://internal/ent/schema" \
+		--to "ent://ent/schema" \
 		--dev-url "docker://postgres/17/dev?search_path=public"
 
 migrate-apply:
