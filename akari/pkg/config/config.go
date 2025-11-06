@@ -29,8 +29,9 @@ const (
 type Config struct {
 	EnvMode EnvMode
 
-	LLM LLMConfig
-	Log LogConfig
+	LLM     LLMConfig
+	Log     LogConfig
+	Discord DiscordConfig
 }
 
 type LLMConfig struct {
@@ -42,6 +43,10 @@ type LLMConfig struct {
 type LogConfig struct {
 	Level  string
 	Format string
+}
+
+type DiscordConfig struct {
+	Token string
 }
 
 func NewConfigRepository() ConfigRepository {
@@ -108,6 +113,7 @@ func (c *configRepositoryImpl) determineEnvMode() (EnvMode, string) {
 func (c *configRepositoryImpl) loadAllConfigs() error {
 	llmConfig := LLMConfig{}
 	logConfig := LogConfig{}
+	discordConfig := DiscordConfig{}
 
 	err := envconfig.Process("akari", &c.config)
 	if err != nil {
@@ -124,8 +130,14 @@ func (c *configRepositoryImpl) loadAllConfigs() error {
 		return err
 	}
 
+	err = envconfig.Process("discord", &discordConfig)
+	if err != nil {
+		return err
+	}
+
 	c.config.LLM = llmConfig
 	c.config.Log = logConfig
+	c.config.Discord = discordConfig
 
 	return nil
 }
