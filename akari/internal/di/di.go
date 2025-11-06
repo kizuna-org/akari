@@ -16,7 +16,7 @@ import (
 
 func NewModule() fx.Option {
 	return fx.Module("akari",
-		// Configuration,
+		// Configuration
 		fx.Provide(
 			config.NewConfigRepository,
 		),
