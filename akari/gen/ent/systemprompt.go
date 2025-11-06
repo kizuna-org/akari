@@ -3,8 +3,10 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
@@ -13,9 +15,23 @@ import (
 
 // SystemPrompt is the model entity for the SystemPrompt schema.
 type SystemPrompt struct {
-	config
+	config `json:"-"`
 	// ID of the ent.
-	ID           int `json:"id,omitempty"`
+	ID int `json:"id,omitempty"`
+	// An identifier title for the system prompt
+	Title string `json:"title,omitempty"`
+	// The purpose of the system prompt
+	Purpose systemprompt.Purpose `json:"purpose,omitempty"`
+	// The system prompt
+	Prompt string `json:"prompt,omitempty"`
+	// Previous versions of the system prompt
+	PreviousPrompts []string `json:"previous_prompts,omitempty"`
+	// Version number of the system prompt
+	Version int `json:"version,omitempty"`
+	// The time when the system prompt was created
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// The time when the system prompt was last updated
+	UpdatedAt    time.Time `json:"updated_at,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -24,8 +40,14 @@ func (*SystemPrompt) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case systemprompt.FieldID:
+		case systemprompt.FieldPreviousPrompts:
+			values[i] = new([]byte)
+		case systemprompt.FieldID, systemprompt.FieldVersion:
 			values[i] = new(sql.NullInt64)
+		case systemprompt.FieldTitle, systemprompt.FieldPurpose, systemprompt.FieldPrompt:
+			values[i] = new(sql.NullString)
+		case systemprompt.FieldCreatedAt, systemprompt.FieldUpdatedAt:
+			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -47,6 +69,50 @@ func (_m *SystemPrompt) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int(value.Int64)
+		case systemprompt.FieldTitle:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field title", values[i])
+			} else if value.Valid {
+				_m.Title = value.String
+			}
+		case systemprompt.FieldPurpose:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field purpose", values[i])
+			} else if value.Valid {
+				_m.Purpose = systemprompt.Purpose(value.String)
+			}
+		case systemprompt.FieldPrompt:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field prompt", values[i])
+			} else if value.Valid {
+				_m.Prompt = value.String
+			}
+		case systemprompt.FieldPreviousPrompts:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field previous_prompts", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.PreviousPrompts); err != nil {
+					return fmt.Errorf("unmarshal field previous_prompts: %w", err)
+				}
+			}
+		case systemprompt.FieldVersion:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field version", values[i])
+			} else if value.Valid {
+				_m.Version = int(value.Int64)
+			}
+		case systemprompt.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				_m.CreatedAt = value.Time
+			}
+		case systemprompt.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				_m.UpdatedAt = value.Time
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -82,7 +148,27 @@ func (_m *SystemPrompt) Unwrap() *SystemPrompt {
 func (_m *SystemPrompt) String() string {
 	var builder strings.Builder
 	builder.WriteString("SystemPrompt(")
-	builder.WriteString(fmt.Sprintf("id=%v", _m.ID))
+	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString("title=")
+	builder.WriteString(_m.Title)
+	builder.WriteString(", ")
+	builder.WriteString("purpose=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Purpose))
+	builder.WriteString(", ")
+	builder.WriteString("prompt=")
+	builder.WriteString(_m.Prompt)
+	builder.WriteString(", ")
+	builder.WriteString("previous_prompts=")
+	builder.WriteString(fmt.Sprintf("%v", _m.PreviousPrompts))
+	builder.WriteString(", ")
+	builder.WriteString("version=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Version))
+	builder.WriteString(", ")
+	builder.WriteString("created_at=")
+	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

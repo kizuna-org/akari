@@ -4,7 +4,9 @@ package ent
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
@@ -18,6 +20,72 @@ type SystemPromptCreate struct {
 	hooks    []Hook
 }
 
+// SetTitle sets the "title" field.
+func (_c *SystemPromptCreate) SetTitle(v string) *SystemPromptCreate {
+	_c.mutation.SetTitle(v)
+	return _c
+}
+
+// SetPurpose sets the "purpose" field.
+func (_c *SystemPromptCreate) SetPurpose(v systemprompt.Purpose) *SystemPromptCreate {
+	_c.mutation.SetPurpose(v)
+	return _c
+}
+
+// SetPrompt sets the "prompt" field.
+func (_c *SystemPromptCreate) SetPrompt(v string) *SystemPromptCreate {
+	_c.mutation.SetPrompt(v)
+	return _c
+}
+
+// SetPreviousPrompts sets the "previous_prompts" field.
+func (_c *SystemPromptCreate) SetPreviousPrompts(v []string) *SystemPromptCreate {
+	_c.mutation.SetPreviousPrompts(v)
+	return _c
+}
+
+// SetVersion sets the "version" field.
+func (_c *SystemPromptCreate) SetVersion(v int) *SystemPromptCreate {
+	_c.mutation.SetVersion(v)
+	return _c
+}
+
+// SetNillableVersion sets the "version" field if the given value is not nil.
+func (_c *SystemPromptCreate) SetNillableVersion(v *int) *SystemPromptCreate {
+	if v != nil {
+		_c.SetVersion(*v)
+	}
+	return _c
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (_c *SystemPromptCreate) SetCreatedAt(v time.Time) *SystemPromptCreate {
+	_c.mutation.SetCreatedAt(v)
+	return _c
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (_c *SystemPromptCreate) SetNillableCreatedAt(v *time.Time) *SystemPromptCreate {
+	if v != nil {
+		_c.SetCreatedAt(*v)
+	}
+	return _c
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_c *SystemPromptCreate) SetUpdatedAt(v time.Time) *SystemPromptCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (_c *SystemPromptCreate) SetNillableUpdatedAt(v *time.Time) *SystemPromptCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
+	}
+	return _c
+}
+
 // Mutation returns the SystemPromptMutation object of the builder.
 func (_c *SystemPromptCreate) Mutation() *SystemPromptMutation {
 	return _c.mutation
@@ -25,6 +93,7 @@ func (_c *SystemPromptCreate) Mutation() *SystemPromptMutation {
 
 // Save creates the SystemPrompt in the database.
 func (_c *SystemPromptCreate) Save(ctx context.Context) (*SystemPrompt, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -50,8 +119,60 @@ func (_c *SystemPromptCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *SystemPromptCreate) defaults() {
+	if _, ok := _c.mutation.Version(); !ok {
+		v := systemprompt.DefaultVersion
+		_c.mutation.SetVersion(v)
+	}
+	if _, ok := _c.mutation.CreatedAt(); !ok {
+		v := systemprompt.DefaultCreatedAt()
+		_c.mutation.SetCreatedAt(v)
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		v := systemprompt.DefaultUpdatedAt()
+		_c.mutation.SetUpdatedAt(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *SystemPromptCreate) check() error {
+	if _, ok := _c.mutation.Title(); !ok {
+		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "SystemPrompt.title"`)}
+	}
+	if v, ok := _c.mutation.Title(); ok {
+		if err := systemprompt.TitleValidator(v); err != nil {
+			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "SystemPrompt.title": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Purpose(); !ok {
+		return &ValidationError{Name: "purpose", err: errors.New(`ent: missing required field "SystemPrompt.purpose"`)}
+	}
+	if v, ok := _c.mutation.Purpose(); ok {
+		if err := systemprompt.PurposeValidator(v); err != nil {
+			return &ValidationError{Name: "purpose", err: fmt.Errorf(`ent: validator failed for field "SystemPrompt.purpose": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Prompt(); !ok {
+		return &ValidationError{Name: "prompt", err: errors.New(`ent: missing required field "SystemPrompt.prompt"`)}
+	}
+	if v, ok := _c.mutation.Prompt(); ok {
+		if err := systemprompt.PromptValidator(v); err != nil {
+			return &ValidationError{Name: "prompt", err: fmt.Errorf(`ent: validator failed for field "SystemPrompt.prompt": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.PreviousPrompts(); !ok {
+		return &ValidationError{Name: "previous_prompts", err: errors.New(`ent: missing required field "SystemPrompt.previous_prompts"`)}
+	}
+	if _, ok := _c.mutation.Version(); !ok {
+		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "SystemPrompt.version"`)}
+	}
+	if _, ok := _c.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "SystemPrompt.created_at"`)}
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "SystemPrompt.updated_at"`)}
+	}
 	return nil
 }
 
@@ -78,6 +199,34 @@ func (_c *SystemPromptCreate) createSpec() (*SystemPrompt, *sqlgraph.CreateSpec)
 		_node = &SystemPrompt{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(systemprompt.Table, sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt))
 	)
+	if value, ok := _c.mutation.Title(); ok {
+		_spec.SetField(systemprompt.FieldTitle, field.TypeString, value)
+		_node.Title = value
+	}
+	if value, ok := _c.mutation.Purpose(); ok {
+		_spec.SetField(systemprompt.FieldPurpose, field.TypeEnum, value)
+		_node.Purpose = value
+	}
+	if value, ok := _c.mutation.Prompt(); ok {
+		_spec.SetField(systemprompt.FieldPrompt, field.TypeString, value)
+		_node.Prompt = value
+	}
+	if value, ok := _c.mutation.PreviousPrompts(); ok {
+		_spec.SetField(systemprompt.FieldPreviousPrompts, field.TypeJSON, value)
+		_node.PreviousPrompts = value
+	}
+	if value, ok := _c.mutation.Version(); ok {
+		_spec.SetField(systemprompt.FieldVersion, field.TypeInt, value)
+		_node.Version = value
+	}
+	if value, ok := _c.mutation.CreatedAt(); ok {
+		_spec.SetField(systemprompt.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
+	}
+	if value, ok := _c.mutation.UpdatedAt(); ok {
+		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
+	}
 	return _node, _spec
 }
 
@@ -99,6 +248,7 @@ func (_c *SystemPromptCreateBulk) Save(ctx context.Context) ([]*SystemPrompt, er
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*SystemPromptMutation)
 				if !ok {

@@ -6,9 +6,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
@@ -27,6 +29,87 @@ func (_u *SystemPromptUpdate) Where(ps ...predicate.SystemPrompt) *SystemPromptU
 	return _u
 }
 
+// SetTitle sets the "title" field.
+func (_u *SystemPromptUpdate) SetTitle(v string) *SystemPromptUpdate {
+	_u.mutation.SetTitle(v)
+	return _u
+}
+
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (_u *SystemPromptUpdate) SetNillableTitle(v *string) *SystemPromptUpdate {
+	if v != nil {
+		_u.SetTitle(*v)
+	}
+	return _u
+}
+
+// SetPurpose sets the "purpose" field.
+func (_u *SystemPromptUpdate) SetPurpose(v systemprompt.Purpose) *SystemPromptUpdate {
+	_u.mutation.SetPurpose(v)
+	return _u
+}
+
+// SetNillablePurpose sets the "purpose" field if the given value is not nil.
+func (_u *SystemPromptUpdate) SetNillablePurpose(v *systemprompt.Purpose) *SystemPromptUpdate {
+	if v != nil {
+		_u.SetPurpose(*v)
+	}
+	return _u
+}
+
+// SetPrompt sets the "prompt" field.
+func (_u *SystemPromptUpdate) SetPrompt(v string) *SystemPromptUpdate {
+	_u.mutation.SetPrompt(v)
+	return _u
+}
+
+// SetNillablePrompt sets the "prompt" field if the given value is not nil.
+func (_u *SystemPromptUpdate) SetNillablePrompt(v *string) *SystemPromptUpdate {
+	if v != nil {
+		_u.SetPrompt(*v)
+	}
+	return _u
+}
+
+// SetPreviousPrompts sets the "previous_prompts" field.
+func (_u *SystemPromptUpdate) SetPreviousPrompts(v []string) *SystemPromptUpdate {
+	_u.mutation.SetPreviousPrompts(v)
+	return _u
+}
+
+// AppendPreviousPrompts appends value to the "previous_prompts" field.
+func (_u *SystemPromptUpdate) AppendPreviousPrompts(v []string) *SystemPromptUpdate {
+	_u.mutation.AppendPreviousPrompts(v)
+	return _u
+}
+
+// SetVersion sets the "version" field.
+func (_u *SystemPromptUpdate) SetVersion(v int) *SystemPromptUpdate {
+	_u.mutation.ResetVersion()
+	_u.mutation.SetVersion(v)
+	return _u
+}
+
+// SetNillableVersion sets the "version" field if the given value is not nil.
+func (_u *SystemPromptUpdate) SetNillableVersion(v *int) *SystemPromptUpdate {
+	if v != nil {
+		_u.SetVersion(*v)
+	}
+	return _u
+}
+
+// AddVersion adds value to the "version" field.
+func (_u *SystemPromptUpdate) AddVersion(v int) *SystemPromptUpdate {
+	_u.mutation.AddVersion(v)
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *SystemPromptUpdate) SetUpdatedAt(v time.Time) *SystemPromptUpdate {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // Mutation returns the SystemPromptMutation object of the builder.
 func (_u *SystemPromptUpdate) Mutation() *SystemPromptMutation {
 	return _u.mutation
@@ -34,6 +117,7 @@ func (_u *SystemPromptUpdate) Mutation() *SystemPromptMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *SystemPromptUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -59,7 +143,38 @@ func (_u *SystemPromptUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_u *SystemPromptUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		v := systemprompt.UpdateDefaultUpdatedAt()
+		_u.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (_u *SystemPromptUpdate) check() error {
+	if v, ok := _u.mutation.Title(); ok {
+		if err := systemprompt.TitleValidator(v); err != nil {
+			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "SystemPrompt.title": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Purpose(); ok {
+		if err := systemprompt.PurposeValidator(v); err != nil {
+			return &ValidationError{Name: "purpose", err: fmt.Errorf(`ent: validator failed for field "SystemPrompt.purpose": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Prompt(); ok {
+		if err := systemprompt.PromptValidator(v); err != nil {
+			return &ValidationError{Name: "prompt", err: fmt.Errorf(`ent: validator failed for field "SystemPrompt.prompt": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (_u *SystemPromptUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(systemprompt.Table, systemprompt.Columns, sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -67,6 +182,32 @@ func (_u *SystemPromptUpdate) sqlSave(ctx context.Context) (_node int, err error
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Title(); ok {
+		_spec.SetField(systemprompt.FieldTitle, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Purpose(); ok {
+		_spec.SetField(systemprompt.FieldPurpose, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Prompt(); ok {
+		_spec.SetField(systemprompt.FieldPrompt, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.PreviousPrompts(); ok {
+		_spec.SetField(systemprompt.FieldPreviousPrompts, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedPreviousPrompts(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, systemprompt.FieldPreviousPrompts, value)
+		})
+	}
+	if value, ok := _u.mutation.Version(); ok {
+		_spec.SetField(systemprompt.FieldVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedVersion(); ok {
+		_spec.AddField(systemprompt.FieldVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -86,6 +227,87 @@ type SystemPromptUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *SystemPromptMutation
+}
+
+// SetTitle sets the "title" field.
+func (_u *SystemPromptUpdateOne) SetTitle(v string) *SystemPromptUpdateOne {
+	_u.mutation.SetTitle(v)
+	return _u
+}
+
+// SetNillableTitle sets the "title" field if the given value is not nil.
+func (_u *SystemPromptUpdateOne) SetNillableTitle(v *string) *SystemPromptUpdateOne {
+	if v != nil {
+		_u.SetTitle(*v)
+	}
+	return _u
+}
+
+// SetPurpose sets the "purpose" field.
+func (_u *SystemPromptUpdateOne) SetPurpose(v systemprompt.Purpose) *SystemPromptUpdateOne {
+	_u.mutation.SetPurpose(v)
+	return _u
+}
+
+// SetNillablePurpose sets the "purpose" field if the given value is not nil.
+func (_u *SystemPromptUpdateOne) SetNillablePurpose(v *systemprompt.Purpose) *SystemPromptUpdateOne {
+	if v != nil {
+		_u.SetPurpose(*v)
+	}
+	return _u
+}
+
+// SetPrompt sets the "prompt" field.
+func (_u *SystemPromptUpdateOne) SetPrompt(v string) *SystemPromptUpdateOne {
+	_u.mutation.SetPrompt(v)
+	return _u
+}
+
+// SetNillablePrompt sets the "prompt" field if the given value is not nil.
+func (_u *SystemPromptUpdateOne) SetNillablePrompt(v *string) *SystemPromptUpdateOne {
+	if v != nil {
+		_u.SetPrompt(*v)
+	}
+	return _u
+}
+
+// SetPreviousPrompts sets the "previous_prompts" field.
+func (_u *SystemPromptUpdateOne) SetPreviousPrompts(v []string) *SystemPromptUpdateOne {
+	_u.mutation.SetPreviousPrompts(v)
+	return _u
+}
+
+// AppendPreviousPrompts appends value to the "previous_prompts" field.
+func (_u *SystemPromptUpdateOne) AppendPreviousPrompts(v []string) *SystemPromptUpdateOne {
+	_u.mutation.AppendPreviousPrompts(v)
+	return _u
+}
+
+// SetVersion sets the "version" field.
+func (_u *SystemPromptUpdateOne) SetVersion(v int) *SystemPromptUpdateOne {
+	_u.mutation.ResetVersion()
+	_u.mutation.SetVersion(v)
+	return _u
+}
+
+// SetNillableVersion sets the "version" field if the given value is not nil.
+func (_u *SystemPromptUpdateOne) SetNillableVersion(v *int) *SystemPromptUpdateOne {
+	if v != nil {
+		_u.SetVersion(*v)
+	}
+	return _u
+}
+
+// AddVersion adds value to the "version" field.
+func (_u *SystemPromptUpdateOne) AddVersion(v int) *SystemPromptUpdateOne {
+	_u.mutation.AddVersion(v)
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *SystemPromptUpdateOne) SetUpdatedAt(v time.Time) *SystemPromptUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
 }
 
 // Mutation returns the SystemPromptMutation object of the builder.
@@ -108,6 +330,7 @@ func (_u *SystemPromptUpdateOne) Select(field string, fields ...string) *SystemP
 
 // Save executes the query and returns the updated SystemPrompt entity.
 func (_u *SystemPromptUpdateOne) Save(ctx context.Context) (*SystemPrompt, error) {
+	_u.defaults()
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -133,7 +356,38 @@ func (_u *SystemPromptUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_u *SystemPromptUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		v := systemprompt.UpdateDefaultUpdatedAt()
+		_u.mutation.SetUpdatedAt(v)
+	}
+}
+
+// check runs all checks and user-defined validators on the builder.
+func (_u *SystemPromptUpdateOne) check() error {
+	if v, ok := _u.mutation.Title(); ok {
+		if err := systemprompt.TitleValidator(v); err != nil {
+			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "SystemPrompt.title": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Purpose(); ok {
+		if err := systemprompt.PurposeValidator(v); err != nil {
+			return &ValidationError{Name: "purpose", err: fmt.Errorf(`ent: validator failed for field "SystemPrompt.purpose": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Prompt(); ok {
+		if err := systemprompt.PromptValidator(v); err != nil {
+			return &ValidationError{Name: "prompt", err: fmt.Errorf(`ent: validator failed for field "SystemPrompt.prompt": %w`, err)}
+		}
+	}
+	return nil
+}
+
 func (_u *SystemPromptUpdateOne) sqlSave(ctx context.Context) (_node *SystemPrompt, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(systemprompt.Table, systemprompt.Columns, sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
@@ -158,6 +412,32 @@ func (_u *SystemPromptUpdateOne) sqlSave(ctx context.Context) (_node *SystemProm
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.Title(); ok {
+		_spec.SetField(systemprompt.FieldTitle, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Purpose(); ok {
+		_spec.SetField(systemprompt.FieldPurpose, field.TypeEnum, value)
+	}
+	if value, ok := _u.mutation.Prompt(); ok {
+		_spec.SetField(systemprompt.FieldPrompt, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.PreviousPrompts(); ok {
+		_spec.SetField(systemprompt.FieldPreviousPrompts, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedPreviousPrompts(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, systemprompt.FieldPreviousPrompts, value)
+		})
+	}
+	if value, ok := _u.mutation.Version(); ok {
+		_spec.SetField(systemprompt.FieldVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedVersion(); ok {
+		_spec.AddField(systemprompt.FieldVersion, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
 	}
 	_node = &SystemPrompt{config: _u.config}
 	_spec.Assign = _node.assignValues

@@ -2,8 +2,39 @@
 
 package ent
 
+import (
+	"time"
+
+	"github.com/kizuna-org/akari/gen/ent/systemprompt"
+	"github.com/kizuna-org/akari/internal/ent/schema"
+)
+
 // The init function reads all schema descriptors with runtime code
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	systempromptFields := schema.SystemPrompt{}.Fields()
+	_ = systempromptFields
+	// systempromptDescTitle is the schema descriptor for title field.
+	systempromptDescTitle := systempromptFields[0].Descriptor()
+	// systemprompt.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	systemprompt.TitleValidator = systempromptDescTitle.Validators[0].(func(string) error)
+	// systempromptDescPrompt is the schema descriptor for prompt field.
+	systempromptDescPrompt := systempromptFields[2].Descriptor()
+	// systemprompt.PromptValidator is a validator for the "prompt" field. It is called by the builders before save.
+	systemprompt.PromptValidator = systempromptDescPrompt.Validators[0].(func(string) error)
+	// systempromptDescVersion is the schema descriptor for version field.
+	systempromptDescVersion := systempromptFields[4].Descriptor()
+	// systemprompt.DefaultVersion holds the default value on creation for the version field.
+	systemprompt.DefaultVersion = systempromptDescVersion.Default.(int)
+	// systempromptDescCreatedAt is the schema descriptor for created_at field.
+	systempromptDescCreatedAt := systempromptFields[5].Descriptor()
+	// systemprompt.DefaultCreatedAt holds the default value on creation for the created_at field.
+	systemprompt.DefaultCreatedAt = systempromptDescCreatedAt.Default.(func() time.Time)
+	// systempromptDescUpdatedAt is the schema descriptor for updated_at field.
+	systempromptDescUpdatedAt := systempromptFields[6].Descriptor()
+	// systemprompt.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	systemprompt.DefaultUpdatedAt = systempromptDescUpdatedAt.Default.(func() time.Time)
+	// systemprompt.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	systemprompt.UpdateDefaultUpdatedAt = systempromptDescUpdatedAt.UpdateDefault.(func() time.Time)
 }

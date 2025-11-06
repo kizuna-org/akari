@@ -258,6 +258,18 @@ func (_q *SystemPromptQuery) Clone() *SystemPromptQuery {
 
 // GroupBy is used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
+//
+// Example:
+//
+//	var v []struct {
+//		Title string `json:"title,omitempty"`
+//		Count int `json:"count,omitempty"`
+//	}
+//
+//	client.SystemPrompt.Query().
+//		GroupBy(systemprompt.FieldTitle).
+//		Aggregate(ent.Count()).
+//		Scan(ctx, &v)
 func (_q *SystemPromptQuery) GroupBy(field string, fields ...string) *SystemPromptGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
 	grbuild := &SystemPromptGroupBy{build: _q}
@@ -269,6 +281,16 @@ func (_q *SystemPromptQuery) GroupBy(field string, fields ...string) *SystemProm
 
 // Select allows the selection one or more fields/columns for the given query,
 // instead of selecting all fields in the entity.
+//
+// Example:
+//
+//	var v []struct {
+//		Title string `json:"title,omitempty"`
+//	}
+//
+//	client.SystemPrompt.Query().
+//		Select(systemprompt.FieldTitle).
+//		Scan(ctx, &v)
 func (_q *SystemPromptQuery) Select(fields ...string) *SystemPromptSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
 	sbuild := &SystemPromptSelect{SystemPromptQuery: _q}

@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
+	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
 const (
@@ -28,13 +30,22 @@ const (
 // SystemPromptMutation represents an operation that mutates the SystemPrompt nodes in the graph.
 type SystemPromptMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*SystemPrompt, error)
-	predicates    []predicate.SystemPrompt
+	op                     Op
+	typ                    string
+	id                     *int
+	title                  *string
+	purpose                *systemprompt.Purpose
+	prompt                 *string
+	previous_prompts       *[]string
+	appendprevious_prompts []string
+	version                *int
+	addversion             *int
+	created_at             *time.Time
+	updated_at             *time.Time
+	clearedFields          map[string]struct{}
+	done                   bool
+	oldValue               func(context.Context) (*SystemPrompt, error)
+	predicates             []predicate.SystemPrompt
 }
 
 var _ ent.Mutation = (*SystemPromptMutation)(nil)
@@ -135,6 +146,293 @@ func (m *SystemPromptMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
+// SetTitle sets the "title" field.
+func (m *SystemPromptMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *SystemPromptMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the SystemPrompt entity.
+// If the SystemPrompt object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SystemPromptMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *SystemPromptMutation) ResetTitle() {
+	m.title = nil
+}
+
+// SetPurpose sets the "purpose" field.
+func (m *SystemPromptMutation) SetPurpose(s systemprompt.Purpose) {
+	m.purpose = &s
+}
+
+// Purpose returns the value of the "purpose" field in the mutation.
+func (m *SystemPromptMutation) Purpose() (r systemprompt.Purpose, exists bool) {
+	v := m.purpose
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPurpose returns the old "purpose" field's value of the SystemPrompt entity.
+// If the SystemPrompt object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SystemPromptMutation) OldPurpose(ctx context.Context) (v systemprompt.Purpose, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPurpose is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPurpose requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPurpose: %w", err)
+	}
+	return oldValue.Purpose, nil
+}
+
+// ResetPurpose resets all changes to the "purpose" field.
+func (m *SystemPromptMutation) ResetPurpose() {
+	m.purpose = nil
+}
+
+// SetPrompt sets the "prompt" field.
+func (m *SystemPromptMutation) SetPrompt(s string) {
+	m.prompt = &s
+}
+
+// Prompt returns the value of the "prompt" field in the mutation.
+func (m *SystemPromptMutation) Prompt() (r string, exists bool) {
+	v := m.prompt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPrompt returns the old "prompt" field's value of the SystemPrompt entity.
+// If the SystemPrompt object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SystemPromptMutation) OldPrompt(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPrompt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPrompt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrompt: %w", err)
+	}
+	return oldValue.Prompt, nil
+}
+
+// ResetPrompt resets all changes to the "prompt" field.
+func (m *SystemPromptMutation) ResetPrompt() {
+	m.prompt = nil
+}
+
+// SetPreviousPrompts sets the "previous_prompts" field.
+func (m *SystemPromptMutation) SetPreviousPrompts(s []string) {
+	m.previous_prompts = &s
+	m.appendprevious_prompts = nil
+}
+
+// PreviousPrompts returns the value of the "previous_prompts" field in the mutation.
+func (m *SystemPromptMutation) PreviousPrompts() (r []string, exists bool) {
+	v := m.previous_prompts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPreviousPrompts returns the old "previous_prompts" field's value of the SystemPrompt entity.
+// If the SystemPrompt object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SystemPromptMutation) OldPreviousPrompts(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPreviousPrompts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPreviousPrompts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPreviousPrompts: %w", err)
+	}
+	return oldValue.PreviousPrompts, nil
+}
+
+// AppendPreviousPrompts adds s to the "previous_prompts" field.
+func (m *SystemPromptMutation) AppendPreviousPrompts(s []string) {
+	m.appendprevious_prompts = append(m.appendprevious_prompts, s...)
+}
+
+// AppendedPreviousPrompts returns the list of values that were appended to the "previous_prompts" field in this mutation.
+func (m *SystemPromptMutation) AppendedPreviousPrompts() ([]string, bool) {
+	if len(m.appendprevious_prompts) == 0 {
+		return nil, false
+	}
+	return m.appendprevious_prompts, true
+}
+
+// ResetPreviousPrompts resets all changes to the "previous_prompts" field.
+func (m *SystemPromptMutation) ResetPreviousPrompts() {
+	m.previous_prompts = nil
+	m.appendprevious_prompts = nil
+}
+
+// SetVersion sets the "version" field.
+func (m *SystemPromptMutation) SetVersion(i int) {
+	m.version = &i
+	m.addversion = nil
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *SystemPromptMutation) Version() (r int, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the SystemPrompt entity.
+// If the SystemPrompt object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SystemPromptMutation) OldVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// AddVersion adds i to the "version" field.
+func (m *SystemPromptMutation) AddVersion(i int) {
+	if m.addversion != nil {
+		*m.addversion += i
+	} else {
+		m.addversion = &i
+	}
+}
+
+// AddedVersion returns the value that was added to the "version" field in this mutation.
+func (m *SystemPromptMutation) AddedVersion() (r int, exists bool) {
+	v := m.addversion
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *SystemPromptMutation) ResetVersion() {
+	m.version = nil
+	m.addversion = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *SystemPromptMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *SystemPromptMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the SystemPrompt entity.
+// If the SystemPrompt object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SystemPromptMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *SystemPromptMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *SystemPromptMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *SystemPromptMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the SystemPrompt entity.
+// If the SystemPrompt object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SystemPromptMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *SystemPromptMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
 // Where appends a list predicates to the SystemPromptMutation builder.
 func (m *SystemPromptMutation) Where(ps ...predicate.SystemPrompt) {
 	m.predicates = append(m.predicates, ps...)
@@ -169,7 +467,28 @@ func (m *SystemPromptMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SystemPromptMutation) Fields() []string {
-	fields := make([]string, 0, 0)
+	fields := make([]string, 0, 7)
+	if m.title != nil {
+		fields = append(fields, systemprompt.FieldTitle)
+	}
+	if m.purpose != nil {
+		fields = append(fields, systemprompt.FieldPurpose)
+	}
+	if m.prompt != nil {
+		fields = append(fields, systemprompt.FieldPrompt)
+	}
+	if m.previous_prompts != nil {
+		fields = append(fields, systemprompt.FieldPreviousPrompts)
+	}
+	if m.version != nil {
+		fields = append(fields, systemprompt.FieldVersion)
+	}
+	if m.created_at != nil {
+		fields = append(fields, systemprompt.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, systemprompt.FieldUpdatedAt)
+	}
 	return fields
 }
 
@@ -177,6 +496,22 @@ func (m *SystemPromptMutation) Fields() []string {
 // return value indicates that this field was not set, or was not defined in the
 // schema.
 func (m *SystemPromptMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case systemprompt.FieldTitle:
+		return m.Title()
+	case systemprompt.FieldPurpose:
+		return m.Purpose()
+	case systemprompt.FieldPrompt:
+		return m.Prompt()
+	case systemprompt.FieldPreviousPrompts:
+		return m.PreviousPrompts()
+	case systemprompt.FieldVersion:
+		return m.Version()
+	case systemprompt.FieldCreatedAt:
+		return m.CreatedAt()
+	case systemprompt.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
 	return nil, false
 }
 
@@ -184,6 +519,22 @@ func (m *SystemPromptMutation) Field(name string) (ent.Value, bool) {
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
 func (m *SystemPromptMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case systemprompt.FieldTitle:
+		return m.OldTitle(ctx)
+	case systemprompt.FieldPurpose:
+		return m.OldPurpose(ctx)
+	case systemprompt.FieldPrompt:
+		return m.OldPrompt(ctx)
+	case systemprompt.FieldPreviousPrompts:
+		return m.OldPreviousPrompts(ctx)
+	case systemprompt.FieldVersion:
+		return m.OldVersion(ctx)
+	case systemprompt.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case systemprompt.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
 	return nil, fmt.Errorf("unknown SystemPrompt field %s", name)
 }
 
@@ -192,6 +543,55 @@ func (m *SystemPromptMutation) OldField(ctx context.Context, name string) (ent.V
 // type.
 func (m *SystemPromptMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case systemprompt.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	case systemprompt.FieldPurpose:
+		v, ok := value.(systemprompt.Purpose)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPurpose(v)
+		return nil
+	case systemprompt.FieldPrompt:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrompt(v)
+		return nil
+	case systemprompt.FieldPreviousPrompts:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPreviousPrompts(v)
+		return nil
+	case systemprompt.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	case systemprompt.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case systemprompt.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
 	}
 	return fmt.Errorf("unknown SystemPrompt field %s", name)
 }
@@ -199,13 +599,21 @@ func (m *SystemPromptMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *SystemPromptMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addversion != nil {
+		fields = append(fields, systemprompt.FieldVersion)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *SystemPromptMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case systemprompt.FieldVersion:
+		return m.AddedVersion()
+	}
 	return nil, false
 }
 
@@ -213,6 +621,15 @@ func (m *SystemPromptMutation) AddedField(name string) (ent.Value, bool) {
 // the field is not defined in the schema, or if the type mismatched the field
 // type.
 func (m *SystemPromptMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case systemprompt.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddVersion(v)
+		return nil
+	}
 	return fmt.Errorf("unknown SystemPrompt numeric field %s", name)
 }
 
@@ -238,6 +655,29 @@ func (m *SystemPromptMutation) ClearField(name string) error {
 // ResetField resets all changes in the mutation for the field with the given name.
 // It returns an error if the field is not defined in the schema.
 func (m *SystemPromptMutation) ResetField(name string) error {
+	switch name {
+	case systemprompt.FieldTitle:
+		m.ResetTitle()
+		return nil
+	case systemprompt.FieldPurpose:
+		m.ResetPurpose()
+		return nil
+	case systemprompt.FieldPrompt:
+		m.ResetPrompt()
+		return nil
+	case systemprompt.FieldPreviousPrompts:
+		m.ResetPreviousPrompts()
+		return nil
+	case systemprompt.FieldVersion:
+		m.ResetVersion()
+		return nil
+	case systemprompt.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case systemprompt.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
 	return fmt.Errorf("unknown SystemPrompt field %s", name)
 }
 

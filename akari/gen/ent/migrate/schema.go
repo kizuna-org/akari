@@ -11,6 +11,13 @@ var (
 	// SystemPromptsColumns holds the columns for the "system_prompts" table.
 	SystemPromptsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "title", Type: field.TypeString},
+		{Name: "purpose", Type: field.TypeEnum, Enums: []string{"text_chat"}},
+		{Name: "prompt", Type: field.TypeString},
+		{Name: "previous_prompts", Type: field.TypeJSON},
+		{Name: "version", Type: field.TypeInt, Default: 1},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 	}
 	// SystemPromptsTable holds the schema information for the "system_prompts" table.
 	SystemPromptsTable = &schema.Table{
