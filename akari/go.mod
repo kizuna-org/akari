@@ -7,7 +7,6 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/samber/lo v1.52.0
 	go.uber.org/fx v1.24.0
-	go.uber.org/mock v0.6.0
 	google.golang.org/api v0.252.0
 	google.golang.org/genai v1.33.0
 )
