@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// GeminiRepository はGemini APIとのやり取りを抽象化するリポジトリインターフェース
+// GeminiRepository はGemini APIとのやり取りを抽象化するリポジトリインターフェース.
 type GeminiRepository interface {
 	SendChatMessage(
 		ctx context.Context,
@@ -14,4 +14,3 @@ type GeminiRepository interface {
 		functions []Function,
 	) ([]*string, []*Part, error)
 }
-
