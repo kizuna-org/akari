@@ -3,7 +3,6 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -24,8 +23,6 @@ type SystemPrompt struct {
 	Purpose systemprompt.Purpose `json:"purpose,omitempty"`
 	// The system prompt
 	Prompt string `json:"prompt,omitempty"`
-	// Previous versions of the system prompt
-	PreviousPrompts []string `json:"previous_prompts,omitempty"`
 	// The time when the system prompt was created
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// The time when the system prompt was last updated
@@ -38,8 +35,6 @@ func (*SystemPrompt) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case systemprompt.FieldPreviousPrompts:
-			values[i] = new([]byte)
 		case systemprompt.FieldID:
 			values[i] = new(sql.NullInt64)
 		case systemprompt.FieldTitle, systemprompt.FieldPurpose, systemprompt.FieldPrompt:
@@ -84,14 +79,6 @@ func (_m *SystemPrompt) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field prompt", values[i])
 			} else if value.Valid {
 				_m.Prompt = value.String
-			}
-		case systemprompt.FieldPreviousPrompts:
-			if value, ok := values[i].(*[]byte); !ok {
-				return fmt.Errorf("unexpected type %T for field previous_prompts", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.PreviousPrompts); err != nil {
-					return fmt.Errorf("unmarshal field previous_prompts: %w", err)
-				}
 			}
 		case systemprompt.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -149,9 +136,6 @@ func (_m *SystemPrompt) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("prompt=")
 	builder.WriteString(_m.Prompt)
-	builder.WriteString(", ")
-	builder.WriteString("previous_prompts=")
-	builder.WriteString(fmt.Sprintf("%v", _m.PreviousPrompts))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

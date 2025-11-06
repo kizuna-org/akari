@@ -10,7 +10,6 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
@@ -68,18 +67,6 @@ func (_u *SystemPromptUpdate) SetNillablePrompt(v *string) *SystemPromptUpdate {
 	if v != nil {
 		_u.SetPrompt(*v)
 	}
-	return _u
-}
-
-// SetPreviousPrompts sets the "previous_prompts" field.
-func (_u *SystemPromptUpdate) SetPreviousPrompts(v []string) *SystemPromptUpdate {
-	_u.mutation.SetPreviousPrompts(v)
-	return _u
-}
-
-// AppendPreviousPrompts appends value to the "previous_prompts" field.
-func (_u *SystemPromptUpdate) AppendPreviousPrompts(v []string) *SystemPromptUpdate {
-	_u.mutation.AppendPreviousPrompts(v)
 	return _u
 }
 
@@ -171,14 +158,6 @@ func (_u *SystemPromptUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.Prompt(); ok {
 		_spec.SetField(systemprompt.FieldPrompt, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.PreviousPrompts(); ok {
-		_spec.SetField(systemprompt.FieldPreviousPrompts, field.TypeJSON, value)
-	}
-	if value, ok := _u.mutation.AppendedPreviousPrompts(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, systemprompt.FieldPreviousPrompts, value)
-		})
-	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
 	}
@@ -241,18 +220,6 @@ func (_u *SystemPromptUpdateOne) SetNillablePrompt(v *string) *SystemPromptUpdat
 	if v != nil {
 		_u.SetPrompt(*v)
 	}
-	return _u
-}
-
-// SetPreviousPrompts sets the "previous_prompts" field.
-func (_u *SystemPromptUpdateOne) SetPreviousPrompts(v []string) *SystemPromptUpdateOne {
-	_u.mutation.SetPreviousPrompts(v)
-	return _u
-}
-
-// AppendPreviousPrompts appends value to the "previous_prompts" field.
-func (_u *SystemPromptUpdateOne) AppendPreviousPrompts(v []string) *SystemPromptUpdateOne {
-	_u.mutation.AppendPreviousPrompts(v)
 	return _u
 }
 
@@ -373,14 +340,6 @@ func (_u *SystemPromptUpdateOne) sqlSave(ctx context.Context) (_node *SystemProm
 	}
 	if value, ok := _u.mutation.Prompt(); ok {
 		_spec.SetField(systemprompt.FieldPrompt, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.PreviousPrompts(); ok {
-		_spec.SetField(systemprompt.FieldPreviousPrompts, field.TypeJSON, value)
-	}
-	if value, ok := _u.mutation.AppendedPreviousPrompts(); ok {
-		_spec.AddModifier(func(u *sql.UpdateBuilder) {
-			sqljson.Append(u, systemprompt.FieldPreviousPrompts, value)
-		})
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)

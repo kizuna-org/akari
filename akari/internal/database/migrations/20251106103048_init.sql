@@ -4,7 +4,6 @@ CREATE TABLE "system_prompts" (
   "title" character varying NOT NULL,
   "purpose" character varying NOT NULL,
   "prompt" character varying NOT NULL,
-  "previous_prompts" jsonb NOT NULL,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NOT NULL,
   PRIMARY KEY ("id")

@@ -30,20 +30,18 @@ const (
 // SystemPromptMutation represents an operation that mutates the SystemPrompt nodes in the graph.
 type SystemPromptMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *int
-	title                  *string
-	purpose                *systemprompt.Purpose
-	prompt                 *string
-	previous_prompts       *[]string
-	appendprevious_prompts []string
-	created_at             *time.Time
-	updated_at             *time.Time
-	clearedFields          map[string]struct{}
-	done                   bool
-	oldValue               func(context.Context) (*SystemPrompt, error)
-	predicates             []predicate.SystemPrompt
+	op            Op
+	typ           string
+	id            *int
+	title         *string
+	purpose       *systemprompt.Purpose
+	prompt        *string
+	created_at    *time.Time
+	updated_at    *time.Time
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*SystemPrompt, error)
+	predicates    []predicate.SystemPrompt
 }
 
 var _ ent.Mutation = (*SystemPromptMutation)(nil)
@@ -252,57 +250,6 @@ func (m *SystemPromptMutation) ResetPrompt() {
 	m.prompt = nil
 }
 
-// SetPreviousPrompts sets the "previous_prompts" field.
-func (m *SystemPromptMutation) SetPreviousPrompts(s []string) {
-	m.previous_prompts = &s
-	m.appendprevious_prompts = nil
-}
-
-// PreviousPrompts returns the value of the "previous_prompts" field in the mutation.
-func (m *SystemPromptMutation) PreviousPrompts() (r []string, exists bool) {
-	v := m.previous_prompts
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldPreviousPrompts returns the old "previous_prompts" field's value of the SystemPrompt entity.
-// If the SystemPrompt object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SystemPromptMutation) OldPreviousPrompts(ctx context.Context) (v []string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPreviousPrompts is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPreviousPrompts requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPreviousPrompts: %w", err)
-	}
-	return oldValue.PreviousPrompts, nil
-}
-
-// AppendPreviousPrompts adds s to the "previous_prompts" field.
-func (m *SystemPromptMutation) AppendPreviousPrompts(s []string) {
-	m.appendprevious_prompts = append(m.appendprevious_prompts, s...)
-}
-
-// AppendedPreviousPrompts returns the list of values that were appended to the "previous_prompts" field in this mutation.
-func (m *SystemPromptMutation) AppendedPreviousPrompts() ([]string, bool) {
-	if len(m.appendprevious_prompts) == 0 {
-		return nil, false
-	}
-	return m.appendprevious_prompts, true
-}
-
-// ResetPreviousPrompts resets all changes to the "previous_prompts" field.
-func (m *SystemPromptMutation) ResetPreviousPrompts() {
-	m.previous_prompts = nil
-	m.appendprevious_prompts = nil
-}
-
 // SetCreatedAt sets the "created_at" field.
 func (m *SystemPromptMutation) SetCreatedAt(t time.Time) {
 	m.created_at = &t
@@ -409,7 +356,7 @@ func (m *SystemPromptMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SystemPromptMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 5)
 	if m.title != nil {
 		fields = append(fields, systemprompt.FieldTitle)
 	}
@@ -418,9 +365,6 @@ func (m *SystemPromptMutation) Fields() []string {
 	}
 	if m.prompt != nil {
 		fields = append(fields, systemprompt.FieldPrompt)
-	}
-	if m.previous_prompts != nil {
-		fields = append(fields, systemprompt.FieldPreviousPrompts)
 	}
 	if m.created_at != nil {
 		fields = append(fields, systemprompt.FieldCreatedAt)
@@ -442,8 +386,6 @@ func (m *SystemPromptMutation) Field(name string) (ent.Value, bool) {
 		return m.Purpose()
 	case systemprompt.FieldPrompt:
 		return m.Prompt()
-	case systemprompt.FieldPreviousPrompts:
-		return m.PreviousPrompts()
 	case systemprompt.FieldCreatedAt:
 		return m.CreatedAt()
 	case systemprompt.FieldUpdatedAt:
@@ -463,8 +405,6 @@ func (m *SystemPromptMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldPurpose(ctx)
 	case systemprompt.FieldPrompt:
 		return m.OldPrompt(ctx)
-	case systemprompt.FieldPreviousPrompts:
-		return m.OldPreviousPrompts(ctx)
 	case systemprompt.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case systemprompt.FieldUpdatedAt:
@@ -498,13 +438,6 @@ func (m *SystemPromptMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPrompt(v)
-		return nil
-	case systemprompt.FieldPreviousPrompts:
-		v, ok := value.([]string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetPreviousPrompts(v)
 		return nil
 	case systemprompt.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -577,9 +510,6 @@ func (m *SystemPromptMutation) ResetField(name string) error {
 		return nil
 	case systemprompt.FieldPrompt:
 		m.ResetPrompt()
-		return nil
-	case systemprompt.FieldPreviousPrompts:
-		m.ResetPreviousPrompts()
 		return nil
 	case systemprompt.FieldCreatedAt:
 		m.ResetCreatedAt()

@@ -20,8 +20,6 @@ const (
 	FieldPurpose = "purpose"
 	// FieldPrompt holds the string denoting the prompt field in the database.
 	FieldPrompt = "prompt"
-	// FieldPreviousPrompts holds the string denoting the previous_prompts field in the database.
-	FieldPreviousPrompts = "previous_prompts"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -36,7 +34,6 @@ var Columns = []string{
 	FieldTitle,
 	FieldPurpose,
 	FieldPrompt,
-	FieldPreviousPrompts,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }

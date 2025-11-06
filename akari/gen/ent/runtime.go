@@ -24,11 +24,11 @@ func init() {
 	// systemprompt.PromptValidator is a validator for the "prompt" field. It is called by the builders before save.
 	systemprompt.PromptValidator = systempromptDescPrompt.Validators[0].(func(string) error)
 	// systempromptDescCreatedAt is the schema descriptor for created_at field.
-	systempromptDescCreatedAt := systempromptFields[4].Descriptor()
+	systempromptDescCreatedAt := systempromptFields[3].Descriptor()
 	// systemprompt.DefaultCreatedAt holds the default value on creation for the created_at field.
 	systemprompt.DefaultCreatedAt = systempromptDescCreatedAt.Default.(func() time.Time)
 	// systempromptDescUpdatedAt is the schema descriptor for updated_at field.
-	systempromptDescUpdatedAt := systempromptFields[5].Descriptor()
+	systempromptDescUpdatedAt := systempromptFields[4].Descriptor()
 	// systemprompt.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	systemprompt.DefaultUpdatedAt = systempromptDescUpdatedAt.Default.(func() time.Time)
 	// systemprompt.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

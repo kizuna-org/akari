@@ -38,12 +38,6 @@ func (_c *SystemPromptCreate) SetPrompt(v string) *SystemPromptCreate {
 	return _c
 }
 
-// SetPreviousPrompts sets the "previous_prompts" field.
-func (_c *SystemPromptCreate) SetPreviousPrompts(v []string) *SystemPromptCreate {
-	_c.mutation.SetPreviousPrompts(v)
-	return _c
-}
-
 // SetCreatedAt sets the "created_at" field.
 func (_c *SystemPromptCreate) SetCreatedAt(v time.Time) *SystemPromptCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -143,9 +137,6 @@ func (_c *SystemPromptCreate) check() error {
 			return &ValidationError{Name: "prompt", err: fmt.Errorf(`ent: validator failed for field "SystemPrompt.prompt": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.PreviousPrompts(); !ok {
-		return &ValidationError{Name: "previous_prompts", err: errors.New(`ent: missing required field "SystemPrompt.previous_prompts"`)}
-	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "SystemPrompt.created_at"`)}
 	}
@@ -189,10 +180,6 @@ func (_c *SystemPromptCreate) createSpec() (*SystemPrompt, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.Prompt(); ok {
 		_spec.SetField(systemprompt.FieldPrompt, field.TypeString, value)
 		_node.Prompt = value
-	}
-	if value, ok := _c.mutation.PreviousPrompts(); ok {
-		_spec.SetField(systemprompt.FieldPreviousPrompts, field.TypeJSON, value)
-		_node.PreviousPrompts = value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(systemprompt.FieldCreatedAt, field.TypeTime, value)
