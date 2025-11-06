@@ -1,10 +1,11 @@
-package infrastructure
+package gemini
 
 import (
 	"context"
 	"log/slog"
 
 	"github.com/kizuna-org/akari/pkg/config"
+	"github.com/kizuna-org/akari/pkg/llm/domain"
 	"github.com/samber/lo"
 	"google.golang.org/genai"
 )
@@ -13,28 +14,13 @@ const (
 	temperature = 1.0
 )
 
-type Function struct {
-	FunctionDeclaration *genai.FunctionDeclaration
-	Function            func(ctx context.Context, request *genai.FunctionCall) (map[string]any, error)
-}
-
-type GeminiModel interface {
-	SendChatMessage(
-		ctx context.Context,
-		systemPrompt string,
-		history []*genai.Content,
-		message string,
-		functions []Function,
-	) ([]*string, []*genai.Part, error)
-}
-
-type GeminiModelImpl struct {
+type repositoryImpl struct {
 	client *genai.Client
 	logger *slog.Logger
 	model  string
 }
 
-func NewGeminiModel(cfg config.ConfigRepository, logger *slog.Logger) (GeminiModel, error) {
+func NewRepository(cfg config.ConfigRepository, logger *slog.Logger) (domain.GeminiRepository, error) {
 	ctx := context.Background()
 	config := cfg.GetConfig()
 
@@ -51,22 +37,22 @@ func NewGeminiModel(cfg config.ConfigRepository, logger *slog.Logger) (GeminiMod
 		return nil, err
 	}
 
-	return &GeminiModelImpl{
+	return &repositoryImpl{
 		client: client,
-		logger: logger.With("component", "gemini_model"),
+		logger: logger.With("component", "gemini_repository"),
 		model:  config.LLM.ModelName,
 	}, nil
 }
 
 //nolint:cyclop,funlen
-func (m *GeminiModelImpl) SendChatMessage(
+func (r *repositoryImpl) SendChatMessage(
 	ctx context.Context,
 	systemPrompt string,
-	history []*genai.Content,
+	history []*domain.Content,
 	message string,
-	functions []Function,
-) ([]*string, []*genai.Part, error) {
-	chat, err := m.client.Chats.Create(ctx, m.model, m.createConfig(systemPrompt, functions), history)
+	functions []domain.Function,
+) ([]*string, []*domain.Part, error) {
+	chat, err := r.client.Chats.Create(ctx, r.model, r.createConfig(systemPrompt, functions), history)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,11 +64,11 @@ func (m *GeminiModelImpl) SendChatMessage(
 	}
 
 	messages := make([]*string, 0)
-	parts := make([]*genai.Part, 0)
+	parts := make([]*domain.Part, 0)
 
 	for {
 		if len(res.Candidates) == 0 || len(res.Candidates[0].Content.Parts) == 0 {
-			m.logger.Info("Model response is empty")
+			r.logger.Info("Model response is empty")
 
 			break
 		}
@@ -90,7 +76,7 @@ func (m *GeminiModelImpl) SendChatMessage(
 		messages = append(messages, lo.ToPtr(res.Candidates[0].Content.Parts[0].Text))
 		parts = append(parts, res.Candidates[0].Content.Parts[0])
 
-		m.logger.Info("res", "res", lo.Map(res.Candidates, func(candidate *genai.Candidate, _ int) []genai.Part {
+		r.logger.Info("res", "res", lo.Map(res.Candidates, func(candidate *genai.Candidate, _ int) []genai.Part {
 			return lo.Map(candidate.Content.Parts, func(part *genai.Part, _ int) genai.Part {
 				return *part
 			})
@@ -110,7 +96,7 @@ func (m *GeminiModelImpl) SendChatMessage(
 					result, err = function.Function(ctx, part.FunctionCall)
 
 					if err != nil {
-						m.logger.Error("Failed to execute function", "error", err)
+						r.logger.Error("Failed to execute function", "error", err)
 					}
 
 					break
@@ -127,7 +113,7 @@ func (m *GeminiModelImpl) SendChatMessage(
 
 			res, err = chat.SendMessage(ctx, functionResponses...)
 			if err != nil {
-				m.logger.Error("Failed to send function response", "error", err)
+				r.logger.Error("Failed to send function response", "error", err)
 			}
 		}
 
@@ -139,7 +125,7 @@ func (m *GeminiModelImpl) SendChatMessage(
 	return messages, parts, nil
 }
 
-func (m *GeminiModelImpl) createConfig(systemPrompt string, functions []Function) *genai.GenerateContentConfig {
+func (r *repositoryImpl) createConfig(systemPrompt string, functions []domain.Function) *genai.GenerateContentConfig {
 	//nolint:exhaustruct
 	config := &genai.GenerateContentConfig{
 		Temperature: genai.Ptr[float32](temperature),

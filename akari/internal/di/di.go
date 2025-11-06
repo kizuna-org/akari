@@ -4,9 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/kizuna-org/akari/pkg/config"
-	"github.com/kizuna-org/akari/pkg/llm/adapter/repository"
-	"github.com/kizuna-org/akari/pkg/llm/domain/service"
-	"github.com/kizuna-org/akari/pkg/llm/infrastructure"
+	"github.com/kizuna-org/akari/pkg/llm/infrastructure/gemini"
 	"github.com/kizuna-org/akari/pkg/llm/usecase/interactor"
 	"go.uber.org/fx"
 )
@@ -20,17 +18,7 @@ func NewModule() fx.Option {
 
 		// Infrastructure
 		fx.Provide(
-			infrastructure.NewGeminiModel,
-		),
-
-		// Repository
-		fx.Provide(
-			repository.NewGeminiRepository,
-		),
-
-		// Service
-		fx.Provide(
-			service.NewGeminiService,
+			gemini.NewRepository,
 		),
 
 		// Usecase
