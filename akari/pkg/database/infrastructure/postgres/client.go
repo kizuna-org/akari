@@ -13,6 +13,7 @@ import (
 
 type client struct {
 	*ent.Client
+	driver *sql.Driver
 }
 
 func NewClient(cfg Config) (domain.Client, error) {
@@ -53,7 +54,7 @@ func NewClient(cfg Config) (domain.Client, error) {
 		opts = append(opts, ent.Debug())
 	}
 
-	return &client{Client: ent.NewClient(opts...)}, nil
+	return &client{Client: ent.NewClient(opts...), driver: drv}, nil
 }
 
 func (c *client) Unwrap() *ent.Client {
@@ -61,9 +62,7 @@ func (c *client) Unwrap() *ent.Client {
 }
 
 func (c *client) Ping(ctx context.Context) error {
-	_, err := c.Client.SystemPrompt.Query().Limit(1).Count(ctx)
-
-	return err
+	return c.driver.DB().PingContext(ctx)
 }
 
 func (c *client) Close() error {
