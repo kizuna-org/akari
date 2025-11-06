@@ -2,131 +2,59 @@ package interactor
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/kizuna-org/akari/pkg/spreadsheet/domain/entity"
-	"github.com/kizuna-org/akari/pkg/spreadsheet/domain/service"
-	"github.com/kizuna-org/akari/pkg/spreadsheet/usecase/dto"
+	"github.com/kizuna-org/akari/pkg/spreadsheet/domain"
 )
 
 type SpreadsheetInteractor interface {
-	Read(ctx context.Context, req *dto.GridDataRequest) (*dto.GridDataResponse, error)
-	Create(ctx context.Context, req *dto.GridDataRequest) error
-	Update(ctx context.Context, req *dto.GridDataRequest) error
-	Delete(ctx context.Context, req *dto.DeleteRequest) error
-	Append(ctx context.Context, req *dto.GridDataRequest) error
+	Read(spreadsheetId, range_ string) ([][]string, error)
+	Update(spreadsheetId, range_ string, values [][]string) error
+	Append(spreadsheetId, range_ string, values [][]string) error
+	Clear(spreadsheetId, range_ string) error
 }
 
 type SpreadsheetInteractorImpl struct {
-	repo service.SpreadsheetRepository
+	spreadsheetRepository domain.SpreadsheetRepository
 }
 
-func NewSpreadsheetInteractor(repo service.SpreadsheetRepository) SpreadsheetInteractor {
+func NewSpreadsheetInteractor(
+	spreadsheetRepository domain.SpreadsheetRepository,
+) SpreadsheetInteractor {
 	return &SpreadsheetInteractorImpl{
-		repo: repo,
+		spreadsheetRepository: spreadsheetRepository,
 	}
 }
 
-func (i *SpreadsheetInteractorImpl) Read(ctx context.Context, req *dto.GridDataRequest) (*dto.GridDataResponse, error) {
-	cellRange := entity.CellRange{
-		SheetData: entity.SheetData{
-			SpreadsheetId: req.SpreadsheetId,
-			SheetName:     req.SheetName,
-		},
-		Range: req.Range,
-	}
-
-	gridData, err := i.repo.Read(ctx, cellRange)
-	if err != nil {
-		return nil, err
-	}
-
-	return &dto.GridDataResponse{
-		SpreadsheetID: gridData.SpreadsheetId,
-		SheetName:     gridData.SheetName,
-		Range:         gridData.Range,
-		Values:        gridData.Values,
-	}, nil
+func (s *SpreadsheetInteractorImpl) Read(spreadsheetId, range_ string) ([][]string, error) {
+	return s.spreadsheetRepository.Read(
+		context.Background(),
+		spreadsheetId,
+		range_,
+	)
 }
 
-func (i *SpreadsheetInteractorImpl) Create(ctx context.Context, req *dto.GridDataRequest) error {
-	if err := i.validateGridDataRequest(req); err != nil {
-		return err
-	}
-
-	gridData := &entity.GridData{
-		CellRange: entity.CellRange{
-			SheetData: entity.SheetData{
-				SpreadsheetId: req.SpreadsheetId,
-				SheetName:     req.SheetName,
-			},
-			Range: req.Range,
-		},
-		Values: req.Values,
-	}
-
-	return i.repo.Create(ctx, gridData)
+func (s *SpreadsheetInteractorImpl) Update(spreadsheetId, range_ string, values [][]string) error {
+	return s.spreadsheetRepository.Update(
+		context.Background(),
+		spreadsheetId,
+		range_,
+		values,
+	)
 }
 
-func (i *SpreadsheetInteractorImpl) Update(ctx context.Context, req *dto.GridDataRequest) error {
-	if err := i.validateGridDataRequest(req); err != nil {
-		return err
-	}
-
-	gridData := &entity.GridData{
-		CellRange: entity.CellRange{
-			SheetData: entity.SheetData{
-				SpreadsheetId: req.SpreadsheetId,
-				SheetName:     req.SheetName,
-			},
-			Range: req.Range,
-		},
-		Values: req.Values,
-	}
-
-	return i.repo.Update(ctx, gridData)
+func (s *SpreadsheetInteractorImpl) Append(spreadsheetId, range_ string, values [][]string) error {
+	return s.spreadsheetRepository.Append(
+		context.Background(),
+		spreadsheetId,
+		range_,
+		values,
+	)
 }
 
-func (i *SpreadsheetInteractorImpl) Delete(ctx context.Context, req *dto.DeleteRequest) error {
-	cellRange := entity.CellRange{
-		SheetData: entity.SheetData{
-			SpreadsheetId: req.SpreadsheetId,
-			SheetName:     req.SheetName,
-		},
-		Range: req.Range,
-	}
-
-	return i.repo.Delete(ctx, cellRange)
-}
-
-func (i *SpreadsheetInteractorImpl) Append(ctx context.Context, req *dto.GridDataRequest) error {
-	if err := i.validateGridDataRequest(req); err != nil {
-		return err
-	}
-
-	gridData := &entity.GridData{
-		CellRange: entity.CellRange{
-			SheetData: entity.SheetData{
-				SpreadsheetId: req.SpreadsheetId,
-				SheetName:     req.SheetName,
-			},
-			Range: req.Range,
-		},
-		Values: req.Values,
-	}
-
-	return i.repo.Append(ctx, gridData)
-}
-
-func (i *SpreadsheetInteractorImpl) validateGridDataRequest(req *dto.GridDataRequest) error {
-	if req.SpreadsheetId == "" {
-		return fmt.Errorf("spreadsheet ID is required")
-	}
-	if req.SheetName == "" {
-		return fmt.Errorf("sheet name is required")
-	}
-	if len(req.Values) == 0 {
-		return fmt.Errorf("values cannot be empty")
-	}
-	return nil
+func (s *SpreadsheetInteractorImpl) Clear(spreadsheetId, range_ string) error {
+	return s.spreadsheetRepository.Clear(
+		context.Background(),
+		spreadsheetId,
+		range_,
+	)
 }
