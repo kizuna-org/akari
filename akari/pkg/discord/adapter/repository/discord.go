@@ -13,15 +13,19 @@ type discordRepositoryImpl struct {
 	client *infrastructure.DiscordClient
 }
 
-// NewDiscordRepository creates a new Discord repository
+// NewDiscordRepository creates a new Discord repository.
 func NewDiscordRepository(client *infrastructure.DiscordClient) repository.DiscordRepository {
 	return &discordRepositoryImpl{
 		client: client,
 	}
 }
 
-// SendMessage sends a message to a specific channel
-func (r *discordRepositoryImpl) SendMessage(ctx context.Context, channelID string, content string) (*entity.Message, error) {
+// SendMessage sends a message to a specific channel.
+func (r *discordRepositoryImpl) SendMessage(
+    ctx context.Context,
+    channelID string,
+    content string,
+) (*entity.Message, error) {
 	msg, err := r.client.Session.ChannelMessageSend(channelID, content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send message: %w", err)
@@ -37,8 +41,12 @@ func (r *discordRepositoryImpl) SendMessage(ctx context.Context, channelID strin
 	}, nil
 }
 
-// GetMessage retrieves a message by its ID from a specific channel
-func (r *discordRepositoryImpl) GetMessage(ctx context.Context, channelID string, messageID string) (*entity.Message, error) {
+// GetMessage retrieves a message by its ID from a specific channel.
+func (r *discordRepositoryImpl) GetMessage(
+    ctx context.Context,
+    channelID string,
+    messageID string,
+) (*entity.Message, error) {
 	msg, err := r.client.Session.ChannelMessage(channelID, messageID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get message: %w", err)
@@ -54,18 +62,20 @@ func (r *discordRepositoryImpl) GetMessage(ctx context.Context, channelID string
 	}, nil
 }
 
-// Start starts the Discord bot session
+// Start starts the Discord bot session.
 func (r *discordRepositoryImpl) Start() error {
 	if err := r.client.Session.Open(); err != nil {
 		return fmt.Errorf("failed to open discord session: %w", err)
 	}
+
 	return nil
 }
 
-// Stop stops the Discord bot session
+// Stop stops the Discord bot session.
 func (r *discordRepositoryImpl) Stop() error {
 	if err := r.client.Session.Close(); err != nil {
 		return fmt.Errorf("failed to close discord session: %w", err)
 	}
+
 	return nil
 }

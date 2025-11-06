@@ -23,18 +23,18 @@ func NewModule() fx.Option {
 
 		// Infrastructure
 		fx.Provide(
-            gemini.NewRepository,
-            newDiscordClient,
-        ),
+			gemini.NewRepository,
+			newDiscordClient,
+		),
 
-        // Repository
-        fx.Provide(
-            discordRepository.NewDiscordRepository,
-        ),
+		// Repository
+		fx.Provide(
+			discordRepository.NewDiscordRepository,
+		),
 
-        // Service
-        fx.Provide(
-            discordService.NewDiscordService,
+		// Service
+		fx.Provide(
+			discordService.NewDiscordService,
 		),
 
 		// Usecase
@@ -57,6 +57,7 @@ func NewModule() fx.Option {
 
 func newDiscordClient(configRepo config.ConfigRepository) (*discordInfra.DiscordClient, error) {
 	cfg := configRepo.GetConfig()
+
 	return discordInfra.NewDiscordClient(cfg.Discord.Token)
 }
 

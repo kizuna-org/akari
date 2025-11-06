@@ -75,6 +75,7 @@ func main() {
 
 	if *useDiscord {
 		runDiscordBot()
+
 		return
 	}
 
@@ -98,6 +99,7 @@ func runDiscordBot() {
 			// Start Discord bot
 			if err := repo.Start(); err != nil {
 				slog.Error("Failed to start Discord bot", "error", err)
+
 				return
 			}
 
