@@ -15,7 +15,9 @@ func (c *client) WithTx(ctx context.Context, txFunc domain.TxFunc) error {
 
 	defer func() {
 		if v := recover(); v != nil {
-			_ = transaction.Rollback()
+			if err := transaction.Rollback(); err != nil {
+				panic(fmt.Sprintf("failed to rollback transaction after panic: %v (original panic: %v)", err, v))
+			}
 
 			panic(v)
 		}
