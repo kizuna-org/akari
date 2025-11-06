@@ -11,7 +11,7 @@ locals {
 
 env "local" {
   src = "ent://internal/ent/schema"
-  dev = "docker://postgres/15/dev?search_path=public"
+  dev = "docker://postgres/17/dev?search_path=public"
   url = local.envfile["DATABASE_URL"]
   migration {
     dir = "file://internal/database/migrations"
@@ -25,7 +25,7 @@ env "local" {
 
 env "test" {
   src = "ent://internal/ent/schema"
-  dev = "docker://postgres/15/dev?search_path=public"
+  dev = "docker://postgres/17/dev?search_path=public"
   url = local.envfile_test["DATABASE_URL"]
   migration {
     dir = "file://internal/database/migrations"
