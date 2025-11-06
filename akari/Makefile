@@ -60,6 +60,10 @@ migrate-status:
 		--dir "file://internal/database/migrations" \
 		--url "$${DATABASE_URL}"
 
+migrate-hash:
+	atlas migrate hash \
+		--dir "file://internal/database/migrations"
+
 migrate-validate:
 	atlas migrate validate \
 		--dir "file://internal/database/migrations"
