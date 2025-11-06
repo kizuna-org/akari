@@ -16,39 +16,32 @@ import (
 
 func NewModule() fx.Option {
 	return fx.Module("akari",
-		// Configuration
 		fx.Provide(
 			config.NewConfigRepository,
 		),
 
-		// Infrastructure
 		fx.Provide(
 			gemini.NewRepository,
 			newDiscordClient,
 		),
 
-		// Repository
 		fx.Provide(
 			discordRepository.NewDiscordRepository,
 		),
 
-		// Service
 		fx.Provide(
 			discordService.NewDiscordService,
 		),
 
-		// Usecase
 		fx.Provide(
 			interactor.NewLLMInteractor,
 			discordInteractor.NewDiscordInteractor,
 		),
 
-		// Handler
 		fx.Provide(
 			handler.NewMessageHandler,
 		),
 
-		// Logger
 		fx.Provide(
 			slog.Default,
 		),

@@ -79,7 +79,6 @@ func main() {
 		return
 	}
 
-	// CLI mode
 	runCLI()
 }
 
@@ -93,10 +92,8 @@ func runDiscordBot() {
 			repo discordRepo.DiscordRepository,
 			messageHandler *handler.MessageHandler,
 		) {
-			// Register handlers
 			messageHandler.RegisterHandlers()
 
-			// Start Discord bot
 			if err := repo.Start(); err != nil {
 				slog.Error("Failed to start Discord bot", "error", err)
 
@@ -105,12 +102,10 @@ func runDiscordBot() {
 
 			slog.Info("Discord bot is now running. Press CTRL-C to exit.")
 
-			// Wait for interrupt signal
 			sc := make(chan os.Signal, 1)
 			signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
 			<-sc
 
-			// Stop Discord bot
 			if err := repo.Stop(); err != nil {
 				slog.Error("Failed to stop Discord bot", "error", err)
 			}

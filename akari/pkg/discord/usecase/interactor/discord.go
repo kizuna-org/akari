@@ -8,7 +8,6 @@ import (
 	"github.com/kizuna-org/akari/pkg/discord/domain/service"
 )
 
-// DiscordInteractor defines the use case for Discord operations.
 type DiscordInteractor interface {
 	SendMessage(ctx context.Context, channelID string, content string) (*entity.Message, error)
 	GetMessage(ctx context.Context, channelID string, messageID string) (*entity.Message, error)
@@ -18,14 +17,12 @@ type discordInteractorImpl struct {
 	service service.DiscordService
 }
 
-// NewDiscordInteractor creates a new Discord interactor.
 func NewDiscordInteractor(service service.DiscordService) DiscordInteractor {
 	return &discordInteractorImpl{
 		service: service,
 	}
 }
 
-// SendMessage sends a message to a Discord channel.
 func (i *discordInteractorImpl) SendMessage(
     ctx context.Context,
     channelID string,
@@ -39,7 +36,6 @@ func (i *discordInteractorImpl) SendMessage(
 	return msg, nil
 }
 
-// GetMessage retrieves a message by its ID from a Discord channel.
 func (i *discordInteractorImpl) GetMessage(
     ctx context.Context,
     channelID string,
