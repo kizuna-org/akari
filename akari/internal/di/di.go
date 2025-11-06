@@ -16,19 +16,23 @@ import (
 
 func NewModule() fx.Option {
 	return fx.Module("akari",
+		// Configuration,
 		fx.Provide(
 			config.NewConfigRepository,
 		),
 
+		// Infrastructure
 		fx.Provide(
 			gemini.NewRepository,
 			newDiscordClient,
 		),
 
+		// Usecase
 		fx.Provide(
 			discordRepository.NewDiscordRepository,
 		),
 
+		// Logger
 		fx.Provide(
 			discordService.NewDiscordService,
 		),

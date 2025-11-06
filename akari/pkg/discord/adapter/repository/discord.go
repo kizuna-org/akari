@@ -20,9 +20,9 @@ func NewDiscordRepository(client *infrastructure.DiscordClient) repository.Disco
 }
 
 func (r *discordRepositoryImpl) SendMessage(
-    ctx context.Context,
-    channelID string,
-    content string,
+	ctx context.Context,
+	channelID string,
+	content string,
 ) (*entity.Message, error) {
 	msg, err := r.client.Session.ChannelMessageSend(channelID, content)
 	if err != nil {
@@ -40,9 +40,9 @@ func (r *discordRepositoryImpl) SendMessage(
 }
 
 func (r *discordRepositoryImpl) GetMessage(
-    ctx context.Context,
-    channelID string,
-    messageID string,
+	ctx context.Context,
+	channelID string,
+	messageID string,
 ) (*entity.Message, error) {
 	msg, err := r.client.Session.ChannelMessage(channelID, messageID)
 	if err != nil {

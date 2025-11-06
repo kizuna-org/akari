@@ -24,9 +24,9 @@ func NewDiscordInteractor(service service.DiscordService) DiscordInteractor {
 }
 
 func (i *discordInteractorImpl) SendMessage(
-    ctx context.Context,
-    channelID string,
-    content string,
+	ctx context.Context,
+	channelID string,
+	content string,
 ) (*entity.Message, error) {
 	msg, err := i.service.SendMessage(ctx, channelID, content)
 	if err != nil {
@@ -37,9 +37,9 @@ func (i *discordInteractorImpl) SendMessage(
 }
 
 func (i *discordInteractorImpl) GetMessage(
-    ctx context.Context,
-    channelID string,
-    messageID string,
+	ctx context.Context,
+	channelID string,
+	messageID string,
 ) (*entity.Message, error) {
 	msg, err := i.service.GetMessage(ctx, channelID, messageID)
 	if err != nil {

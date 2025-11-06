@@ -24,9 +24,9 @@ func NewDiscordService(repo repository.DiscordRepository) DiscordService {
 }
 
 func (s *discordServiceImpl) SendMessage(
-    ctx context.Context,
-    channelID string,
-    content string,
+	ctx context.Context,
+	channelID string,
+	content string,
 ) (*entity.Message, error) {
 	if channelID == "" {
 		return nil, errors.New("channel ID is required")
@@ -40,9 +40,9 @@ func (s *discordServiceImpl) SendMessage(
 }
 
 func (s *discordServiceImpl) GetMessage(
-    ctx context.Context,
-    channelID string,
-    messageID string,
+	ctx context.Context,
+	channelID string,
+	messageID string,
 ) (*entity.Message, error) {
 	if channelID == "" {
 		return nil, errors.New("channel ID is required")
