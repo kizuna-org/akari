@@ -4,12 +4,12 @@ import (
 	"log/slog"
 
 	"github.com/kizuna-org/akari/pkg/config"
-    "github.com/kizuna-org/akari/pkg/llm/infrastructure/gemini"
-    discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
-    discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
-    "github.com/kizuna-org/akari/pkg/discord/handler"
-    discordInfra "github.com/kizuna-org/akari/pkg/discord/infrastructure"
-    discordInteractor "github.com/kizuna-org/akari/pkg/discord/usecase/interactor"
+	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
+	discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
+	"github.com/kizuna-org/akari/pkg/discord/handler"
+	discordInfra "github.com/kizuna-org/akari/pkg/discord/infrastructure"
+	discordInteractor "github.com/kizuna-org/akari/pkg/discord/usecase/interactor"
+	"github.com/kizuna-org/akari/pkg/llm/infrastructure/gemini"
 	"github.com/kizuna-org/akari/pkg/llm/usecase/interactor"
 	"go.uber.org/fx"
 )

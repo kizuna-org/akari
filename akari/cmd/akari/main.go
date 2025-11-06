@@ -11,9 +11,9 @@ import (
 
 	"github.com/kizuna-org/akari/internal/di"
 	"github.com/kizuna-org/akari/pkg/config"
-	"github.com/kizuna-org/akari/pkg/llm/domain"
 	discordRepo "github.com/kizuna-org/akari/pkg/discord/domain/repository"
 	"github.com/kizuna-org/akari/pkg/discord/handler"
+	"github.com/kizuna-org/akari/pkg/llm/domain"
 	"github.com/kizuna-org/akari/pkg/llm/usecase/interactor"
 	"go.uber.org/fx"
 )
