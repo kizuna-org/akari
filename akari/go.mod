@@ -3,6 +3,7 @@ module github.com/kizuna-org/akari
 go 1.25.3
 
 require (
+    github.com/bwmarrin/discordgo v0.29.0
 	github.com/samber/lo v1.52.0
 	go.uber.org/fx v1.24.0
 )
