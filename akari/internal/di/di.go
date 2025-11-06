@@ -16,7 +16,7 @@ func NewModule() fx.Option {
 			config.NewConfigRepository,
 		),
 
-		// Infrastructure - Repository実装
+		// Infrastructure
 		fx.Provide(
 			gemini.NewRepository,
 		),

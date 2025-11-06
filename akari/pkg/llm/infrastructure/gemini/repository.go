@@ -20,7 +20,6 @@ type repositoryImpl struct {
 	model  string
 }
 
-// NewRepository は GeminiRepository の実装を作成します.
 func NewRepository(cfg config.ConfigRepository, logger *slog.Logger) (domain.GeminiRepository, error) {
 	ctx := context.Background()
 	config := cfg.GetConfig()
