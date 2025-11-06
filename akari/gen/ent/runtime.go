@@ -5,8 +5,8 @@ package ent
 import (
 	"time"
 
+	"github.com/kizuna-org/akari/ent/schema"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
-	"github.com/kizuna-org/akari/internal/ent/schema"
 )
 
 // The init function reads all schema descriptors with runtime code
