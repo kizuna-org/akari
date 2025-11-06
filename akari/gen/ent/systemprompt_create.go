@@ -44,20 +44,6 @@ func (_c *SystemPromptCreate) SetPreviousPrompts(v []string) *SystemPromptCreate
 	return _c
 }
 
-// SetVersion sets the "version" field.
-func (_c *SystemPromptCreate) SetVersion(v int) *SystemPromptCreate {
-	_c.mutation.SetVersion(v)
-	return _c
-}
-
-// SetNillableVersion sets the "version" field if the given value is not nil.
-func (_c *SystemPromptCreate) SetNillableVersion(v *int) *SystemPromptCreate {
-	if v != nil {
-		_c.SetVersion(*v)
-	}
-	return _c
-}
-
 // SetCreatedAt sets the "created_at" field.
 func (_c *SystemPromptCreate) SetCreatedAt(v time.Time) *SystemPromptCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -121,10 +107,6 @@ func (_c *SystemPromptCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *SystemPromptCreate) defaults() {
-	if _, ok := _c.mutation.Version(); !ok {
-		v := systemprompt.DefaultVersion
-		_c.mutation.SetVersion(v)
-	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := systemprompt.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
@@ -163,9 +145,6 @@ func (_c *SystemPromptCreate) check() error {
 	}
 	if _, ok := _c.mutation.PreviousPrompts(); !ok {
 		return &ValidationError{Name: "previous_prompts", err: errors.New(`ent: missing required field "SystemPrompt.previous_prompts"`)}
-	}
-	if _, ok := _c.mutation.Version(); !ok {
-		return &ValidationError{Name: "version", err: errors.New(`ent: missing required field "SystemPrompt.version"`)}
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "SystemPrompt.created_at"`)}
@@ -214,10 +193,6 @@ func (_c *SystemPromptCreate) createSpec() (*SystemPrompt, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.PreviousPrompts(); ok {
 		_spec.SetField(systemprompt.FieldPreviousPrompts, field.TypeJSON, value)
 		_node.PreviousPrompts = value
-	}
-	if value, ok := _c.mutation.Version(); ok {
-		_spec.SetField(systemprompt.FieldVersion, field.TypeInt, value)
-		_node.Version = value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(systemprompt.FieldCreatedAt, field.TypeTime, value)

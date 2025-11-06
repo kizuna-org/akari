@@ -64,11 +64,6 @@ func Prompt(v string) predicate.SystemPrompt {
 	return predicate.SystemPrompt(sql.FieldEQ(FieldPrompt, v))
 }
 
-// Version applies equality check predicate on the "version" field. It's identical to VersionEQ.
-func Version(v int) predicate.SystemPrompt {
-	return predicate.SystemPrompt(sql.FieldEQ(FieldVersion, v))
-}
-
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.SystemPrompt {
 	return predicate.SystemPrompt(sql.FieldEQ(FieldCreatedAt, v))
@@ -227,46 +222,6 @@ func PromptEqualFold(v string) predicate.SystemPrompt {
 // PromptContainsFold applies the ContainsFold predicate on the "prompt" field.
 func PromptContainsFold(v string) predicate.SystemPrompt {
 	return predicate.SystemPrompt(sql.FieldContainsFold(FieldPrompt, v))
-}
-
-// VersionEQ applies the EQ predicate on the "version" field.
-func VersionEQ(v int) predicate.SystemPrompt {
-	return predicate.SystemPrompt(sql.FieldEQ(FieldVersion, v))
-}
-
-// VersionNEQ applies the NEQ predicate on the "version" field.
-func VersionNEQ(v int) predicate.SystemPrompt {
-	return predicate.SystemPrompt(sql.FieldNEQ(FieldVersion, v))
-}
-
-// VersionIn applies the In predicate on the "version" field.
-func VersionIn(vs ...int) predicate.SystemPrompt {
-	return predicate.SystemPrompt(sql.FieldIn(FieldVersion, vs...))
-}
-
-// VersionNotIn applies the NotIn predicate on the "version" field.
-func VersionNotIn(vs ...int) predicate.SystemPrompt {
-	return predicate.SystemPrompt(sql.FieldNotIn(FieldVersion, vs...))
-}
-
-// VersionGT applies the GT predicate on the "version" field.
-func VersionGT(v int) predicate.SystemPrompt {
-	return predicate.SystemPrompt(sql.FieldGT(FieldVersion, v))
-}
-
-// VersionGTE applies the GTE predicate on the "version" field.
-func VersionGTE(v int) predicate.SystemPrompt {
-	return predicate.SystemPrompt(sql.FieldGTE(FieldVersion, v))
-}
-
-// VersionLT applies the LT predicate on the "version" field.
-func VersionLT(v int) predicate.SystemPrompt {
-	return predicate.SystemPrompt(sql.FieldLT(FieldVersion, v))
-}
-
-// VersionLTE applies the LTE predicate on the "version" field.
-func VersionLTE(v int) predicate.SystemPrompt {
-	return predicate.SystemPrompt(sql.FieldLTE(FieldVersion, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

@@ -22,8 +22,6 @@ const (
 	FieldPrompt = "prompt"
 	// FieldPreviousPrompts holds the string denoting the previous_prompts field in the database.
 	FieldPreviousPrompts = "previous_prompts"
-	// FieldVersion holds the string denoting the version field in the database.
-	FieldVersion = "version"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -39,7 +37,6 @@ var Columns = []string{
 	FieldPurpose,
 	FieldPrompt,
 	FieldPreviousPrompts,
-	FieldVersion,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
@@ -59,8 +56,6 @@ var (
 	TitleValidator func(string) error
 	// PromptValidator is a validator for the "prompt" field. It is called by the builders before save.
 	PromptValidator func(string) error
-	// DefaultVersion holds the default value on creation for the "version" field.
-	DefaultVersion int
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -112,11 +107,6 @@ func ByPurpose(opts ...sql.OrderTermOption) OrderOption {
 // ByPrompt orders the results by the prompt field.
 func ByPrompt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrompt, opts...).ToFunc()
-}
-
-// ByVersion orders the results by the version field.
-func ByVersion(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldVersion, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

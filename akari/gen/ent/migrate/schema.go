@@ -15,7 +15,6 @@ var (
 		{Name: "purpose", Type: field.TypeEnum, Enums: []string{"text_chat"}},
 		{Name: "prompt", Type: field.TypeString},
 		{Name: "previous_prompts", Type: field.TypeJSON},
-		{Name: "version", Type: field.TypeInt, Default: 1},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 	}

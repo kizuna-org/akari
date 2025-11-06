@@ -26,8 +26,6 @@ type SystemPrompt struct {
 	Prompt string `json:"prompt,omitempty"`
 	// Previous versions of the system prompt
 	PreviousPrompts []string `json:"previous_prompts,omitempty"`
-	// Version number of the system prompt
-	Version int `json:"version,omitempty"`
 	// The time when the system prompt was created
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// The time when the system prompt was last updated
@@ -42,7 +40,7 @@ func (*SystemPrompt) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case systemprompt.FieldPreviousPrompts:
 			values[i] = new([]byte)
-		case systemprompt.FieldID, systemprompt.FieldVersion:
+		case systemprompt.FieldID:
 			values[i] = new(sql.NullInt64)
 		case systemprompt.FieldTitle, systemprompt.FieldPurpose, systemprompt.FieldPrompt:
 			values[i] = new(sql.NullString)
@@ -94,12 +92,6 @@ func (_m *SystemPrompt) assignValues(columns []string, values []any) error {
 				if err := json.Unmarshal(*value, &_m.PreviousPrompts); err != nil {
 					return fmt.Errorf("unmarshal field previous_prompts: %w", err)
 				}
-			}
-		case systemprompt.FieldVersion:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field version", values[i])
-			} else if value.Valid {
-				_m.Version = int(value.Int64)
 			}
 		case systemprompt.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -160,9 +152,6 @@ func (_m *SystemPrompt) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("previous_prompts=")
 	builder.WriteString(fmt.Sprintf("%v", _m.PreviousPrompts))
-	builder.WriteString(", ")
-	builder.WriteString("version=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Version))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

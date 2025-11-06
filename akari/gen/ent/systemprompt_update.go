@@ -83,27 +83,6 @@ func (_u *SystemPromptUpdate) AppendPreviousPrompts(v []string) *SystemPromptUpd
 	return _u
 }
 
-// SetVersion sets the "version" field.
-func (_u *SystemPromptUpdate) SetVersion(v int) *SystemPromptUpdate {
-	_u.mutation.ResetVersion()
-	_u.mutation.SetVersion(v)
-	return _u
-}
-
-// SetNillableVersion sets the "version" field if the given value is not nil.
-func (_u *SystemPromptUpdate) SetNillableVersion(v *int) *SystemPromptUpdate {
-	if v != nil {
-		_u.SetVersion(*v)
-	}
-	return _u
-}
-
-// AddVersion adds value to the "version" field.
-func (_u *SystemPromptUpdate) AddVersion(v int) *SystemPromptUpdate {
-	_u.mutation.AddVersion(v)
-	return _u
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (_u *SystemPromptUpdate) SetUpdatedAt(v time.Time) *SystemPromptUpdate {
 	_u.mutation.SetUpdatedAt(v)
@@ -200,12 +179,6 @@ func (_u *SystemPromptUpdate) sqlSave(ctx context.Context) (_node int, err error
 			sqljson.Append(u, systemprompt.FieldPreviousPrompts, value)
 		})
 	}
-	if value, ok := _u.mutation.Version(); ok {
-		_spec.SetField(systemprompt.FieldVersion, field.TypeInt, value)
-	}
-	if value, ok := _u.mutation.AddedVersion(); ok {
-		_spec.AddField(systemprompt.FieldVersion, field.TypeInt, value)
-	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
 	}
@@ -280,27 +253,6 @@ func (_u *SystemPromptUpdateOne) SetPreviousPrompts(v []string) *SystemPromptUpd
 // AppendPreviousPrompts appends value to the "previous_prompts" field.
 func (_u *SystemPromptUpdateOne) AppendPreviousPrompts(v []string) *SystemPromptUpdateOne {
 	_u.mutation.AppendPreviousPrompts(v)
-	return _u
-}
-
-// SetVersion sets the "version" field.
-func (_u *SystemPromptUpdateOne) SetVersion(v int) *SystemPromptUpdateOne {
-	_u.mutation.ResetVersion()
-	_u.mutation.SetVersion(v)
-	return _u
-}
-
-// SetNillableVersion sets the "version" field if the given value is not nil.
-func (_u *SystemPromptUpdateOne) SetNillableVersion(v *int) *SystemPromptUpdateOne {
-	if v != nil {
-		_u.SetVersion(*v)
-	}
-	return _u
-}
-
-// AddVersion adds value to the "version" field.
-func (_u *SystemPromptUpdateOne) AddVersion(v int) *SystemPromptUpdateOne {
-	_u.mutation.AddVersion(v)
 	return _u
 }
 
@@ -429,12 +381,6 @@ func (_u *SystemPromptUpdateOne) sqlSave(ctx context.Context) (_node *SystemProm
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, systemprompt.FieldPreviousPrompts, value)
 		})
-	}
-	if value, ok := _u.mutation.Version(); ok {
-		_spec.SetField(systemprompt.FieldVersion, field.TypeInt, value)
-	}
-	if value, ok := _u.mutation.AddedVersion(); ok {
-		_spec.AddField(systemprompt.FieldVersion, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
