@@ -11,9 +11,11 @@ runs:
   using: composite
   steps:
     - uses: ./.github/actions/setup-golang
+      with:
+        working-directory: ${{ inputs.working-directory }}
     - name: Run `make init`
       shell: bash
-      working-directory: ${{ steps.get-current-directory.outputs.current-directory }}
+      working-directory: ${{ inputs.working-directory }}
       run: |
         make init
     - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
