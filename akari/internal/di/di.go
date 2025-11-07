@@ -3,6 +3,7 @@ package di
 import (
 	"log/slog"
 
+	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/pkg/config"
 	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
@@ -12,7 +13,6 @@ import (
 	discordInteractor "github.com/kizuna-org/akari/pkg/discord/usecase/interactor"
 	"github.com/kizuna-org/akari/pkg/llm/infrastructure/gemini"
 	"github.com/kizuna-org/akari/pkg/llm/usecase/interactor"
-	"entgo.io/ent/dialect"
 	"go.uber.org/fx"
 )
 

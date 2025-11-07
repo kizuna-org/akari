@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"log"
+	"net"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -57,7 +58,7 @@ type DatabaseConfig struct {
 	User     string `split_words:"true"`
 	Password string `split_words:"true"`
 	DB       string `split_words:"true"`
-	SSLMode  string `split_words:"true" default:"disable"`
+	SSLMode  string `default:"disable"  split_words:"true"`
 }
 
 // BuildDSN builds a PostgreSQL data source name from the database configuration.
@@ -75,12 +76,13 @@ func (d *DatabaseConfig) BuildDSN() string {
 
 // BuildURL builds a PostgreSQL connection URL from the database configuration.
 func (d *DatabaseConfig) BuildURL() string {
+	hostPort := net.JoinHostPort(d.Host, d.Port)
+
 	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		"postgres://%s:%s@%s/%s?sslmode=%s",
 		d.User,
 		d.Password,
-		d.Host,
-		d.Port,
+		hostPort,
 		d.DB,
 		d.SSLMode,
 	)
