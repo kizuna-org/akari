@@ -10,7 +10,17 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Check if Go is already set up
+      id: check-go
+      shell: bash
+      run: |
+        if command -v go >/dev/null 2>&1; then
+          echo "go-already-setup=true" >> $GITHUB_OUTPUT
+        else
+          echo "go-already-setup=false" >> $GITHUB_OUTPUT
+        fi
     - uses: ./.github/actions/setup-golang
+      if: steps.check-go.outputs.go-already-setup != 'true'
       with:
         working-directory: ${{ inputs.working-directory }}
     - name: Run `make init`
