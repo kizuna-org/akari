@@ -1,6 +1,7 @@
 APP_NAME := akari
 BIN := bin/$(APP_NAME)
 GO := go
+ENV := local
 
 .PHONY: init build run test fmt vet tidy generate lint lint-fix tools clean migrate-new migrate-apply migrate-status migrate-validate migrate-lint
 
@@ -45,25 +46,16 @@ migrate-new:
 		echo "Error: NAME is required. Usage: make migrate-new NAME=migration_name"; \
 		exit 1; \
 	fi
-	atlas migrate diff $(NAME) \
-		--dir "file://internal/database/migrations" \
-		--to "ent://ent/schema" \
-		--dev-url "docker://postgres/17/dev?search_path=public"
+	atlas migrate diff $(NAME) --env=$(ENV)
 
 migrate-apply:
-	atlas migrate apply \
-		--dir "file://internal/database/migrations" \
-		--url "$${DATABASE_URL}"
+	atlas migrate apply --env=$(ENV)
 
 migrate-status:
-	atlas migrate status \
-		--dir "file://internal/database/migrations" \
-		--url "$${DATABASE_URL}"
+	atlas migrate status --env=$(ENV)
 
 migrate-hash:
-	atlas migrate hash \
-		--dir "file://internal/database/migrations"
+	atlas migrate hash --env=$(ENV)
 
 migrate-validate:
-	atlas migrate validate \
-		--dir "file://internal/database/migrations"
+	atlas migrate validate --env=$(ENV)
