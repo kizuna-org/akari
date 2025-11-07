@@ -7,8 +7,6 @@ import (
 )
 
 type DatabaseInteractor interface {
-	Close() error
-	HealthCheck(ctx context.Context) error
 	WithTransaction(ctx context.Context, fn domain.TxFunc) error
 	CreateSystemPrompt(
 		ctx context.Context,
@@ -33,14 +31,6 @@ func NewDatabaseInteractor(repository domain.DatabaseRepository) DatabaseInterac
 	return &databaseInteractorImpl{
 		repository: repository,
 	}
-}
-
-func (d *databaseInteractorImpl) Close() error {
-	return d.repository.Close()
-}
-
-func (d *databaseInteractorImpl) HealthCheck(ctx context.Context) error {
-	return d.repository.HealthCheck(ctx)
 }
 
 func (d *databaseInteractorImpl) WithTransaction(ctx context.Context, fn domain.TxFunc) error {

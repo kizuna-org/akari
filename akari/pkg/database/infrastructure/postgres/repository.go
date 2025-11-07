@@ -9,12 +9,18 @@ import (
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
 
+type Repository interface {
+	domain.DatabaseRepository
+	Close() error
+	HealthCheck(ctx context.Context) error
+}
+
 type repositoryImpl struct {
 	client *client
 	logger *slog.Logger
 }
 
-func NewRepository(cfg config.ConfigRepository, logger *slog.Logger) (domain.DatabaseRepository, error) {
+func NewRepository(cfg config.ConfigRepository, logger *slog.Logger) (Repository, error) {
 	config := NewConfig(cfg.GetConfig())
 
 	client, err := newClient(config)

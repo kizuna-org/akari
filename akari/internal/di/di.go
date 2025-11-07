@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/pkg/config"
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/database/infrastructure/postgres"
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
@@ -32,6 +33,7 @@ func NewModule() fx.Option {
 			newEntClient,
 			gemini.NewRepository,
 			postgres.NewRepository,
+			newDatabaseRepository,
 			newDiscordClient,
 		),
 
@@ -71,11 +73,11 @@ func newEntClient(configRepo config.ConfigRepository) (*ent.Client, error) {
 	return ent.Open(dialect.Postgres, cfg.Database.BuildDSN())
 }
 
-func registerDatabaseHooks(lc fx.Lifecycle, interactor databaseInteractor.DatabaseInteractor, logger *slog.Logger) {
+func registerDatabaseHooks(lc fx.Lifecycle, repository postgres.Repository, logger *slog.Logger) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			logger.Info("verifying database connection")
-			if err := interactor.HealthCheck(ctx); err != nil {
+			if err := repository.HealthCheck(ctx); err != nil {
 				return fmt.Errorf("database health check failed: %w", err)
 			}
 			logger.Info("database connection verified successfully")
@@ -84,7 +86,7 @@ func registerDatabaseHooks(lc fx.Lifecycle, interactor databaseInteractor.Databa
 		},
 		OnStop: func(ctx context.Context) error {
 			logger.Info("disconnecting from database")
-			if err := interactor.Close(); err != nil {
+			if err := repository.Close(); err != nil {
 				return fmt.Errorf("failed to disconnect from database: %w", err)
 			}
 			logger.Info("database disconnected successfully")
@@ -92,6 +94,10 @@ func registerDatabaseHooks(lc fx.Lifecycle, interactor databaseInteractor.Databa
 			return nil
 		},
 	})
+}
+
+func newDatabaseRepository(repo postgres.Repository) databaseDomain.DatabaseRepository {
+	return repo
 }
 
 func newDiscordClient(configRepo config.ConfigRepository) (*discordInfra.DiscordClient, error) {
