@@ -71,26 +71,20 @@ func newEntClient(configRepo config.ConfigRepository) (*ent.Client, error) {
 	return ent.Open(dialect.Postgres, cfg.Database.BuildDSN())
 }
 
-func newDiscordClient(configRepo config.ConfigRepository) (*discordInfra.DiscordClient, error) {
-	cfg := configRepo.GetConfig()
-
-	return discordInfra.NewDiscordClient(cfg.Discord.Token)
-}
-
 func registerDatabaseHooks(lc fx.Lifecycle, interactor databaseInteractor.DatabaseInteractor, logger *slog.Logger) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			logger.Info("connecting to database")
-			if err := interactor.Connect(ctx); err != nil {
-				return fmt.Errorf("failed to connect to database: %w", err)
+			logger.Info("verifying database connection")
+			if err := interactor.HealthCheck(ctx); err != nil {
+				return fmt.Errorf("database health check failed: %w", err)
 			}
-			logger.Info("database connected successfully")
+			logger.Info("database connection verified successfully")
 
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
 			logger.Info("disconnecting from database")
-			if err := interactor.Disconnect(); err != nil {
+			if err := interactor.Close(); err != nil {
 				return fmt.Errorf("failed to disconnect from database: %w", err)
 			}
 			logger.Info("database disconnected successfully")
@@ -98,6 +92,12 @@ func registerDatabaseHooks(lc fx.Lifecycle, interactor databaseInteractor.Databa
 			return nil
 		},
 	})
+}
+
+func newDiscordClient(configRepo config.ConfigRepository) (*discordInfra.DiscordClient, error) {
+	cfg := configRepo.GetConfig()
+
+	return discordInfra.NewDiscordClient(cfg.Discord.Token)
 }
 
 func NewApp() *fx.App {

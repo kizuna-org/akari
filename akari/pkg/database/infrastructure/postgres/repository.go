@@ -34,17 +34,7 @@ func NewRepository(cfg config.ConfigRepository, logger *slog.Logger) (domain.Dat
 	}, nil
 }
 
-func (r *repositoryImpl) Connect(ctx context.Context) error {
-	if err := r.client.Ping(ctx); err != nil {
-		return fmt.Errorf("failed to ping database: %w", err)
-	}
-
-	r.logger.Info("database connection verified")
-
-	return nil
-}
-
-func (r *repositoryImpl) Disconnect() error {
+func (r *repositoryImpl) Close() error {
 	if err := r.client.Close(); err != nil {
 		return fmt.Errorf("failed to close database connection: %w", err)
 	}

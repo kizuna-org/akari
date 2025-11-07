@@ -8,8 +8,7 @@ import (
 )
 
 type DatabaseRepository interface {
-	Connect(ctx context.Context) error
-	Disconnect() error
+	Close() error
 	HealthCheck(ctx context.Context) error
 	WithTransaction(ctx context.Context, fn TxFunc) error
 	CreateSystemPrompt(ctx context.Context, title, prompt string, purpose SystemPromptPurpose) (*SystemPrompt, error)
