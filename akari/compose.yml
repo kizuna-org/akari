@@ -20,7 +20,7 @@ services:
     container_name: akari-db-side
     command: ["sh", "-c", "echo 'Wake up db-side'"]
     depends_on:
-      db:
+      akari-db:
         condition: service_healthy
 
 volumes:
