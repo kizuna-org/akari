@@ -21,6 +21,7 @@ jobs:
       - yaml-lint
       - action-lint
       - dotenv-lint
+      - migrate-check
       - golang-build-check
       - golang-vet-check
       - golang-fmt-check
@@ -71,6 +72,71 @@ jobs:
         with:
           dotenv_linter_flags: --skip UnorderedKey
           fail_on_error: true
+
+  migrate-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          ref: ${{ github.base_ref }}
+      - uses: ./.github/actions/setup-golang
+      - name: Run `make init` (base branch)
+        run: make init
+      - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - name: Start DB container
+        run: |
+          docker compose build akari-db akari-db-side
+          docker compose up -d --no-build akari-db akari-db-side
+      - name: Apply migrations (base branch)
+        run: make migrate-apply
+      - name: Checkout PR branch
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+      - name: Run `make init` (PR branch)
+        run: make init
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup sqlfluff
+        run: |
+          pip install sqlfluff
+      - name: Validate migration
+        run: make migrate-validate
+      - name: Run migration dry-run
+        id: migration-run
+        run: |
+          set +e
+          MIGRATE_OUT=$(make migrate-dry-run 2>&1)
+          if echo "$MIGRATE_OUT" | sqlfluff fix - --dialect postgres > /tmp/migrate_formatted.sql 2>/dev/null; then
+            MIGRATE_OUT=$(cat /tmp/migrate_formatted.sql)
+          fi
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          {
+            echo "comment<<$EOF"
+            if [ -n "$MIGRATE_OUT" ]; then
+              printf "# Migration dry run\n\n"
+              printf "<details>\n"
+              printf "<summary>SQL queries to be executed</summary>\n"
+              printf "\n\`\`\`sql\n\n"
+              echo "$MIGRATE_OUT"
+              printf "\n\`\`\`\n\n"
+              printf "</details>\n"
+            fi
+            echo "$EOF"
+          } >> "$GITHUB_ENV"
+      - name: Run migration
+        run: make migrate-apply
+      - name: Create PR comment
+        uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31 # v2.9.0
+        if: ${{ env.comment != '' }}
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          number: ${{ github.event.pull_request.number }}
+          header: migration-check
+          message: ${{ env.comment }}
 
   golang-build-check:
     runs-on: ubuntu-latest
@@ -145,6 +211,7 @@ jobs:
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
+      - uses: ./.github/actions/setup-db
       - name: Run go test
         id: golang-test
         run: |
@@ -195,6 +262,7 @@ jobs:
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
+      - uses: ./.github/actions/setup-db
       - name: Set up gotestfmt
         uses: gotesttools/gotestfmt-action@8b4478c7019be847373babde9300210e7de34bfb # v2.5.0
         with:
@@ -225,6 +293,7 @@ jobs:
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
+      - uses: ./.github/actions/setup-db
       - name: Run go generate
         id: golang-generate
         run: |
