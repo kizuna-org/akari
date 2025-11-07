@@ -8,10 +8,10 @@ import (
 )
 
 type DatabaseRepository interface {
-	GetClient() Client
 	Connect(ctx context.Context) error
 	Disconnect() error
 	HealthCheck(ctx context.Context) error
+	WithTransaction(ctx context.Context, fn TxFunc) error
 	CreateSystemPrompt(ctx context.Context, title, prompt string, purpose SystemPromptPurpose) (*SystemPrompt, error)
 	GetSystemPromptByID(ctx context.Context, id int) (*SystemPrompt, error)
 	UpdateSystemPrompt(

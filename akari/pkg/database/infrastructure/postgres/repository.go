@@ -34,10 +34,6 @@ func NewRepository(cfg config.ConfigRepository, logger *slog.Logger) (domain.Dat
 	}, nil
 }
 
-func (r *repositoryImpl) GetClient() domain.Client {
-	return r.client
-}
-
 func (r *repositoryImpl) Connect(ctx context.Context) error {
 	if err := r.client.Ping(ctx); err != nil {
 		return fmt.Errorf("failed to ping database: %w", err)
@@ -64,6 +60,10 @@ func (r *repositoryImpl) HealthCheck(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (r *repositoryImpl) WithTransaction(ctx context.Context, fn domain.TxFunc) error {
+	return r.client.WithTx(ctx, fn)
 }
 
 func (r *repositoryImpl) CreateSystemPrompt(

@@ -7,7 +7,6 @@ import (
 )
 
 type DatabaseInteractor interface {
-	GetClient() domain.Client
 	Connect(ctx context.Context) error
 	Disconnect() error
 	HealthCheck(ctx context.Context) error
@@ -37,10 +36,6 @@ func NewDatabaseInteractor(repository domain.DatabaseRepository) DatabaseInterac
 	}
 }
 
-func (d *databaseInteractorImpl) GetClient() domain.Client {
-	return d.repository.GetClient()
-}
-
 func (d *databaseInteractorImpl) Connect(ctx context.Context) error {
 	return d.repository.Connect(ctx)
 }
@@ -54,7 +49,7 @@ func (d *databaseInteractorImpl) HealthCheck(ctx context.Context) error {
 }
 
 func (d *databaseInteractorImpl) WithTransaction(ctx context.Context, fn domain.TxFunc) error {
-	return d.repository.GetClient().WithTx(ctx, fn)
+	return d.repository.WithTransaction(ctx, fn)
 }
 
 func (d *databaseInteractorImpl) CreateSystemPrompt(
