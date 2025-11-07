@@ -3,6 +3,7 @@ package di
 import (
 	"log/slog"
 
+	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/pkg/config"
 	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
 	discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
@@ -11,6 +12,7 @@ import (
 	discordInteractor "github.com/kizuna-org/akari/pkg/discord/usecase/interactor"
 	"github.com/kizuna-org/akari/pkg/llm/infrastructure/gemini"
 	"github.com/kizuna-org/akari/pkg/llm/usecase/interactor"
+	"entgo.io/ent/dialect"
 	"go.uber.org/fx"
 )
 
@@ -23,6 +25,7 @@ func NewModule() fx.Option {
 
 		// Infrastructure
 		fx.Provide(
+			newEntClient,
 			gemini.NewRepository,
 			newDiscordClient,
 		),
@@ -50,6 +53,12 @@ func NewModule() fx.Option {
 			slog.Default,
 		),
 	)
+}
+
+func newEntClient(configRepo config.ConfigRepository) (*ent.Client, error) {
+	cfg := configRepo.GetConfig()
+
+	return ent.Open(dialect.Postgres, cfg.Database.BuildDSN())
 }
 
 func newDiscordClient(configRepo config.ConfigRepository) (*discordInfra.DiscordClient, error) {

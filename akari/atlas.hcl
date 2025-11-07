@@ -12,7 +12,7 @@ locals {
 env "local" {
   src = "ent://ent/schema"
   dev = "docker://postgres/17/dev?search_path=public"
-  url = local.envfile["DATABASE_URL"]
+  url = try(local.envfile["DATABASE_URL"], local.database_url)
   migration {
     dir = "file://internal/database/migrations"
   }
@@ -26,7 +26,7 @@ env "local" {
 env "test" {
   src = "ent://ent/schema"
   dev = "docker://postgres/17/dev?search_path=public"
-  url = local.envfile_test["DATABASE_URL"]
+  url = try(local.envfile_test["DATABASE_URL"], local.database_url_test)
   migration {
     dir = "file://internal/database/migrations"
   }
@@ -39,7 +39,18 @@ env "test" {
 
 env "dev" {
   src = "ent://ent/schema"
-  url = getenv("DATABASE_URL")
+  url = try(
+    getenv("DATABASE_URL"),
+    format(
+      "postgres://%s:%s@%s:%s/%s?sslmode=%s",
+      try(getenv("POSTGRES_USER"), "postgres"),
+      getenv("POSTGRES_PASSWORD"),
+      try(getenv("POSTGRES_HOST"), "localhost"),
+      try(getenv("POSTGRES_PORT"), "5432"),
+      getenv("POSTGRES_DB"),
+      try(getenv("POSTGRES_SSLMODE"), "disable")
+    )
+  )
   migration {
     dir = "file://internal/database/migrations"
   }
