@@ -3,7 +3,7 @@ BIN := bin/$(APP_NAME)
 GO := go
 ENV := local
 
-.PHONY: init build run test fmt vet tidy generate lint lint-fix tools clean migrate-new migrate-apply migrate-status migrate-validate migrate-lint up down down-volumes
+.PHONY: init build run test fmt vet tidy generate lint lint-fix tools clean migrate-new migrate-apply migrate-status migrate-validate migrate-lint migrate-dry-run up down down-volumes
 
 init:
 	go mod download
@@ -68,3 +68,6 @@ migrate-hash: up
 
 migrate-validate: up
 	atlas migrate validate --env=$(ENV)
+
+migrate-dry-run: up
+	atlas migrate apply --dry-run --env=$(ENV)
