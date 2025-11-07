@@ -2,7 +2,9 @@
 package config
 
 import (
+	"fmt"
 	"log"
+	"net"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -29,9 +31,10 @@ const (
 type Config struct {
 	EnvMode EnvMode
 
-	LLM     LLMConfig
-	Log     LogConfig
-	Discord DiscordConfig
+	Database DatabaseConfig
+	LLM      LLMConfig
+	Log      LogConfig
+	Discord  DiscordConfig
 }
 
 type LLMConfig struct {
@@ -47,6 +50,42 @@ type LogConfig struct {
 
 type DiscordConfig struct {
 	Token string
+}
+
+type DatabaseConfig struct {
+	Host     string `split_words:"true"`
+	Port     string `split_words:"true"`
+	User     string `split_words:"true"`
+	Password string `split_words:"true"`
+	DB       string `split_words:"true"`
+	SSLMode  string `default:"disable"  split_words:"true"`
+}
+
+// BuildDSN builds a PostgreSQL data source name from the database configuration.
+func (d *DatabaseConfig) BuildDSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		d.Host,
+		d.Port,
+		d.User,
+		d.Password,
+		d.DB,
+		d.SSLMode,
+	)
+}
+
+// BuildURL builds a PostgreSQL connection URL from the database configuration.
+func (d *DatabaseConfig) BuildURL() string {
+	hostPort := net.JoinHostPort(d.Host, d.Port)
+
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s/%s?sslmode=%s",
+		d.User,
+		d.Password,
+		hostPort,
+		d.DB,
+		d.SSLMode,
+	)
 }
 
 func NewConfigRepository() ConfigRepository {
@@ -111,11 +150,17 @@ func (c *configRepositoryImpl) determineEnvMode() (EnvMode, string) {
 }
 
 func (c *configRepositoryImpl) loadAllConfigs() error {
+	databaseConfig := DatabaseConfig{}
 	llmConfig := LLMConfig{}
 	logConfig := LogConfig{}
 	discordConfig := DiscordConfig{}
 
 	err := envconfig.Process("akari", &c.config)
+	if err != nil {
+		return err
+	}
+
+	err = envconfig.Process("postgres", &databaseConfig)
 	if err != nil {
 		return err
 	}
@@ -135,6 +180,7 @@ func (c *configRepositoryImpl) loadAllConfigs() error {
 		return err
 	}
 
+	c.config.Database = databaseConfig
 	c.config.LLM = llmConfig
 	c.config.Log = logConfig
 	c.config.Discord = discordConfig

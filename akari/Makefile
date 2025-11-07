@@ -3,21 +3,24 @@ BIN := bin/$(APP_NAME)
 GO := go
 ENV := local
 
-.PHONY: init build run test fmt vet tidy generate lint lint-fix tools clean migrate-new migrate-apply migrate-status migrate-validate migrate-lint
+.PHONY: init build run test fmt vet tidy generate lint lint-fix tools clean migrate-new migrate-apply migrate-status migrate-validate migrate-lint migrate-dry-run up down down-volumes
 
 init:
 	go mod download
 	if [ ! -f .env ]; then \
 		cp .env.example .env; \
 	fi
+	if [ ! -f .env.test ]; then \
+		cp .env.test.example .env.test; \
+	fi
 
 build: init generate
 	$(GO) build -o $(BIN) ./cmd/akari
 
-run: init generate
+run: init generate migrate-apply
 	$(GO) run ./cmd/akari
 
- test:
+test: init generate migrate-apply
 	$(GO) test ./...
 
 fmt:
@@ -41,21 +44,33 @@ lint:
 clean:
 	rm -rf bin
 
-migrate-new:
+up:
+	docker compose up -d
+
+down:
+	docker compose down
+
+down-volumes:
+	docker compose down -v
+
+migrate-new: up
 	@if [ -z "$(NAME)" ]; then \
 		echo "Error: NAME is required. Usage: make migrate-new NAME=migration_name"; \
 		exit 1; \
 	fi
 	atlas migrate diff $(NAME) --env=$(ENV)
 
-migrate-apply:
+migrate-apply: up
 	atlas migrate apply --env=$(ENV)
 
-migrate-status:
+migrate-status: up
 	atlas migrate status --env=$(ENV)
 
-migrate-hash:
+migrate-hash: up
 	atlas migrate hash --env=$(ENV)
 
-migrate-validate:
+migrate-validate: up
 	atlas migrate validate --env=$(ENV)
+
+migrate-dry-run: up
+	atlas migrate apply --dry-run --env=$(ENV)
