@@ -12,7 +12,15 @@ locals {
 env "local" {
   src = "ent://ent/schema"
   dev = "docker://postgres/17/dev?search_path=public"
-  url = try(local.envfile["DATABASE_URL"], local.database_url)
+  url = format(
+    "postgres://%s:%s@%s:%s/%s?sslmode=%s",
+    local.envfile["POSTGRES_USER"],
+    local.envfile["POSTGRES_PASSWORD"],
+    local.envfile["POSTGRES_HOST"],
+    local.envfile["POSTGRES_PORT"],
+    local.envfile["POSTGRES_DB"],
+    local.envfile["POSTGRES_SSLMODE"]
+  )
   migration {
     dir = "file://internal/database/migrations"
   }
@@ -26,7 +34,15 @@ env "local" {
 env "test" {
   src = "ent://ent/schema"
   dev = "docker://postgres/17/dev?search_path=public"
-  url = try(local.envfile_test["DATABASE_URL"], local.database_url_test)
+  url = format(
+    "postgres://%s:%s@%s:%s/%s?sslmode=%s",
+    local.envfile_test["POSTGRES_USER"],
+    local.envfile_test["POSTGRES_PASSWORD"],
+    local.envfile_test["POSTGRES_HOST"],
+    local.envfile_test["POSTGRES_PORT"],
+    local.envfile_test["POSTGRES_DB"],
+    local.envfile_test["POSTGRES_SSLMODE"]
+  )
   migration {
     dir = "file://internal/database/migrations"
   }
@@ -39,17 +55,14 @@ env "test" {
 
 env "dev" {
   src = "ent://ent/schema"
-  url = try(
-    getenv("DATABASE_URL"),
-    format(
-      "postgres://%s:%s@%s:%s/%s?sslmode=%s",
-      try(getenv("POSTGRES_USER"), "postgres"),
-      getenv("POSTGRES_PASSWORD"),
-      try(getenv("POSTGRES_HOST"), "localhost"),
-      try(getenv("POSTGRES_PORT"), "5432"),
-      getenv("POSTGRES_DB"),
-      try(getenv("POSTGRES_SSLMODE"), "disable")
-    )
+  url = format(
+    "postgres://%s:%s@%s:%s/%s?sslmode=%s",
+    getenv("POSTGRES_USER"),
+    getenv("POSTGRES_PASSWORD"),
+    getenv("POSTGRES_HOST"),
+    getenv("POSTGRES_PORT"),
+    getenv("POSTGRES_DB"),
+    getenv("POSTGRES_SSLMODE")
   )
   migration {
     dir = "file://internal/database/migrations"

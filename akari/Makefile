@@ -10,6 +10,9 @@ init:
 	if [ ! -f .env ]; then \
 		cp .env.example .env; \
 	fi
+	if [ ! -f .env.test ]; then \
+		cp .env.test.example .env.test; \
+	fi
 
 build: init generate
 	$(GO) build -o $(BIN) ./cmd/akari
