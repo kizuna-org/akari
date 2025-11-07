@@ -22,13 +22,6 @@ type DatabaseRepository interface {
 	DeleteSystemPrompt(ctx context.Context, id int) error
 }
 
-type Client interface {
-	Unwrap() *ent.Client
-	Ping(ctx context.Context) error
-	Close() error
-	WithTx(ctx context.Context, fn TxFunc) error
-}
-
 type (
 	Tx                  = ent.Tx
 	SystemPrompt        = ent.SystemPrompt

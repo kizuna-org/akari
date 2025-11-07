@@ -7,7 +7,6 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"github.com/kizuna-org/akari/gen/ent"
-	"github.com/kizuna-org/akari/pkg/database/domain"
 	_ "github.com/lib/pq"
 )
 
@@ -16,7 +15,7 @@ type client struct {
 	driver *sql.Driver
 }
 
-func NewClient(cfg Config) (domain.Client, error) {
+func newClient(cfg Config) (*client, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host,
@@ -55,10 +54,6 @@ func NewClient(cfg Config) (domain.Client, error) {
 	}
 
 	return &client{Client: ent.NewClient(opts...), driver: drv}, nil
-}
-
-func (c *client) Unwrap() *ent.Client {
-	return c.Client
 }
 
 func (c *client) Ping(ctx context.Context) error {

@@ -10,14 +10,14 @@ import (
 )
 
 type repositoryImpl struct {
-	client domain.Client
+	client *client
 	logger *slog.Logger
 }
 
 func NewRepository(cfg config.ConfigRepository, logger *slog.Logger) (domain.DatabaseRepository, error) {
 	config := NewConfig(cfg.GetConfig())
 
-	client, err := NewClient(config)
+	client, err := newClient(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create database client: %w", err)
 	}
@@ -61,7 +61,7 @@ func (r *repositoryImpl) CreateSystemPrompt(
 	title, prompt string,
 	purpose domain.SystemPromptPurpose,
 ) (*domain.SystemPrompt, error) {
-	systemPrompt, err := r.client.Unwrap().SystemPrompt.
+	systemPrompt, err := r.client.SystemPrompt.
 		Create().
 		SetTitle(title).
 		SetPrompt(prompt).
@@ -82,7 +82,7 @@ func (r *repositoryImpl) CreateSystemPrompt(
 }
 
 func (r *repositoryImpl) GetSystemPromptByID(ctx context.Context, id int) (*domain.SystemPrompt, error) {
-	systemPrompt, err := r.client.Unwrap().SystemPrompt.Get(ctx, id)
+	systemPrompt, err := r.client.SystemPrompt.Get(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get system prompt by id: %w", err)
 	}
@@ -96,7 +96,7 @@ func (r *repositoryImpl) UpdateSystemPrompt(
 	title, prompt *string,
 	purpose *domain.SystemPromptPurpose,
 ) (*domain.SystemPrompt, error) {
-	updater := r.client.Unwrap().SystemPrompt.UpdateOneID(promptID)
+	updater := r.client.SystemPrompt.UpdateOneID(promptID)
 	if title != nil {
 		updater = updater.SetTitle(*title)
 	}
@@ -125,7 +125,7 @@ func (r *repositoryImpl) UpdateSystemPrompt(
 }
 
 func (r *repositoryImpl) DeleteSystemPrompt(ctx context.Context, promptID int) error {
-	if err := r.client.Unwrap().SystemPrompt.DeleteOneID(promptID).Exec(ctx); err != nil {
+	if err := r.client.SystemPrompt.DeleteOneID(promptID).Exec(ctx); err != nil {
 		return fmt.Errorf("failed to delete system prompt: %w", err)
 	}
 
