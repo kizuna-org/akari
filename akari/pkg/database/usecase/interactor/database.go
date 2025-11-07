@@ -12,6 +12,19 @@ type DatabaseInteractor interface {
 	Disconnect() error
 	HealthCheck(ctx context.Context) error
 	WithTransaction(ctx context.Context, fn domain.TxFunc) error
+	CreateSystemPrompt(
+		ctx context.Context,
+		title, prompt string,
+		purpose domain.SystemPromptPurpose,
+	) (*domain.SystemPrompt, error)
+	GetSystemPromptByID(ctx context.Context, id int) (*domain.SystemPrompt, error)
+	UpdateSystemPrompt(
+		ctx context.Context,
+		id int,
+		title, prompt *string,
+		purpose *domain.SystemPromptPurpose,
+	) (*domain.SystemPrompt, error)
+	DeleteSystemPrompt(ctx context.Context, id int) error
 }
 
 type databaseInteractorImpl struct {
@@ -42,4 +55,32 @@ func (d *databaseInteractorImpl) HealthCheck(ctx context.Context) error {
 
 func (d *databaseInteractorImpl) WithTransaction(ctx context.Context, fn domain.TxFunc) error {
 	return d.repository.GetClient().WithTx(ctx, fn)
+}
+
+func (d *databaseInteractorImpl) CreateSystemPrompt(
+	ctx context.Context,
+	title, prompt string,
+	purpose domain.SystemPromptPurpose,
+) (*domain.SystemPrompt, error) {
+	return d.repository.CreateSystemPrompt(ctx, title, prompt, purpose)
+}
+
+func (d *databaseInteractorImpl) GetSystemPromptByID(
+	ctx context.Context,
+	id int,
+) (*domain.SystemPrompt, error) {
+	return d.repository.GetSystemPromptByID(ctx, id)
+}
+
+func (d *databaseInteractorImpl) UpdateSystemPrompt(
+	ctx context.Context,
+	id int,
+	title, prompt *string,
+	purpose *domain.SystemPromptPurpose,
+) (*domain.SystemPrompt, error) {
+	return d.repository.UpdateSystemPrompt(ctx, id, title, prompt, purpose)
+}
+
+func (d *databaseInteractorImpl) DeleteSystemPrompt(ctx context.Context, id int) error {
+	return d.repository.DeleteSystemPrompt(ctx, id)
 }
