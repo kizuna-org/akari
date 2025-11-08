@@ -28,7 +28,7 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         make init
-    - uses: ariga/setup-atlas@v0
+    - uses: ariga/setup-atlas@4240bd74ba9f13319a21de2b6e497f2b6d184d76 # v0
     - uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
     - name: Start DB container
       shell: bash
