@@ -100,7 +100,7 @@ jobs:
         run: make init
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14.0"
       - name: Setup sqlfluff
         run: |
           pip install sqlfluff
