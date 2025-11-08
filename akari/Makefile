@@ -72,5 +72,6 @@ migrate-hash: up
 migrate-validate: up
 	atlas migrate validate --env=$(ENV)
 
-migrate-dry-run: up
-	atlas migrate apply --dry-run --env=$(ENV)
+migrate-dry-run:
+	@docker compose up -d >/dev/null 2>&1
+	@atlas migrate apply --dry-run --env=$(ENV)
