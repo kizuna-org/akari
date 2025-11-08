@@ -111,6 +111,7 @@ jobs:
         run: |
           set +e
           MIGRATE_OUT=$(make migrate-dry-run 2>&1)
+          MIGRATE_OUT=$(echo "$MIGRATE_OUT" | grep -v "No migration files to execute")
           if echo "$MIGRATE_OUT" | sqlfluff fix - --dialect postgres > /tmp/migrate_formatted.sql 2>/dev/null; then
             MIGRATE_OUT=$(cat /tmp/migrate_formatted.sql)
           fi

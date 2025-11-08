@@ -74,4 +74,4 @@ migrate-validate: up
 
 migrate-dry-run:
 	@docker compose up -d >/dev/null 2>&1
-	atlas migrate apply --dry-run --env=$(ENV)
+	@atlas migrate apply --dry-run --env=$(ENV)
