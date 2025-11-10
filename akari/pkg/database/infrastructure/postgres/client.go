@@ -7,15 +7,23 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"github.com/kizuna-org/akari/gen/ent"
+	"github.com/kizuna-org/akari/pkg/database/domain"
 	_ "github.com/lib/pq"
 )
+
+type Client interface {
+	Ping(ctx context.Context) error
+	Close() error
+	WithTx(ctx context.Context, txFunc domain.TxFunc) error
+	SystemPromptClient() *ent.SystemPromptClient
+}
 
 type client struct {
 	*ent.Client
 	driver *sql.Driver
 }
 
-func newClient(cfg Config) (*client, error) {
+func NewClient(cfg Config) (Client, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host,
@@ -62,4 +70,8 @@ func (c *client) Ping(ctx context.Context) error {
 
 func (c *client) Close() error {
 	return c.Client.Close()
+}
+
+func (c *client) SystemPromptClient() *ent.SystemPromptClient {
+	return c.SystemPrompt
 }

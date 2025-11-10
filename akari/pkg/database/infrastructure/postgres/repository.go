@@ -5,53 +5,25 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/kizuna-org/akari/pkg/config"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
 
 type Repository interface {
 	domain.DatabaseRepository
 	domain.SystemPromptRepository
-	Close() error
 	HealthCheck(ctx context.Context) error
 }
 
 type repositoryImpl struct {
-	client *client
+	client Client
 	logger *slog.Logger
 }
 
-func NewRepository(cfg config.ConfigRepository, logger *slog.Logger) (Repository, error) {
-	config, err := NewConfig(cfg.GetConfig())
-	if err != nil {
-		return nil, fmt.Errorf("failed to load database config: %w", err)
-	}
-
-	client, err := newClient(config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create database client: %w", err)
-	}
-
-	logger.Info("database client created",
-		slog.String("host", config.Host),
-		slog.Int("port", config.Port),
-		slog.String("database", config.Database),
-	)
-
+func NewRepository(client Client, logger *slog.Logger) Repository {
 	return &repositoryImpl{
 		client: client,
 		logger: logger.With("component", "postgres_repository"),
-	}, nil
-}
-
-func (r *repositoryImpl) Close() error {
-	if err := r.client.Close(); err != nil {
-		return fmt.Errorf("failed to close database connection: %w", err)
 	}
-
-	r.logger.Info("database connection closed")
-
-	return nil
 }
 
 func (r *repositoryImpl) HealthCheck(ctx context.Context) error {
@@ -71,7 +43,7 @@ func (r *repositoryImpl) CreateSystemPrompt(
 	title, prompt string,
 	purpose domain.SystemPromptPurpose,
 ) (*domain.SystemPrompt, error) {
-	systemPrompt, err := r.client.SystemPrompt.
+	systemPrompt, err := r.client.SystemPromptClient().
 		Create().
 		SetTitle(title).
 		SetPrompt(prompt).
@@ -92,7 +64,7 @@ func (r *repositoryImpl) CreateSystemPrompt(
 }
 
 func (r *repositoryImpl) GetSystemPromptByID(ctx context.Context, id int) (*domain.SystemPrompt, error) {
-	systemPrompt, err := r.client.SystemPrompt.Get(ctx, id)
+	systemPrompt, err := r.client.SystemPromptClient().Get(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get system prompt by id: %w", err)
 	}
@@ -106,7 +78,7 @@ func (r *repositoryImpl) UpdateSystemPrompt(
 	title, prompt *string,
 	purpose *domain.SystemPromptPurpose,
 ) (*domain.SystemPrompt, error) {
-	updater := r.client.SystemPrompt.UpdateOneID(promptID)
+	updater := r.client.SystemPromptClient().UpdateOneID(promptID)
 	if title != nil {
 		updater = updater.SetTitle(*title)
 	}
@@ -143,7 +115,7 @@ func (r *repositoryImpl) UpdateSystemPrompt(
 }
 
 func (r *repositoryImpl) DeleteSystemPrompt(ctx context.Context, promptID int) error {
-	if err := r.client.SystemPrompt.DeleteOneID(promptID).Exec(ctx); err != nil {
+	if err := r.client.SystemPromptClient().DeleteOneID(promptID).Exec(ctx); err != nil {
 		return fmt.Errorf("failed to delete system prompt: %w", err)
 	}
 

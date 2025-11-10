@@ -32,6 +32,7 @@ func NewModule() fx.Option {
 		fx.Provide(
 			newEntClient,
 			gemini.NewRepository,
+			newPostgresClient,
 			postgres.NewRepository,
 			newDatabaseRepository,
 			newSystemPromptRepository,
@@ -75,7 +76,12 @@ func newEntClient(configRepo config.ConfigRepository) (*ent.Client, error) {
 	return ent.Open(dialect.Postgres, cfg.Database.BuildDSN())
 }
 
-func registerDatabaseHooks(lc fx.Lifecycle, repository postgres.Repository, logger *slog.Logger) {
+func registerDatabaseHooks(
+	lc fx.Lifecycle,
+	client postgres.Client,
+	repository postgres.Repository,
+	logger *slog.Logger,
+) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			logger.Info("verifying database connection")
@@ -88,7 +94,7 @@ func registerDatabaseHooks(lc fx.Lifecycle, repository postgres.Repository, logg
 		},
 		OnStop: func(ctx context.Context) error {
 			logger.Info("disconnecting from database")
-			if err := repository.Close(); err != nil {
+			if err := client.Close(); err != nil {
 				return fmt.Errorf("failed to disconnect from database: %w", err)
 			}
 			logger.Info("database disconnected successfully")
@@ -96,6 +102,26 @@ func registerDatabaseHooks(lc fx.Lifecycle, repository postgres.Repository, logg
 			return nil
 		},
 	})
+}
+
+func newPostgresClient(configRepo config.ConfigRepository, logger *slog.Logger) (postgres.Client, error) {
+	cfg, err := postgres.NewConfig(configRepo.GetConfig())
+	if err != nil {
+		return nil, fmt.Errorf("failed to load database config: %w", err)
+	}
+
+	client, err := postgres.NewClient(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create database client: %w", err)
+	}
+
+	logger.Info("database client created",
+		slog.String("host", cfg.Host),
+		slog.Int("port", cfg.Port),
+		slog.String("database", cfg.Database),
+	)
+
+	return client, nil
 }
 
 func newDatabaseRepository(repo postgres.Repository) databaseDomain.DatabaseRepository {
