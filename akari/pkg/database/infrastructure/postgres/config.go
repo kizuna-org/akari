@@ -1,67 +1,41 @@
 package postgres
 
 import (
-	"os"
-	"strconv"
 	"time"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/kizuna-org/akari/pkg/config"
 )
 
-const (
-	defaultPort               = 5432
-	defaultMaxOpenConns       = 25
-	defaultMaxIdleConns       = 5
-	defaultConnMaxLifetimeMin = 5
-	defaultConnMaxIdleTimeMin = 2
-)
-
 type Config struct {
-	Host     string
-	Port     int
-	User     string
-	Password string
-	Database string
-	SSLMode  string
+	Host     string `default:"localhost" envconfig:"HOST"`
+	Port     int    `default:"5432"      envconfig:"PORT"`
+	User     string `default:"postgres"  envconfig:"USER"`
+	Password string `default:"postgres"  envconfig:"PASSWORD"`
+	Database string `default:"akari"     envconfig:"NAME"`
+	SSLMode  string `default:"disable"   envconfig:"SSLMODE"`
 
-	MaxOpenConns    int
-	MaxIdleConns    int
-	ConnMaxLifetime time.Duration
-	ConnMaxIdleTime time.Duration
+	MaxOpenConns       int `default:"25" envconfig:"MAX_OPEN_CONNS"`
+	MaxIdleConns       int `default:"5"  envconfig:"MAX_IDLE_CONNS"`
+	ConnMaxLifetimeMin int `default:"5"  envconfig:"CONN_MAX_LIFETIME_MINUTES"`
+	ConnMaxIdleTimeMin int `default:"2"  envconfig:"CONN_MAX_IDLE_TIME_MINUTES"`
 
-	Debug bool
+	ConnMaxLifetime time.Duration `ignored:"true"`
+	ConnMaxIdleTime time.Duration `ignored:"true"`
+
+	Debug bool `ignored:"true"`
 }
 
-func NewConfig(appConfig config.Config) Config {
-	return Config{
-		Host:            getEnv("DB_HOST", "localhost"),
-		Port:            getEnvAsInt("DB_PORT", defaultPort),
-		User:            getEnv("DB_USER", "postgres"),
-		Password:        getEnv("DB_PASSWORD", "postgres"),
-		Database:        getEnv("DB_NAME", "akari"),
-		SSLMode:         getEnv("DB_SSLMODE", "disable"),
-		MaxOpenConns:    getEnvAsInt("DB_MAX_OPEN_CONNS", defaultMaxOpenConns),
-		MaxIdleConns:    getEnvAsInt("DB_MAX_IDLE_CONNS", defaultMaxIdleConns),
-		ConnMaxLifetime: time.Duration(getEnvAsInt("DB_CONN_MAX_LIFETIME_MINUTES", defaultConnMaxLifetimeMin)) * time.Minute,
-		ConnMaxIdleTime: time.Duration(getEnvAsInt("DB_CONN_MAX_IDLE_TIME_MINUTES", defaultConnMaxIdleTimeMin)) * time.Minute,
-		Debug:           appConfig.EnvMode == config.EnvModeDevelopment,
-	}
-}
-
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+func NewConfig(appConfig config.Config) (Config, error) {
+	var cfg Config
+	if err := envconfig.Process("postgres", &cfg); err != nil {
+		return Config{}, err
 	}
 
-	return defaultValue
-}
+	cfg.ConnMaxLifetime = time.Duration(cfg.ConnMaxLifetimeMin) * time.Minute
+	cfg.ConnMaxIdleTime = time.Duration(cfg.ConnMaxIdleTimeMin) * time.Minute
 
-func getEnvAsInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intVal, err := strconv.Atoi(value); err == nil {
-			return intVal
-		}
-	}
+	cfg.Debug = appConfig.EnvMode == config.EnvModeDevelopment
 
-	return defaultValue
+	return cfg, nil
 }

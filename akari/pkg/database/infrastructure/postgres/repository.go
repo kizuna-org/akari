@@ -21,7 +21,10 @@ type repositoryImpl struct {
 }
 
 func NewRepository(cfg config.ConfigRepository, logger *slog.Logger) (Repository, error) {
-	config := NewConfig(cfg.GetConfig())
+	config, err := NewConfig(cfg.GetConfig())
+	if err != nil {
+		return nil, fmt.Errorf("failed to load database config: %w", err)
+	}
 
 	client, err := newClient(config)
 	if err != nil {
