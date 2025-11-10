@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"github.com/kizuna-org/akari/gen/ent"
+	"github.com/kizuna-org/akari/pkg/config"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 	_ "github.com/lib/pq"
 )
@@ -23,7 +24,7 @@ type client struct {
 	driver *sql.Driver
 }
 
-func NewClient(cfg Config) (Client, error) {
+func NewClient(cfg config.DatabaseConfig) (Client, error) {
 	dsn := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host,

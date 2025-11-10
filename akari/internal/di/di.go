@@ -105,10 +105,7 @@ func registerDatabaseHooks(
 }
 
 func newPostgresClient(configRepo config.ConfigRepository, logger *slog.Logger) (postgres.Client, error) {
-	cfg, err := postgres.NewConfig(configRepo.GetConfig())
-	if err != nil {
-		return nil, fmt.Errorf("failed to load database config: %w", err)
-	}
+	cfg := configRepo.GetConfig().Database
 
 	client, err := postgres.NewClient(cfg)
 	if err != nil {
