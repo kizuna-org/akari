@@ -99,7 +99,7 @@ jobs:
       - uses: ./.github/actions/setup-golang
       - name: Run `make init` (PR branch)
         run: make init
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.14.0"
       - name: Setup sqlfluff
@@ -253,7 +253,7 @@ jobs:
           echo "$TEST_OUT" | tee /tmp/gotest.log | gotestfmt
           exit "$TEST_EXIT"
         continue-on-error: true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: test-log-${{ matrix.run }}
           path: /tmp/gotest.log
