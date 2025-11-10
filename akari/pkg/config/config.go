@@ -6,6 +6,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
@@ -53,37 +55,47 @@ type DiscordConfig struct {
 }
 
 type DatabaseConfig struct {
-	Host     string `split_words:"true"`
-	Port     string `split_words:"true"`
-	User     string `split_words:"true"`
-	Password string `split_words:"true"`
-	DB       string `split_words:"true"`
-	SSLMode  string `default:"disable"  split_words:"true"`
+	Host     string `default:"localhost" envconfig:"HOST"`
+	Port     int    `default:"5432"      envconfig:"PORT"`
+	User     string `default:"postgres"  envconfig:"USER"`
+	Password string `default:"postgres"  envconfig:"PASSWORD"`
+	Database string `default:"akari"     envconfig:"NAME"`
+	SSLMode  string `default:"disable"   envconfig:"SSLMODE"`
+
+	MaxOpenConns       int `default:"25" envconfig:"MAX_OPEN_CONNS"`
+	MaxIdleConns       int `default:"5"  envconfig:"MAX_IDLE_CONNS"`
+	ConnMaxLifetimeMin int `default:"5"  envconfig:"CONN_MAX_LIFETIME_MINUTES"`
+	ConnMaxIdleTimeMin int `default:"2"  envconfig:"CONN_MAX_IDLE_TIME_MINUTES"`
+
+	ConnMaxLifetime time.Duration `ignored:"true"`
+	ConnMaxIdleTime time.Duration `ignored:"true"`
+
+	Debug bool `ignored:"true"`
 }
 
 // BuildDSN builds a PostgreSQL data source name from the database configuration.
 func (d *DatabaseConfig) BuildDSN() string {
 	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		d.Host,
 		d.Port,
 		d.User,
 		d.Password,
-		d.DB,
+		d.Database,
 		d.SSLMode,
 	)
 }
 
 // BuildURL builds a PostgreSQL connection URL from the database configuration.
 func (d *DatabaseConfig) BuildURL() string {
-	hostPort := net.JoinHostPort(d.Host, d.Port)
+	hostPort := net.JoinHostPort(d.Host, strconv.Itoa(d.Port))
 
 	return fmt.Sprintf(
 		"postgres://%s:%s@%s/%s?sslmode=%s",
 		d.User,
 		d.Password,
 		hostPort,
-		d.DB,
+		d.Database,
 		d.SSLMode,
 	)
 }
@@ -109,12 +121,12 @@ func (c *configRepositoryImpl) LoadConfig() error {
 		}
 	}
 
+	c.config.EnvMode = envMode
+
 	err := c.loadAllConfigs()
 	if err != nil {
 		return err
 	}
-
-	c.config.EnvMode = envMode
 
 	return nil
 }
@@ -164,6 +176,10 @@ func (c *configRepositoryImpl) loadAllConfigs() error {
 	if err != nil {
 		return err
 	}
+
+	databaseConfig.ConnMaxLifetime = time.Duration(databaseConfig.ConnMaxLifetimeMin) * time.Minute
+	databaseConfig.ConnMaxIdleTime = time.Duration(databaseConfig.ConnMaxIdleTimeMin) * time.Minute
+	databaseConfig.Debug = c.config.EnvMode == EnvModeDevelopment
 
 	err = envconfig.Process("llm", &llmConfig)
 	if err != nil {
