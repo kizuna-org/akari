@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/kizuna-org/akari/internal/di"
@@ -25,6 +26,7 @@ const (
 	version               = "0.1.0"
 	defaultSystemPrompt   = "You are a helpful AI assistant."
 	defaultSystemPromptID = 1
+	messageTimeout        = 30 * time.Second
 )
 
 func setupLogger(envMode config.EnvMode) {
@@ -134,7 +136,8 @@ func handleDiscordMessage(
 			"message_id", message.ID,
 		)
 
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), messageTimeout)
+		defer cancel()
 
 		response, err := getLLMResponse(
 			ctx,
@@ -143,13 +146,21 @@ func handleDiscordMessage(
 			message.Content,
 		)
 		if err != nil {
-			slog.Error("Failed to get response", "error", err)
+			if errors.Is(err, context.DeadlineExceeded) {
+				slog.Error("Request timed out", "error", err, "timeout", messageTimeout)
+			} else {
+				slog.Error("Failed to get response", "error", err)
+			}
 
 			return
 		}
 
 		if _, err = repo.SendMessage(ctx, message.ChannelID, *response); err != nil {
-			slog.Error("Failed to send message", "error", err)
+			if errors.Is(err, context.DeadlineExceeded) {
+				slog.Error("Sending message timed out", "error", err, "timeout", messageTimeout)
+			} else {
+				slog.Error("Failed to send message", "error", err)
+			}
 		}
 	}
 }
