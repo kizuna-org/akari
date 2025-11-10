@@ -11,7 +11,7 @@ locals {
 
 env "local" {
   src = "ent://ent/schema"
-  dev = "docker://postgres/17/dev?search_path=public"
+  dev = "docker://postgres/18/dev?search_path=public"
   url = format(
     "postgres://%s:%s@%s:%s/%s?sslmode=%s",
     local.envfile["POSTGRES_USER"],
@@ -33,7 +33,7 @@ env "local" {
 
 env "test" {
   src = "ent://ent/schema"
-  dev = "docker://postgres/17/dev?search_path=public"
+  dev = "docker://postgres/18/dev?search_path=public"
   url = format(
     "postgres://%s:%s@%s:%s/%s?sslmode=%s",
     local.envfile_test["POSTGRES_USER"],
