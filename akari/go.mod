@@ -5,9 +5,12 @@ go 1.25.4
 require (
 	entgo.io/ent v0.14.5
 	github.com/bwmarrin/discordgo v0.29.0
+	github.com/joho/godotenv v1.5.1
+	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/samber/lo v1.52.0
 	go.uber.org/fx v1.24.0
+	google.golang.org/genai v1.34.0
 )
 
 require (
@@ -38,14 +41,8 @@ require (
 	golang.org/x/mod v0.28.0 // indirect
 	golang.org/x/net v0.45.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/text v0.30.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	google.golang.org/grpc v1.66.2 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
-)
-
-require (
-	github.com/joho/godotenv v1.5.1
-	github.com/kelseyhightower/envconfig v1.4.0
-	golang.org/x/text v0.30.0 // indirect
-	google.golang.org/genai v1.34.0
 )
