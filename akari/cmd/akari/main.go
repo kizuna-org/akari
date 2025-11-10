@@ -129,6 +129,20 @@ func handleDiscordMessage(
 			return
 		}
 
+		isBotMentioned := func() bool {
+			for _, mention := range message.Mentions {
+				if mention.ID == session.State.User.ID {
+					return true
+				}
+			}
+
+			return false
+		}
+
+		if !isBotMentioned() {
+			return
+		}
+
 		slog.Info("Received message",
 			"author", message.Author.Username,
 			"content", message.Content,
