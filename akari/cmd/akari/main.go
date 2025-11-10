@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"regexp"
 	"syscall"
 	"time"
 
@@ -83,7 +84,7 @@ func main() {
 	}
 
 	if *useDiscord {
-		runDiscordBot()
+		runDiscordBot(cfg.Discord.BotNameRegExp)
 
 		return
 	}
@@ -123,6 +124,7 @@ func handleDiscordMessage(
 	repo discordRepo.DiscordRepository,
 	llmInteractor interactor.LLMInteractor,
 	systemPromptInteractor databaseInteractor.SystemPromptInteractor,
+	botNameRegExp string,
 ) func(*discordgo.Session, *discordgo.MessageCreate) {
 	return func(session *discordgo.Session, message *discordgo.MessageCreate) {
 		if message.Author.Bot {
@@ -136,7 +138,7 @@ func handleDiscordMessage(
 				}
 			}
 
-			return false
+			return regexp.MustCompile(botNameRegExp).MatchString(message.Content)
 		}
 
 		if !isBotMentioned() {
@@ -179,7 +181,7 @@ func handleDiscordMessage(
 	}
 }
 
-func runDiscordBot() {
+func runDiscordBot(botNameRegExp string) {
 	slog.Info("Starting Discord bot mode")
 
 	app := fx.New(
@@ -191,7 +193,7 @@ func runDiscordBot() {
 			systemPromptInteractor databaseInteractor.SystemPromptInteractor,
 			client *discordInfra.DiscordClient,
 		) {
-			client.Session.AddHandler(handleDiscordMessage(repo, llmInteractor, systemPromptInteractor))
+			client.Session.AddHandler(handleDiscordMessage(repo, llmInteractor, systemPromptInteractor, botNameRegExp))
 
 			if err := repo.Start(); err != nil {
 				slog.Error("Failed to start Discord bot", "error", err)

@@ -53,7 +53,8 @@ type LogConfig struct {
 }
 
 type DiscordConfig struct {
-	Token string
+	Token         string
+	BotNameRegExp string
 }
 
 type DatabaseConfig struct {
