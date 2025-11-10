@@ -11,6 +11,7 @@ import (
 
 type Repository interface {
 	domain.DatabaseRepository
+	domain.SystemPromptRepository
 	Close() error
 	HealthCheck(ctx context.Context) error
 }
@@ -123,12 +124,20 @@ func (r *repositoryImpl) UpdateSystemPrompt(
 		return nil, fmt.Errorf("failed to update system prompt: %w", err)
 	}
 
-	r.logger.Info("system prompt updated",
-		slog.Int("id", promptID),
-		slog.String("title", *title),
-		slog.String("purpose", string(*purpose)),
-		slog.String("prompt", *prompt),
-	)
+	logAttrs := []any{slog.Int("id", promptID)}
+	if title != nil {
+		logAttrs = append(logAttrs, slog.String("title", *title))
+	}
+
+	if purpose != nil {
+		logAttrs = append(logAttrs, slog.String("purpose", string(*purpose)))
+	}
+
+	if prompt != nil {
+		logAttrs = append(logAttrs, slog.String("prompt", *prompt))
+	}
+
+	r.logger.Info("system prompt updated", logAttrs...)
 
 	return systemPrompt, nil
 }

@@ -4,26 +4,14 @@ import (
 	"context"
 
 	"github.com/kizuna-org/akari/gen/ent"
-	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
 type DatabaseRepository interface {
 	WithTransaction(ctx context.Context, fn TxFunc) error
-	CreateSystemPrompt(ctx context.Context, title, prompt string, purpose SystemPromptPurpose) (*SystemPrompt, error)
-	GetSystemPromptByID(ctx context.Context, id int) (*SystemPrompt, error)
-	UpdateSystemPrompt(
-		ctx context.Context,
-		id int,
-		title, prompt *string,
-		purpose *SystemPromptPurpose,
-	) (*SystemPrompt, error)
-	DeleteSystemPrompt(ctx context.Context, id int) error
 }
 
 type (
-	Tx                  = ent.Tx
-	SystemPrompt        = ent.SystemPrompt
-	SystemPromptPurpose = systemprompt.Purpose
+	Tx = ent.Tx
 )
 
 type TxFunc func(ctx context.Context, tx *Tx) error

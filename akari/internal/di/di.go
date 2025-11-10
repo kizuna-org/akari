@@ -34,6 +34,7 @@ func NewModule() fx.Option {
 			gemini.NewRepository,
 			postgres.NewRepository,
 			newDatabaseRepository,
+			newSystemPromptRepository,
 			newDiscordClient,
 		),
 
@@ -41,6 +42,7 @@ func NewModule() fx.Option {
 		fx.Provide(
 			llmInteractor.NewLLMInteractor,
 			databaseInteractor.NewDatabaseInteractor,
+			databaseInteractor.NewSystemPromptInteractor,
 			discordRepository.NewDiscordRepository,
 		),
 
@@ -97,6 +99,10 @@ func registerDatabaseHooks(lc fx.Lifecycle, repository postgres.Repository, logg
 }
 
 func newDatabaseRepository(repo postgres.Repository) databaseDomain.DatabaseRepository {
+	return repo
+}
+
+func newSystemPromptRepository(repo postgres.Repository) databaseDomain.SystemPromptRepository {
 	return repo
 }
 
