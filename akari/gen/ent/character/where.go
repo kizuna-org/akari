@@ -215,6 +215,29 @@ func UpdatedAtLTE(v time.Time) predicate.Character {
 	return predicate.Character(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
+// HasConfig applies the HasEdge predicate on the "config" edge.
+func HasConfig() predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, ConfigTable, ConfigColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConfigWith applies the HasEdge predicate on the "config" edge with a given conditions (other predicates).
+func HasConfigWith(preds ...predicate.CharacterConfig) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		step := newConfigStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasSystemPrompts applies the HasEdge predicate on the "system_prompts" edge.
 func HasSystemPrompts() predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {

@@ -20,10 +20,19 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// EdgeConfig holds the string denoting the config edge name in mutations.
+	EdgeConfig = "config"
 	// EdgeSystemPrompts holds the string denoting the system_prompts edge name in mutations.
 	EdgeSystemPrompts = "system_prompts"
 	// Table holds the table name of the character in the database.
 	Table = "characters"
+	// ConfigTable is the table that holds the config relation/edge.
+	ConfigTable = "character_configs"
+	// ConfigInverseTable is the table name for the CharacterConfig entity.
+	// It exists in this package in order to avoid circular dependency with the "characterconfig" package.
+	ConfigInverseTable = "character_configs"
+	// ConfigColumn is the table column denoting the config relation/edge.
+	ConfigColumn = "character_config"
 	// SystemPromptsTable is the table that holds the system_prompts relation/edge.
 	SystemPromptsTable = "system_prompts"
 	// SystemPromptsInverseTable is the table name for the SystemPrompt entity.
@@ -85,6 +94,13 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
+// ByConfigField orders the results by config field.
+func ByConfigField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConfigStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // BySystemPromptsCount orders the results by system_prompts count.
 func BySystemPromptsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -97,6 +113,13 @@ func BySystemPrompts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newSystemPromptsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
+}
+func newConfigStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConfigInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, ConfigTable, ConfigColumn),
+	)
 }
 func newSystemPromptsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

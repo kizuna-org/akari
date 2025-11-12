@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/kizuna-org/akari/gen/ent/character"
+	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -74,8 +75,9 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			character.Table:    character.ValidColumn,
-			systemprompt.Table: systemprompt.ValidColumn,
+			character.Table:       character.ValidColumn,
+			characterconfig.Table: characterconfig.ValidColumn,
+			systemprompt.Table:    systemprompt.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

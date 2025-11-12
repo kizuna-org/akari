@@ -7,6 +7,7 @@ import (
 
 	"github.com/kizuna-org/akari/ent/schema"
 	"github.com/kizuna-org/akari/gen/ent/character"
+	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -30,6 +31,12 @@ func init() {
 	character.DefaultUpdatedAt = characterDescUpdatedAt.Default.(func() time.Time)
 	// character.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	character.UpdateDefaultUpdatedAt = characterDescUpdatedAt.UpdateDefault.(func() time.Time)
+	characterconfigFields := schema.CharacterConfig{}.Fields()
+	_ = characterconfigFields
+	// characterconfigDescDefaultSystemPrompt is the schema descriptor for default_system_prompt field.
+	characterconfigDescDefaultSystemPrompt := characterconfigFields[1].Descriptor()
+	// characterconfig.DefaultSystemPromptValidator is a validator for the "default_system_prompt" field. It is called by the builders before save.
+	characterconfig.DefaultSystemPromptValidator = characterconfigDescDefaultSystemPrompt.Validators[0].(func(string) error)
 	systempromptFields := schema.SystemPrompt{}.Fields()
 	_ = systempromptFields
 	// systempromptDescTitle is the schema descriptor for title field.

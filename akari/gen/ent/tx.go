@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// Character is the client for interacting with the Character builders.
 	Character *CharacterClient
+	// CharacterConfig is the client for interacting with the CharacterConfig builders.
+	CharacterConfig *CharacterConfigClient
 	// SystemPrompt is the client for interacting with the SystemPrompt builders.
 	SystemPrompt *SystemPromptClient
 
@@ -148,6 +150,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Character = NewCharacterClient(tx.config)
+	tx.CharacterConfig = NewCharacterConfigClient(tx.config)
 	tx.SystemPrompt = NewSystemPromptClient(tx.config)
 }
 

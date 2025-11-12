@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/character"
+	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
@@ -24,6 +25,7 @@ type CharacterQuery struct {
 	order             []character.OrderOption
 	inters            []Interceptor
 	predicates        []predicate.Character
+	withConfig        *CharacterConfigQuery
 	withSystemPrompts *SystemPromptQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -59,6 +61,28 @@ func (_q *CharacterQuery) Unique(unique bool) *CharacterQuery {
 func (_q *CharacterQuery) Order(o ...character.OrderOption) *CharacterQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryConfig chains the current query on the "config" edge.
+func (_q *CharacterQuery) QueryConfig() *CharacterConfigQuery {
+	query := (&CharacterConfigClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(character.Table, character.FieldID, selector),
+			sqlgraph.To(characterconfig.Table, characterconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, character.ConfigTable, character.ConfigColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QuerySystemPrompts chains the current query on the "system_prompts" edge.
@@ -275,11 +299,23 @@ func (_q *CharacterQuery) Clone() *CharacterQuery {
 		order:             append([]character.OrderOption{}, _q.order...),
 		inters:            append([]Interceptor{}, _q.inters...),
 		predicates:        append([]predicate.Character{}, _q.predicates...),
+		withConfig:        _q.withConfig.Clone(),
 		withSystemPrompts: _q.withSystemPrompts.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithConfig tells the query-builder to eager-load the nodes that are connected to
+// the "config" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *CharacterQuery) WithConfig(opts ...func(*CharacterConfigQuery)) *CharacterQuery {
+	query := (&CharacterConfigClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConfig = query
+	return _q
 }
 
 // WithSystemPrompts tells the query-builder to eager-load the nodes that are connected to
@@ -371,7 +407,8 @@ func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 	var (
 		nodes       = []*Character{}
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
+			_q.withConfig != nil,
 			_q.withSystemPrompts != nil,
 		}
 	)
@@ -393,6 +430,12 @@ func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withConfig; query != nil {
+		if err := _q.loadConfig(ctx, query, nodes, nil,
+			func(n *Character, e *CharacterConfig) { n.Edges.Config = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withSystemPrompts; query != nil {
 		if err := _q.loadSystemPrompts(ctx, query, nodes,
 			func(n *Character) { n.Edges.SystemPrompts = []*SystemPrompt{} },
@@ -403,6 +446,34 @@ func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 	return nodes, nil
 }
 
+func (_q *CharacterQuery) loadConfig(ctx context.Context, query *CharacterConfigQuery, nodes []*Character, init func(*Character), assign func(*Character, *CharacterConfig)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Character)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	query.withFKs = true
+	query.Where(predicate.CharacterConfig(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(character.ConfigColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.character_config
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "character_config" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "character_config" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
 func (_q *CharacterQuery) loadSystemPrompts(ctx context.Context, query *SystemPromptQuery, nodes []*Character, init func(*Character), assign func(*Character, *SystemPrompt)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Character)

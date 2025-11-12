@@ -16,6 +16,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/kizuna-org/akari/gen/ent/character"
+	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -26,6 +27,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Character is the client for interacting with the Character builders.
 	Character *CharacterClient
+	// CharacterConfig is the client for interacting with the CharacterConfig builders.
+	CharacterConfig *CharacterConfigClient
 	// SystemPrompt is the client for interacting with the SystemPrompt builders.
 	SystemPrompt *SystemPromptClient
 }
@@ -40,6 +43,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Character = NewCharacterClient(c.config)
+	c.CharacterConfig = NewCharacterConfigClient(c.config)
 	c.SystemPrompt = NewSystemPromptClient(c.config)
 }
 
@@ -131,10 +135,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:          ctx,
-		config:       cfg,
-		Character:    NewCharacterClient(cfg),
-		SystemPrompt: NewSystemPromptClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Character:       NewCharacterClient(cfg),
+		CharacterConfig: NewCharacterConfigClient(cfg),
+		SystemPrompt:    NewSystemPromptClient(cfg),
 	}, nil
 }
 
@@ -152,10 +157,11 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:          ctx,
-		config:       cfg,
-		Character:    NewCharacterClient(cfg),
-		SystemPrompt: NewSystemPromptClient(cfg),
+		ctx:             ctx,
+		config:          cfg,
+		Character:       NewCharacterClient(cfg),
+		CharacterConfig: NewCharacterConfigClient(cfg),
+		SystemPrompt:    NewSystemPromptClient(cfg),
 	}, nil
 }
 
@@ -185,6 +191,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Character.Use(hooks...)
+	c.CharacterConfig.Use(hooks...)
 	c.SystemPrompt.Use(hooks...)
 }
 
@@ -192,6 +199,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Character.Intercept(interceptors...)
+	c.CharacterConfig.Intercept(interceptors...)
 	c.SystemPrompt.Intercept(interceptors...)
 }
 
@@ -200,6 +208,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *CharacterMutation:
 		return c.Character.mutate(ctx, m)
+	case *CharacterConfigMutation:
+		return c.CharacterConfig.mutate(ctx, m)
 	case *SystemPromptMutation:
 		return c.SystemPrompt.mutate(ctx, m)
 	default:
@@ -315,6 +325,22 @@ func (c *CharacterClient) GetX(ctx context.Context, id int) *Character {
 	return obj
 }
 
+// QueryConfig queries the config edge of a Character.
+func (c *CharacterClient) QueryConfig(_m *Character) *CharacterConfigQuery {
+	query := (&CharacterConfigClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(character.Table, character.FieldID, id),
+			sqlgraph.To(characterconfig.Table, characterconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, character.ConfigTable, character.ConfigColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QuerySystemPrompts queries the system_prompts edge of a Character.
 func (c *CharacterClient) QuerySystemPrompts(_m *Character) *SystemPromptQuery {
 	query := (&SystemPromptClient{config: c.config}).Query()
@@ -353,6 +379,155 @@ func (c *CharacterClient) mutate(ctx context.Context, m *CharacterMutation) (Val
 		return (&CharacterDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Character mutation op: %q", m.Op())
+	}
+}
+
+// CharacterConfigClient is a client for the CharacterConfig schema.
+type CharacterConfigClient struct {
+	config
+}
+
+// NewCharacterConfigClient returns a client for the CharacterConfig from the given config.
+func NewCharacterConfigClient(c config) *CharacterConfigClient {
+	return &CharacterConfigClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `characterconfig.Hooks(f(g(h())))`.
+func (c *CharacterConfigClient) Use(hooks ...Hook) {
+	c.hooks.CharacterConfig = append(c.hooks.CharacterConfig, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `characterconfig.Intercept(f(g(h())))`.
+func (c *CharacterConfigClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CharacterConfig = append(c.inters.CharacterConfig, interceptors...)
+}
+
+// Create returns a builder for creating a CharacterConfig entity.
+func (c *CharacterConfigClient) Create() *CharacterConfigCreate {
+	mutation := newCharacterConfigMutation(c.config, OpCreate)
+	return &CharacterConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CharacterConfig entities.
+func (c *CharacterConfigClient) CreateBulk(builders ...*CharacterConfigCreate) *CharacterConfigCreateBulk {
+	return &CharacterConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CharacterConfigClient) MapCreateBulk(slice any, setFunc func(*CharacterConfigCreate, int)) *CharacterConfigCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CharacterConfigCreateBulk{err: fmt.Errorf("calling to CharacterConfigClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CharacterConfigCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CharacterConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CharacterConfig.
+func (c *CharacterConfigClient) Update() *CharacterConfigUpdate {
+	mutation := newCharacterConfigMutation(c.config, OpUpdate)
+	return &CharacterConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CharacterConfigClient) UpdateOne(_m *CharacterConfig) *CharacterConfigUpdateOne {
+	mutation := newCharacterConfigMutation(c.config, OpUpdateOne, withCharacterConfig(_m))
+	return &CharacterConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CharacterConfigClient) UpdateOneID(id int) *CharacterConfigUpdateOne {
+	mutation := newCharacterConfigMutation(c.config, OpUpdateOne, withCharacterConfigID(id))
+	return &CharacterConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CharacterConfig.
+func (c *CharacterConfigClient) Delete() *CharacterConfigDelete {
+	mutation := newCharacterConfigMutation(c.config, OpDelete)
+	return &CharacterConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CharacterConfigClient) DeleteOne(_m *CharacterConfig) *CharacterConfigDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CharacterConfigClient) DeleteOneID(id int) *CharacterConfigDeleteOne {
+	builder := c.Delete().Where(characterconfig.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CharacterConfigDeleteOne{builder}
+}
+
+// Query returns a query builder for CharacterConfig.
+func (c *CharacterConfigClient) Query() *CharacterConfigQuery {
+	return &CharacterConfigQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCharacterConfig},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CharacterConfig entity by its id.
+func (c *CharacterConfigClient) Get(ctx context.Context, id int) (*CharacterConfig, error) {
+	return c.Query().Where(characterconfig.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CharacterConfigClient) GetX(ctx context.Context, id int) *CharacterConfig {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCharacter queries the character edge of a CharacterConfig.
+func (c *CharacterConfigClient) QueryCharacter(_m *CharacterConfig) *CharacterQuery {
+	query := (&CharacterClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(characterconfig.Table, characterconfig.FieldID, id),
+			sqlgraph.To(character.Table, character.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, characterconfig.CharacterTable, characterconfig.CharacterColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CharacterConfigClient) Hooks() []Hook {
+	return c.hooks.CharacterConfig
+}
+
+// Interceptors returns the client interceptors.
+func (c *CharacterConfigClient) Interceptors() []Interceptor {
+	return c.inters.CharacterConfig
+}
+
+func (c *CharacterConfigClient) mutate(ctx context.Context, m *CharacterConfigMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CharacterConfigCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CharacterConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CharacterConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CharacterConfigDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CharacterConfig mutation op: %q", m.Op())
 	}
 }
 
@@ -508,9 +683,9 @@ func (c *SystemPromptClient) mutate(ctx context.Context, m *SystemPromptMutation
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Character, SystemPrompt []ent.Hook
+		Character, CharacterConfig, SystemPrompt []ent.Hook
 	}
 	inters struct {
-		Character, SystemPrompt []ent.Interceptor
+		Character, CharacterConfig, SystemPrompt []ent.Interceptor
 	}
 )
