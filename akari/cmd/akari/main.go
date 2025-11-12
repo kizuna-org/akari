@@ -25,8 +25,8 @@ import (
 
 const (
 	version               = "0.1.0"
-	defaultSystemPrompt   = "You are a helpful AI assistant."
-	defaultSystemPromptID = 1
+	defaultCharacterID    = 1
+	defaultSystemPromptID = 0
 	messageTimeout        = 30 * time.Second
 )
 
@@ -84,23 +84,12 @@ func main() {
 	}
 
 	if *useDiscord {
-		runDiscordBot(cfg.Discord.BotNameRegExp)
+		runDiscordBot()
 
 		return
 	}
 
 	runCLI()
-}
-
-func getSystemPrompt(ctx context.Context, systemPromptInteractor databaseInteractor.SystemPromptInteractor) string {
-	systemPrompt, err := systemPromptInteractor.GetSystemPromptByID(ctx, defaultSystemPromptID)
-	if err != nil {
-		slog.Error("Failed to get system prompt", "error", err)
-
-		return defaultSystemPrompt
-	}
-
-	return systemPrompt.Prompt
 }
 
 func getLLMResponse(
@@ -123,8 +112,7 @@ func getLLMResponse(
 func handleDiscordMessage(
 	repo discordRepo.DiscordRepository,
 	llmInteractor interactor.LLMInteractor,
-	systemPromptInteractor databaseInteractor.SystemPromptInteractor,
-	botNameRegExp string,
+	botNameRegExp, systemPrompt string,
 ) func(*discordgo.Session, *discordgo.MessageCreate) {
 	return func(session *discordgo.Session, message *discordgo.MessageCreate) {
 		if message.Author.Bot {
@@ -155,12 +143,7 @@ func handleDiscordMessage(
 		ctx, cancel := context.WithTimeout(context.Background(), messageTimeout)
 		defer cancel()
 
-		response, err := getLLMResponse(
-			ctx,
-			llmInteractor,
-			getSystemPrompt(ctx, systemPromptInteractor),
-			message.Content,
-		)
+		response, err := getLLMResponse(ctx, llmInteractor, systemPrompt, message.Content)
 		if err != nil {
 			if errors.Is(err, context.DeadlineExceeded) {
 				slog.Error("Request timed out", "error", err, "timeout", messageTimeout)
@@ -181,7 +164,7 @@ func handleDiscordMessage(
 	}
 }
 
-func runDiscordBot(botNameRegExp string) {
+func runDiscordBot() {
 	slog.Info("Starting Discord bot mode")
 
 	app := fx.New(
@@ -190,10 +173,22 @@ func runDiscordBot(botNameRegExp string) {
 		fx.Invoke(func(
 			repo discordRepo.DiscordRepository,
 			llmInteractor interactor.LLMInteractor,
-			systemPromptInteractor databaseInteractor.SystemPromptInteractor,
+			characterInteractor databaseInteractor.CharacterInteractor,
 			client *discordInfra.DiscordClient,
 		) {
-			client.Session.AddHandler(handleDiscordMessage(repo, llmInteractor, systemPromptInteractor, botNameRegExp))
+			character, err := characterInteractor.GetCharacterByID(context.Background(), defaultCharacterID)
+			if err != nil {
+				slog.Error("Failed to get character", "error", err)
+
+				return
+			}
+
+			client.Session.AddHandler(handleDiscordMessage(
+				repo,
+				llmInteractor,
+				character.Edges.SystemPrompts[defaultSystemPromptID].Prompt,
+				*character.Edges.Config.NameRegexp,
+			))
 
 			if err := repo.Start(); err != nil {
 				slog.Error("Failed to start Discord bot", "error", err)
@@ -237,18 +232,43 @@ func runCLI() {
 
 	userMessage := scanner.Text()
 
+	startAppWithMessage(userMessage)
+}
+
+func startAppWithMessage(userMessage string) {
 	app := fx.New(
 		di.NewModule(),
 		fx.NopLogger,
-		fx.Invoke(func(llmInteractor interactor.LLMInteractor) {
-			ctx := context.Background()
+		fx.Supply(userMessage),
+		fx.Invoke(func(
+			llmInteractor interactor.LLMInteractor,
+			characterConfigInteractor databaseInteractor.CharacterConfigInteractor,
+			userMessage string,
+		) {
+			innerCtx := context.Background()
 
 			slog.Info("Akari started")
 
 			history := []*domain.Content{}
 			functions := []domain.Function{}
 
-			messages, _, err := llmInteractor.SendChatMessage(ctx, defaultSystemPrompt, history, userMessage, functions)
+			characterConfig, err := characterConfigInteractor.GetCharacterConfigByCharacterID(
+				context.Background(),
+				defaultCharacterID,
+			)
+			if err != nil {
+				slog.Error("Failed to get character config", "error", err)
+
+				return
+			}
+
+			messages, _, err := llmInteractor.SendChatMessage(
+				innerCtx,
+				characterConfig.DefaultSystemPrompt,
+				history,
+				userMessage,
+				functions,
+			)
 			if err != nil {
 				slog.Error("Failed to send message to LLM", "error", err)
 
