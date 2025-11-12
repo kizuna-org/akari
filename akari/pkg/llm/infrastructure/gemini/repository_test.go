@@ -26,32 +26,10 @@ func TestNewRepository(t *testing.T) {
 			setupMock: func(mockCfg *mock.MockConfigRepository) {
 				mockCfg.EXPECT().GetConfig().Return(config.Config{
 					EnvMode: config.EnvModeDevelopment,
-					Database: config.DatabaseConfig{
-						Host:               "localhost",
-						Port:               5432,
-						User:               "postgres",
-						Password:           "postgres",
-						Database:           "akari",
-						SSLMode:            "disable",
-						MaxOpenConns:       25,
-						MaxIdleConns:       5,
-						ConnMaxLifetimeMin: 5,
-						ConnMaxIdleTimeMin: 2,
-						ConnMaxLifetime:    0,
-						ConnMaxIdleTime:    0,
-						Debug:              false,
-					},
 					LLM: config.LLMConfig{
 						ProjectID: "test-project",
 						Location:  "us-central1",
 						ModelName: "gemini-1.5-flash",
-					},
-					Log: config.LogConfig{
-						Level:  "info",
-						Format: "json",
-					},
-					Discord: config.DiscordConfig{
-						Token: "test-token",
 					},
 				})
 			},
@@ -63,32 +41,10 @@ func TestNewRepository(t *testing.T) {
 			setupMock: func(mockCfg *mock.MockConfigRepository) {
 				mockCfg.EXPECT().GetConfig().Return(config.Config{
 					EnvMode: config.EnvModeDevelopment,
-					Database: config.DatabaseConfig{
-						Host:               "localhost",
-						Port:               5432,
-						User:               "postgres",
-						Password:           "postgres",
-						Database:           "akari",
-						SSLMode:            "disable",
-						MaxOpenConns:       25,
-						MaxIdleConns:       5,
-						ConnMaxLifetimeMin: 5,
-						ConnMaxIdleTimeMin: 2,
-						ConnMaxLifetime:    0,
-						ConnMaxIdleTime:    0,
-						Debug:              false,
-					},
 					LLM: config.LLMConfig{
 						ProjectID: "",
 						Location:  "us-central1",
 						ModelName: "gemini-1.5-flash",
-					},
-					Log: config.LogConfig{
-						Level:  "info",
-						Format: "json",
-					},
-					Discord: config.DiscordConfig{
-						Token: "test-token",
 					},
 				})
 			},

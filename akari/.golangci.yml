@@ -11,8 +11,9 @@ linters:
     rules:
       - path: (.+)_test\.go
         linters:
-          - funlen
           - dupl
+          - exhaustruct
+          - funlen
 
   settings:
     custom:

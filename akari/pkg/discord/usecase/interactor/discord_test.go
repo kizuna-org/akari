@@ -42,8 +42,6 @@ func TestDiscordInteractor_SendMessage(t *testing.T) {
 					Return(&entity.Message{
 						ID:        "msg-1",
 						ChannelID: "123",
-						GuildID:   "",
-						AuthorID:  "",
 						Content:   "Hello",
 						Timestamp: time.Now(),
 					}, nil)
@@ -103,9 +101,6 @@ func TestDiscordInteractor_GetMessage(t *testing.T) {
 					Return(&entity.Message{
 						ID:        "msg-1",
 						ChannelID: "123",
-						GuildID:   "",
-						AuthorID:  "",
-						Content:   "",
 						Timestamp: time.Now(),
 					}, nil)
 			},

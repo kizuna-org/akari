@@ -33,14 +33,7 @@ func TestMessage_Structure(t *testing.T) {
 func TestMessage_EmptyValues(t *testing.T) {
 	t.Parallel()
 
-	msg := &entity.Message{
-		ID:        "",
-		ChannelID: "",
-		GuildID:   "",
-		AuthorID:  "",
-		Content:   "",
-		Timestamp: time.Time{},
-	}
+	msg := &entity.Message{}
 
 	assert.Empty(t, msg.ID)
 	assert.Empty(t, msg.ChannelID)
@@ -78,9 +71,6 @@ func TestMessage_Timestamps(t *testing.T) {
 			msg := &entity.Message{
 				ID:        "msg-001",
 				ChannelID: "channel-001",
-				GuildID:   "",
-				AuthorID:  "",
-				Content:   "",
 				Timestamp: testCase.timestamp,
 			}
 
