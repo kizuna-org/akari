@@ -7,6 +7,14 @@ linters:
     - ireturn
     - err113
     - shironerr113
+  exclusions:
+    rules:
+      - path: (.+)_test\.go
+        linters:
+          - dupl
+          - exhaustruct
+          - funlen
+
   settings:
     custom:
       shironerr113:
