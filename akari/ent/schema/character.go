@@ -15,7 +15,6 @@ type Character struct {
 func (Character) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").NotEmpty().Unique().Comment("The name of the AI character"),
-		field.Bool("is_active").Default(true).Comment("Whether the character is currently active"),
 		field.Time("created_at").Immutable().Default(time.Now).Comment("The time when the character was created"),
 		field.Time("updated_at").
 			Default(time.Now).

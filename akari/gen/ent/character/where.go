@@ -60,11 +60,6 @@ func Name(v string) predicate.Character {
 	return predicate.Character(sql.FieldEQ(FieldName, v))
 }
 
-// IsActive applies equality check predicate on the "is_active" field. It's identical to IsActiveEQ.
-func IsActive(v bool) predicate.Character {
-	return predicate.Character(sql.FieldEQ(FieldIsActive, v))
-}
-
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.Character {
 	return predicate.Character(sql.FieldEQ(FieldCreatedAt, v))
@@ -138,16 +133,6 @@ func NameEqualFold(v string) predicate.Character {
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.Character {
 	return predicate.Character(sql.FieldContainsFold(FieldName, v))
-}
-
-// IsActiveEQ applies the EQ predicate on the "is_active" field.
-func IsActiveEQ(v bool) predicate.Character {
-	return predicate.Character(sql.FieldEQ(FieldIsActive, v))
-}
-
-// IsActiveNEQ applies the NEQ predicate on the "is_active" field.
-func IsActiveNEQ(v bool) predicate.Character {
-	return predicate.Character(sql.FieldNEQ(FieldIsActive, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

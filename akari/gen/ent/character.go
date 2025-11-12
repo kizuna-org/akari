@@ -19,8 +19,6 @@ type Character struct {
 	ID int `json:"id,omitempty"`
 	// The name of the AI character
 	Name string `json:"name,omitempty"`
-	// Whether the character is currently active
-	IsActive bool `json:"is_active,omitempty"`
 	// The time when the character was created
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// The time when the character was last updated
@@ -54,8 +52,6 @@ func (*Character) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case character.FieldIsActive:
-			values[i] = new(sql.NullBool)
 		case character.FieldID:
 			values[i] = new(sql.NullInt64)
 		case character.FieldName:
@@ -88,12 +84,6 @@ func (_m *Character) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				_m.Name = value.String
-			}
-		case character.FieldIsActive:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field is_active", values[i])
-			} else if value.Valid {
-				_m.IsActive = value.Bool
 			}
 		case character.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -150,9 +140,6 @@ func (_m *Character) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
-	builder.WriteString(", ")
-	builder.WriteString("is_active=")
-	builder.WriteString(fmt.Sprintf("%v", _m.IsActive))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))

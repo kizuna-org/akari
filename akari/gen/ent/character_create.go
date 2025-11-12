@@ -27,20 +27,6 @@ func (_c *CharacterCreate) SetName(v string) *CharacterCreate {
 	return _c
 }
 
-// SetIsActive sets the "is_active" field.
-func (_c *CharacterCreate) SetIsActive(v bool) *CharacterCreate {
-	_c.mutation.SetIsActive(v)
-	return _c
-}
-
-// SetNillableIsActive sets the "is_active" field if the given value is not nil.
-func (_c *CharacterCreate) SetNillableIsActive(v *bool) *CharacterCreate {
-	if v != nil {
-		_c.SetIsActive(*v)
-	}
-	return _c
-}
-
 // SetCreatedAt sets the "created_at" field.
 func (_c *CharacterCreate) SetCreatedAt(v time.Time) *CharacterCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -119,10 +105,6 @@ func (_c *CharacterCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *CharacterCreate) defaults() {
-	if _, ok := _c.mutation.IsActive(); !ok {
-		v := character.DefaultIsActive
-		_c.mutation.SetIsActive(v)
-	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		v := character.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
@@ -142,9 +124,6 @@ func (_c *CharacterCreate) check() error {
 		if err := character.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Character.name": %w`, err)}
 		}
-	}
-	if _, ok := _c.mutation.IsActive(); !ok {
-		return &ValidationError{Name: "is_active", err: errors.New(`ent: missing required field "Character.is_active"`)}
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Character.created_at"`)}
@@ -184,10 +163,6 @@ func (_c *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(character.FieldName, field.TypeString, value)
 		_node.Name = value
-	}
-	if value, ok := _c.mutation.IsActive(); ok {
-		_spec.SetField(character.FieldIsActive, field.TypeBool, value)
-		_node.IsActive = value
 	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(character.FieldCreatedAt, field.TypeTime, value)

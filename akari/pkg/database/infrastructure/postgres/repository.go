@@ -173,12 +173,8 @@ func (r *repositoryImpl) GetCharacterWithSystemPromptByID(
 	return char, nil
 }
 
-func (r *repositoryImpl) ListCharacters(ctx context.Context, activeOnly bool) ([]*domain.Character, error) {
+func (r *repositoryImpl) ListCharacters(ctx context.Context) ([]*domain.Character, error) {
 	query := r.client.CharacterClient().Query()
-
-	if activeOnly {
-		query = query.Where(character.IsActiveEQ(true))
-	}
 
 	characters, err := query.All(ctx)
 	if err != nil {
@@ -192,16 +188,11 @@ func (r *repositoryImpl) UpdateCharacter(
 	ctx context.Context,
 	characterID int,
 	name *string,
-	isActive *bool,
 ) (*domain.Character, error) {
 	updater := r.client.CharacterClient().UpdateOneID(characterID)
 
 	if name != nil {
 		updater = updater.SetName(*name)
-	}
-
-	if isActive != nil {
-		updater = updater.SetIsActive(*isActive)
 	}
 
 	char, err := updater.Save(ctx)
@@ -212,10 +203,6 @@ func (r *repositoryImpl) UpdateCharacter(
 	logAttrs := []any{slog.Int("id", characterID)}
 	if name != nil {
 		logAttrs = append(logAttrs, slog.String("name", *name))
-	}
-
-	if isActive != nil {
-		logAttrs = append(logAttrs, slog.Bool("is_active", *isActive))
 	}
 
 	r.logger.Info("character updated", logAttrs...)

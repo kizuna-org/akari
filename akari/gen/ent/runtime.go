@@ -20,16 +20,12 @@ func init() {
 	characterDescName := characterFields[0].Descriptor()
 	// character.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	character.NameValidator = characterDescName.Validators[0].(func(string) error)
-	// characterDescIsActive is the schema descriptor for is_active field.
-	characterDescIsActive := characterFields[1].Descriptor()
-	// character.DefaultIsActive holds the default value on creation for the is_active field.
-	character.DefaultIsActive = characterDescIsActive.Default.(bool)
 	// characterDescCreatedAt is the schema descriptor for created_at field.
-	characterDescCreatedAt := characterFields[2].Descriptor()
+	characterDescCreatedAt := characterFields[1].Descriptor()
 	// character.DefaultCreatedAt holds the default value on creation for the created_at field.
 	character.DefaultCreatedAt = characterDescCreatedAt.Default.(func() time.Time)
 	// characterDescUpdatedAt is the schema descriptor for updated_at field.
-	characterDescUpdatedAt := characterFields[3].Descriptor()
+	characterDescUpdatedAt := characterFields[2].Descriptor()
 	// character.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	character.DefaultUpdatedAt = characterDescUpdatedAt.Default.(func() time.Time)
 	// character.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

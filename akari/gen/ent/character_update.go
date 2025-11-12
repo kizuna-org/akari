@@ -43,20 +43,6 @@ func (_u *CharacterUpdate) SetNillableName(v *string) *CharacterUpdate {
 	return _u
 }
 
-// SetIsActive sets the "is_active" field.
-func (_u *CharacterUpdate) SetIsActive(v bool) *CharacterUpdate {
-	_u.mutation.SetIsActive(v)
-	return _u
-}
-
-// SetNillableIsActive sets the "is_active" field if the given value is not nil.
-func (_u *CharacterUpdate) SetNillableIsActive(v *bool) *CharacterUpdate {
-	if v != nil {
-		_u.SetIsActive(*v)
-	}
-	return _u
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (_u *CharacterUpdate) SetUpdatedAt(v time.Time) *CharacterUpdate {
 	_u.mutation.SetUpdatedAt(v)
@@ -165,9 +151,6 @@ func (_u *CharacterUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(character.FieldName, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.IsActive(); ok {
-		_spec.SetField(character.FieldIsActive, field.TypeBool, value)
-	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(character.FieldUpdatedAt, field.TypeTime, value)
 	}
@@ -246,20 +229,6 @@ func (_u *CharacterUpdateOne) SetName(v string) *CharacterUpdateOne {
 func (_u *CharacterUpdateOne) SetNillableName(v *string) *CharacterUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
-	}
-	return _u
-}
-
-// SetIsActive sets the "is_active" field.
-func (_u *CharacterUpdateOne) SetIsActive(v bool) *CharacterUpdateOne {
-	_u.mutation.SetIsActive(v)
-	return _u
-}
-
-// SetNillableIsActive sets the "is_active" field if the given value is not nil.
-func (_u *CharacterUpdateOne) SetNillableIsActive(v *bool) *CharacterUpdateOne {
-	if v != nil {
-		_u.SetIsActive(*v)
 	}
 	return _u
 }
@@ -401,9 +370,6 @@ func (_u *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, er
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(character.FieldName, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.IsActive(); ok {
-		_spec.SetField(character.FieldIsActive, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(character.FieldUpdatedAt, field.TypeTime, value)

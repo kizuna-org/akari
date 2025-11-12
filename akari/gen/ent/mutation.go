@@ -36,7 +36,6 @@ type CharacterMutation struct {
 	typ                  string
 	id                   *int
 	name                 *string
-	is_active            *bool
 	created_at           *time.Time
 	updated_at           *time.Time
 	clearedFields        map[string]struct{}
@@ -180,42 +179,6 @@ func (m *CharacterMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *CharacterMutation) ResetName() {
 	m.name = nil
-}
-
-// SetIsActive sets the "is_active" field.
-func (m *CharacterMutation) SetIsActive(b bool) {
-	m.is_active = &b
-}
-
-// IsActive returns the value of the "is_active" field in the mutation.
-func (m *CharacterMutation) IsActive() (r bool, exists bool) {
-	v := m.is_active
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldIsActive returns the old "is_active" field's value of the Character entity.
-// If the Character object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CharacterMutation) OldIsActive(ctx context.Context) (v bool, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldIsActive is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldIsActive requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldIsActive: %w", err)
-	}
-	return oldValue.IsActive, nil
-}
-
-// ResetIsActive resets all changes to the "is_active" field.
-func (m *CharacterMutation) ResetIsActive() {
-	m.is_active = nil
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -378,12 +341,9 @@ func (m *CharacterMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CharacterMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, character.FieldName)
-	}
-	if m.is_active != nil {
-		fields = append(fields, character.FieldIsActive)
 	}
 	if m.created_at != nil {
 		fields = append(fields, character.FieldCreatedAt)
@@ -401,8 +361,6 @@ func (m *CharacterMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case character.FieldName:
 		return m.Name()
-	case character.FieldIsActive:
-		return m.IsActive()
 	case character.FieldCreatedAt:
 		return m.CreatedAt()
 	case character.FieldUpdatedAt:
@@ -418,8 +376,6 @@ func (m *CharacterMutation) OldField(ctx context.Context, name string) (ent.Valu
 	switch name {
 	case character.FieldName:
 		return m.OldName(ctx)
-	case character.FieldIsActive:
-		return m.OldIsActive(ctx)
 	case character.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case character.FieldUpdatedAt:
@@ -439,13 +395,6 @@ func (m *CharacterMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
-		return nil
-	case character.FieldIsActive:
-		v, ok := value.(bool)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetIsActive(v)
 		return nil
 	case character.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -512,9 +461,6 @@ func (m *CharacterMutation) ResetField(name string) error {
 	switch name {
 	case character.FieldName:
 		m.ResetName()
-		return nil
-	case character.FieldIsActive:
-		m.ResetIsActive()
 		return nil
 	case character.FieldCreatedAt:
 		m.ResetCreatedAt()
