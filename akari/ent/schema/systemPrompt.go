@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -21,5 +22,14 @@ func (SystemPrompt) Fields() []ent.Field {
 			Default(time.Now).
 			UpdateDefault(time.Now).
 			Comment("The time when the system prompt was last updated"),
+	}
+}
+
+func (SystemPrompt) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.From("character", Character.Type).
+			Ref("system_prompts").
+			Unique().
+			Comment("The character using this system prompt"),
 	}
 }

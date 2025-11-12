@@ -38,4 +38,5 @@ func TestNewClient(t *testing.T) {
 	}()
 
 	assert.NotNil(t, client.SystemPromptClient())
+	assert.NotNil(t, client.CharacterClient())
 }

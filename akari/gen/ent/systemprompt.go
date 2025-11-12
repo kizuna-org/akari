@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -26,8 +27,32 @@ type SystemPrompt struct {
 	// The time when the system prompt was created
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// The time when the system prompt was last updated
-	UpdatedAt    time.Time `json:"updated_at,omitempty"`
-	selectValues sql.SelectValues
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the SystemPromptQuery when eager-loading is set.
+	Edges                    SystemPromptEdges `json:"edges"`
+	character_system_prompts *int
+	selectValues             sql.SelectValues
+}
+
+// SystemPromptEdges holds the relations/edges for other nodes in the graph.
+type SystemPromptEdges struct {
+	// The character using this system prompt
+	Character *Character `json:"character,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// CharacterOrErr returns the Character value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e SystemPromptEdges) CharacterOrErr() (*Character, error) {
+	if e.Character != nil {
+		return e.Character, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: character.Label}
+	}
+	return nil, &NotLoadedError{edge: "character"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -41,6 +66,8 @@ func (*SystemPrompt) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case systemprompt.FieldCreatedAt, systemprompt.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
+		case systemprompt.ForeignKeys[0]: // character_system_prompts
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -92,6 +119,13 @@ func (_m *SystemPrompt) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.UpdatedAt = value.Time
 			}
+		case systemprompt.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field character_system_prompts", value)
+			} else if value.Valid {
+				_m.character_system_prompts = new(int)
+				*_m.character_system_prompts = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -103,6 +137,11 @@ func (_m *SystemPrompt) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *SystemPrompt) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryCharacter queries the "character" edge of the SystemPrompt entity.
+func (_m *SystemPrompt) QueryCharacter() *CharacterQuery {
+	return NewSystemPromptClient(_m.config).QueryCharacter(_m)
 }
 
 // Update returns a builder for updating this SystemPrompt.

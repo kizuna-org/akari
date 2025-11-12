@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -16,54 +17,53 @@ import (
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
-// SystemPromptQuery is the builder for querying SystemPrompt entities.
-type SystemPromptQuery struct {
+// CharacterQuery is the builder for querying Character entities.
+type CharacterQuery struct {
 	config
-	ctx           *QueryContext
-	order         []systemprompt.OrderOption
-	inters        []Interceptor
-	predicates    []predicate.SystemPrompt
-	withCharacter *CharacterQuery
-	withFKs       bool
+	ctx               *QueryContext
+	order             []character.OrderOption
+	inters            []Interceptor
+	predicates        []predicate.Character
+	withSystemPrompts *SystemPromptQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the SystemPromptQuery builder.
-func (_q *SystemPromptQuery) Where(ps ...predicate.SystemPrompt) *SystemPromptQuery {
+// Where adds a new predicate for the CharacterQuery builder.
+func (_q *CharacterQuery) Where(ps ...predicate.Character) *CharacterQuery {
 	_q.predicates = append(_q.predicates, ps...)
 	return _q
 }
 
 // Limit the number of records to be returned by this query.
-func (_q *SystemPromptQuery) Limit(limit int) *SystemPromptQuery {
+func (_q *CharacterQuery) Limit(limit int) *CharacterQuery {
 	_q.ctx.Limit = &limit
 	return _q
 }
 
 // Offset to start from.
-func (_q *SystemPromptQuery) Offset(offset int) *SystemPromptQuery {
+func (_q *CharacterQuery) Offset(offset int) *CharacterQuery {
 	_q.ctx.Offset = &offset
 	return _q
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (_q *SystemPromptQuery) Unique(unique bool) *SystemPromptQuery {
+func (_q *CharacterQuery) Unique(unique bool) *CharacterQuery {
 	_q.ctx.Unique = &unique
 	return _q
 }
 
 // Order specifies how the records should be ordered.
-func (_q *SystemPromptQuery) Order(o ...systemprompt.OrderOption) *SystemPromptQuery {
+func (_q *CharacterQuery) Order(o ...character.OrderOption) *CharacterQuery {
 	_q.order = append(_q.order, o...)
 	return _q
 }
 
-// QueryCharacter chains the current query on the "character" edge.
-func (_q *SystemPromptQuery) QueryCharacter() *CharacterQuery {
-	query := (&CharacterClient{config: _q.config}).Query()
+// QuerySystemPrompts chains the current query on the "system_prompts" edge.
+func (_q *CharacterQuery) QuerySystemPrompts() *SystemPromptQuery {
+	query := (&SystemPromptClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -73,9 +73,9 @@ func (_q *SystemPromptQuery) QueryCharacter() *CharacterQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(systemprompt.Table, systemprompt.FieldID, selector),
-			sqlgraph.To(character.Table, character.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, systemprompt.CharacterTable, systemprompt.CharacterColumn),
+			sqlgraph.From(character.Table, character.FieldID, selector),
+			sqlgraph.To(systemprompt.Table, systemprompt.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, character.SystemPromptsTable, character.SystemPromptsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -83,21 +83,21 @@ func (_q *SystemPromptQuery) QueryCharacter() *CharacterQuery {
 	return query
 }
 
-// First returns the first SystemPrompt entity from the query.
-// Returns a *NotFoundError when no SystemPrompt was found.
-func (_q *SystemPromptQuery) First(ctx context.Context) (*SystemPrompt, error) {
+// First returns the first Character entity from the query.
+// Returns a *NotFoundError when no Character was found.
+func (_q *CharacterQuery) First(ctx context.Context) (*Character, error) {
 	nodes, err := _q.Limit(1).All(setContextOp(ctx, _q.ctx, ent.OpQueryFirst))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{systemprompt.Label}
+		return nil, &NotFoundError{character.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (_q *SystemPromptQuery) FirstX(ctx context.Context) *SystemPrompt {
+func (_q *CharacterQuery) FirstX(ctx context.Context) *Character {
 	node, err := _q.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -105,22 +105,22 @@ func (_q *SystemPromptQuery) FirstX(ctx context.Context) *SystemPrompt {
 	return node
 }
 
-// FirstID returns the first SystemPrompt ID from the query.
-// Returns a *NotFoundError when no SystemPrompt ID was found.
-func (_q *SystemPromptQuery) FirstID(ctx context.Context) (id int, err error) {
+// FirstID returns the first Character ID from the query.
+// Returns a *NotFoundError when no Character ID was found.
+func (_q *CharacterQuery) FirstID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(1).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryFirstID)); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{systemprompt.Label}
+		err = &NotFoundError{character.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (_q *SystemPromptQuery) FirstIDX(ctx context.Context) int {
+func (_q *CharacterQuery) FirstIDX(ctx context.Context) int {
 	id, err := _q.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -128,10 +128,10 @@ func (_q *SystemPromptQuery) FirstIDX(ctx context.Context) int {
 	return id
 }
 
-// Only returns a single SystemPrompt entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one SystemPrompt entity is found.
-// Returns a *NotFoundError when no SystemPrompt entities are found.
-func (_q *SystemPromptQuery) Only(ctx context.Context) (*SystemPrompt, error) {
+// Only returns a single Character entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one Character entity is found.
+// Returns a *NotFoundError when no Character entities are found.
+func (_q *CharacterQuery) Only(ctx context.Context) (*Character, error) {
 	nodes, err := _q.Limit(2).All(setContextOp(ctx, _q.ctx, ent.OpQueryOnly))
 	if err != nil {
 		return nil, err
@@ -140,14 +140,14 @@ func (_q *SystemPromptQuery) Only(ctx context.Context) (*SystemPrompt, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{systemprompt.Label}
+		return nil, &NotFoundError{character.Label}
 	default:
-		return nil, &NotSingularError{systemprompt.Label}
+		return nil, &NotSingularError{character.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (_q *SystemPromptQuery) OnlyX(ctx context.Context) *SystemPrompt {
+func (_q *CharacterQuery) OnlyX(ctx context.Context) *Character {
 	node, err := _q.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -155,10 +155,10 @@ func (_q *SystemPromptQuery) OnlyX(ctx context.Context) *SystemPrompt {
 	return node
 }
 
-// OnlyID is like Only, but returns the only SystemPrompt ID in the query.
-// Returns a *NotSingularError when more than one SystemPrompt ID is found.
+// OnlyID is like Only, but returns the only Character ID in the query.
+// Returns a *NotSingularError when more than one Character ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (_q *SystemPromptQuery) OnlyID(ctx context.Context) (id int, err error) {
+func (_q *CharacterQuery) OnlyID(ctx context.Context) (id int, err error) {
 	var ids []int
 	if ids, err = _q.Limit(2).IDs(setContextOp(ctx, _q.ctx, ent.OpQueryOnlyID)); err != nil {
 		return
@@ -167,15 +167,15 @@ func (_q *SystemPromptQuery) OnlyID(ctx context.Context) (id int, err error) {
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{systemprompt.Label}
+		err = &NotFoundError{character.Label}
 	default:
-		err = &NotSingularError{systemprompt.Label}
+		err = &NotSingularError{character.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (_q *SystemPromptQuery) OnlyIDX(ctx context.Context) int {
+func (_q *CharacterQuery) OnlyIDX(ctx context.Context) int {
 	id, err := _q.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -183,18 +183,18 @@ func (_q *SystemPromptQuery) OnlyIDX(ctx context.Context) int {
 	return id
 }
 
-// All executes the query and returns a list of SystemPrompts.
-func (_q *SystemPromptQuery) All(ctx context.Context) ([]*SystemPrompt, error) {
+// All executes the query and returns a list of Characters.
+func (_q *CharacterQuery) All(ctx context.Context) ([]*Character, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryAll)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*SystemPrompt, *SystemPromptQuery]()
-	return withInterceptors[[]*SystemPrompt](ctx, _q, qr, _q.inters)
+	qr := querierAll[[]*Character, *CharacterQuery]()
+	return withInterceptors[[]*Character](ctx, _q, qr, _q.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (_q *SystemPromptQuery) AllX(ctx context.Context) []*SystemPrompt {
+func (_q *CharacterQuery) AllX(ctx context.Context) []*Character {
 	nodes, err := _q.All(ctx)
 	if err != nil {
 		panic(err)
@@ -202,20 +202,20 @@ func (_q *SystemPromptQuery) AllX(ctx context.Context) []*SystemPrompt {
 	return nodes
 }
 
-// IDs executes the query and returns a list of SystemPrompt IDs.
-func (_q *SystemPromptQuery) IDs(ctx context.Context) (ids []int, err error) {
+// IDs executes the query and returns a list of Character IDs.
+func (_q *CharacterQuery) IDs(ctx context.Context) (ids []int, err error) {
 	if _q.ctx.Unique == nil && _q.path != nil {
 		_q.Unique(true)
 	}
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryIDs)
-	if err = _q.Select(systemprompt.FieldID).Scan(ctx, &ids); err != nil {
+	if err = _q.Select(character.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (_q *SystemPromptQuery) IDsX(ctx context.Context) []int {
+func (_q *CharacterQuery) IDsX(ctx context.Context) []int {
 	ids, err := _q.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -224,16 +224,16 @@ func (_q *SystemPromptQuery) IDsX(ctx context.Context) []int {
 }
 
 // Count returns the count of the given query.
-func (_q *SystemPromptQuery) Count(ctx context.Context) (int, error) {
+func (_q *CharacterQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryCount)
 	if err := _q.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, _q, querierCount[*SystemPromptQuery](), _q.inters)
+	return withInterceptors[int](ctx, _q, querierCount[*CharacterQuery](), _q.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (_q *SystemPromptQuery) CountX(ctx context.Context) int {
+func (_q *CharacterQuery) CountX(ctx context.Context) int {
 	count, err := _q.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -242,7 +242,7 @@ func (_q *SystemPromptQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (_q *SystemPromptQuery) Exist(ctx context.Context) (bool, error) {
+func (_q *CharacterQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, _q.ctx, ent.OpQueryExist)
 	switch _, err := _q.FirstID(ctx); {
 	case IsNotFound(err):
@@ -255,7 +255,7 @@ func (_q *SystemPromptQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (_q *SystemPromptQuery) ExistX(ctx context.Context) bool {
+func (_q *CharacterQuery) ExistX(ctx context.Context) bool {
 	exist, err := _q.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -263,33 +263,33 @@ func (_q *SystemPromptQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the SystemPromptQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the CharacterQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (_q *SystemPromptQuery) Clone() *SystemPromptQuery {
+func (_q *CharacterQuery) Clone() *CharacterQuery {
 	if _q == nil {
 		return nil
 	}
-	return &SystemPromptQuery{
-		config:        _q.config,
-		ctx:           _q.ctx.Clone(),
-		order:         append([]systemprompt.OrderOption{}, _q.order...),
-		inters:        append([]Interceptor{}, _q.inters...),
-		predicates:    append([]predicate.SystemPrompt{}, _q.predicates...),
-		withCharacter: _q.withCharacter.Clone(),
+	return &CharacterQuery{
+		config:            _q.config,
+		ctx:               _q.ctx.Clone(),
+		order:             append([]character.OrderOption{}, _q.order...),
+		inters:            append([]Interceptor{}, _q.inters...),
+		predicates:        append([]predicate.Character{}, _q.predicates...),
+		withSystemPrompts: _q.withSystemPrompts.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
 }
 
-// WithCharacter tells the query-builder to eager-load the nodes that are connected to
-// the "character" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *SystemPromptQuery) WithCharacter(opts ...func(*CharacterQuery)) *SystemPromptQuery {
-	query := (&CharacterClient{config: _q.config}).Query()
+// WithSystemPrompts tells the query-builder to eager-load the nodes that are connected to
+// the "system_prompts" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *CharacterQuery) WithSystemPrompts(opts ...func(*SystemPromptQuery)) *CharacterQuery {
+	query := (&SystemPromptClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withCharacter = query
+	_q.withSystemPrompts = query
 	return _q
 }
 
@@ -299,19 +299,19 @@ func (_q *SystemPromptQuery) WithCharacter(opts ...func(*CharacterQuery)) *Syste
 // Example:
 //
 //	var v []struct {
-//		Title string `json:"title,omitempty"`
+//		Name string `json:"name,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.SystemPrompt.Query().
-//		GroupBy(systemprompt.FieldTitle).
+//	client.Character.Query().
+//		GroupBy(character.FieldName).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (_q *SystemPromptQuery) GroupBy(field string, fields ...string) *SystemPromptGroupBy {
+func (_q *CharacterQuery) GroupBy(field string, fields ...string) *CharacterGroupBy {
 	_q.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &SystemPromptGroupBy{build: _q}
+	grbuild := &CharacterGroupBy{build: _q}
 	grbuild.flds = &_q.ctx.Fields
-	grbuild.label = systemprompt.Label
+	grbuild.label = character.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -322,26 +322,26 @@ func (_q *SystemPromptQuery) GroupBy(field string, fields ...string) *SystemProm
 // Example:
 //
 //	var v []struct {
-//		Title string `json:"title,omitempty"`
+//		Name string `json:"name,omitempty"`
 //	}
 //
-//	client.SystemPrompt.Query().
-//		Select(systemprompt.FieldTitle).
+//	client.Character.Query().
+//		Select(character.FieldName).
 //		Scan(ctx, &v)
-func (_q *SystemPromptQuery) Select(fields ...string) *SystemPromptSelect {
+func (_q *CharacterQuery) Select(fields ...string) *CharacterSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
-	sbuild := &SystemPromptSelect{SystemPromptQuery: _q}
-	sbuild.label = systemprompt.Label
+	sbuild := &CharacterSelect{CharacterQuery: _q}
+	sbuild.label = character.Label
 	sbuild.flds, sbuild.scan = &_q.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a SystemPromptSelect configured with the given aggregations.
-func (_q *SystemPromptQuery) Aggregate(fns ...AggregateFunc) *SystemPromptSelect {
+// Aggregate returns a CharacterSelect configured with the given aggregations.
+func (_q *CharacterQuery) Aggregate(fns ...AggregateFunc) *CharacterSelect {
 	return _q.Select().Aggregate(fns...)
 }
 
-func (_q *SystemPromptQuery) prepareQuery(ctx context.Context) error {
+func (_q *CharacterQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range _q.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -353,7 +353,7 @@ func (_q *SystemPromptQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range _q.ctx.Fields {
-		if !systemprompt.ValidColumn(f) {
+		if !character.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -367,26 +367,19 @@ func (_q *SystemPromptQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (_q *SystemPromptQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*SystemPrompt, error) {
+func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Character, error) {
 	var (
-		nodes       = []*SystemPrompt{}
-		withFKs     = _q.withFKs
+		nodes       = []*Character{}
 		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			_q.withCharacter != nil,
+			_q.withSystemPrompts != nil,
 		}
 	)
-	if _q.withCharacter != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, systemprompt.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*SystemPrompt).scanValues(nil, columns)
+		return (*Character).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &SystemPrompt{config: _q.config}
+		node := &Character{config: _q.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -400,49 +393,49 @@ func (_q *SystemPromptQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withCharacter; query != nil {
-		if err := _q.loadCharacter(ctx, query, nodes, nil,
-			func(n *SystemPrompt, e *Character) { n.Edges.Character = e }); err != nil {
+	if query := _q.withSystemPrompts; query != nil {
+		if err := _q.loadSystemPrompts(ctx, query, nodes,
+			func(n *Character) { n.Edges.SystemPrompts = []*SystemPrompt{} },
+			func(n *Character, e *SystemPrompt) { n.Edges.SystemPrompts = append(n.Edges.SystemPrompts, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *SystemPromptQuery) loadCharacter(ctx context.Context, query *CharacterQuery, nodes []*SystemPrompt, init func(*SystemPrompt), assign func(*SystemPrompt, *Character)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*SystemPrompt)
+func (_q *CharacterQuery) loadSystemPrompts(ctx context.Context, query *SystemPromptQuery, nodes []*Character, init func(*Character), assign func(*Character, *SystemPrompt)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Character)
 	for i := range nodes {
-		if nodes[i].character_system_prompts == nil {
-			continue
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
 		}
-		fk := *nodes[i].character_system_prompts
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(character.IDIn(ids...))
+	query.withFKs = true
+	query.Where(predicate.SystemPrompt(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(character.SystemPromptsColumn), fks...))
+	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		fk := n.character_system_prompts
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "character_system_prompts" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "character_system_prompts" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "character_system_prompts" returned %v for node %v`, *fk, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
+		assign(node, n)
 	}
 	return nil
 }
 
-func (_q *SystemPromptQuery) sqlCount(ctx context.Context) (int, error) {
+func (_q *CharacterQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
 	_spec.Node.Columns = _q.ctx.Fields
 	if len(_q.ctx.Fields) > 0 {
@@ -451,8 +444,8 @@ func (_q *SystemPromptQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, _q.driver, _spec)
 }
 
-func (_q *SystemPromptQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(systemprompt.Table, systemprompt.Columns, sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt))
+func (_q *CharacterQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(character.Table, character.Columns, sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt))
 	_spec.From = _q.sql
 	if unique := _q.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -461,9 +454,9 @@ func (_q *SystemPromptQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := _q.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, systemprompt.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, character.FieldID)
 		for i := range fields {
-			if fields[i] != systemprompt.FieldID {
+			if fields[i] != character.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -491,12 +484,12 @@ func (_q *SystemPromptQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (_q *SystemPromptQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (_q *CharacterQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(_q.driver.Dialect())
-	t1 := builder.Table(systemprompt.Table)
+	t1 := builder.Table(character.Table)
 	columns := _q.ctx.Fields
 	if len(columns) == 0 {
-		columns = systemprompt.Columns
+		columns = character.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if _q.sql != nil {
@@ -523,28 +516,28 @@ func (_q *SystemPromptQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// SystemPromptGroupBy is the group-by builder for SystemPrompt entities.
-type SystemPromptGroupBy struct {
+// CharacterGroupBy is the group-by builder for Character entities.
+type CharacterGroupBy struct {
 	selector
-	build *SystemPromptQuery
+	build *CharacterQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (_g *SystemPromptGroupBy) Aggregate(fns ...AggregateFunc) *SystemPromptGroupBy {
+func (_g *CharacterGroupBy) Aggregate(fns ...AggregateFunc) *CharacterGroupBy {
 	_g.fns = append(_g.fns, fns...)
 	return _g
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_g *SystemPromptGroupBy) Scan(ctx context.Context, v any) error {
+func (_g *CharacterGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _g.build.ctx, ent.OpQueryGroupBy)
 	if err := _g.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*SystemPromptQuery, *SystemPromptGroupBy](ctx, _g.build, _g, _g.build.inters, v)
+	return scanWithInterceptors[*CharacterQuery, *CharacterGroupBy](ctx, _g.build, _g, _g.build.inters, v)
 }
 
-func (_g *SystemPromptGroupBy) sqlScan(ctx context.Context, root *SystemPromptQuery, v any) error {
+func (_g *CharacterGroupBy) sqlScan(ctx context.Context, root *CharacterQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(_g.fns))
 	for _, fn := range _g.fns {
@@ -571,28 +564,28 @@ func (_g *SystemPromptGroupBy) sqlScan(ctx context.Context, root *SystemPromptQu
 	return sql.ScanSlice(rows, v)
 }
 
-// SystemPromptSelect is the builder for selecting fields of SystemPrompt entities.
-type SystemPromptSelect struct {
-	*SystemPromptQuery
+// CharacterSelect is the builder for selecting fields of Character entities.
+type CharacterSelect struct {
+	*CharacterQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (_s *SystemPromptSelect) Aggregate(fns ...AggregateFunc) *SystemPromptSelect {
+func (_s *CharacterSelect) Aggregate(fns ...AggregateFunc) *CharacterSelect {
 	_s.fns = append(_s.fns, fns...)
 	return _s
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (_s *SystemPromptSelect) Scan(ctx context.Context, v any) error {
+func (_s *CharacterSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, _s.ctx, ent.OpQuerySelect)
 	if err := _s.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*SystemPromptQuery, *SystemPromptSelect](ctx, _s.SystemPromptQuery, _s, _s.inters, v)
+	return scanWithInterceptors[*CharacterQuery, *CharacterSelect](ctx, _s.CharacterQuery, _s, _s.inters, v)
 }
 
-func (_s *SystemPromptSelect) sqlScan(ctx context.Context, root *SystemPromptQuery, v any) error {
+func (_s *CharacterSelect) sqlScan(ctx context.Context, root *CharacterQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(_s.fns))
 	for _, fn := range _s.fns {

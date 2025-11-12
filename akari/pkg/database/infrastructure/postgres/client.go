@@ -17,6 +17,7 @@ type Client interface {
 	Close() error
 	WithTx(ctx context.Context, txFunc domain.TxFunc) error
 	SystemPromptClient() *ent.SystemPromptClient
+	CharacterClient() *ent.CharacterClient
 }
 
 type client struct {
@@ -75,4 +76,8 @@ func (c *client) Close() error {
 
 func (c *client) SystemPromptClient() *ent.SystemPromptClient {
 	return c.SystemPrompt
+}
+
+func (c *client) CharacterClient() *ent.CharacterClient {
+	return c.Character
 }
