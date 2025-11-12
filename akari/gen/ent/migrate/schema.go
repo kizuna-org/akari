@@ -42,6 +42,51 @@ var (
 			},
 		},
 	}
+	// ConversationsColumns holds the columns for the "conversations" table.
+	ConversationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "conversation_group_conversations", Type: field.TypeInt, Nullable: true},
+	}
+	// ConversationsTable holds the schema information for the "conversations" table.
+	ConversationsTable = &schema.Table{
+		Name:       "conversations",
+		Columns:    ConversationsColumns,
+		PrimaryKey: []*schema.Column{ConversationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "conversations_conversation_groups_conversations",
+				Columns:    []*schema.Column{ConversationsColumns[2]},
+				RefColumns: []*schema.Column{ConversationGroupsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "conversation_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConversationsColumns[1]},
+			},
+		},
+	}
+	// ConversationGroupsColumns holds the columns for the "conversation_groups" table.
+	ConversationGroupsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// ConversationGroupsTable holds the schema information for the "conversation_groups" table.
+	ConversationGroupsTable = &schema.Table{
+		Name:       "conversation_groups",
+		Columns:    ConversationGroupsColumns,
+		PrimaryKey: []*schema.Column{ConversationGroupsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "conversationgroup_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ConversationGroupsColumns[1]},
+			},
+		},
+	}
 	// DiscordChannelsColumns holds the columns for the "discord_channels" table.
 	DiscordChannelsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
@@ -86,6 +131,8 @@ var (
 		{Name: "timestamp", Type: field.TypeTime},
 		{Name: "mentions", Type: field.TypeJSON, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "conversation_trigger_message", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "conversation_response_message", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "discord_message_channel", Type: field.TypeString},
 	}
 	// DiscordMessagesTable holds the schema information for the "discord_messages" table.
@@ -95,8 +142,20 @@ var (
 		PrimaryKey: []*schema.Column{DiscordMessagesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "discord_messages_discord_channels_channel",
+				Symbol:     "discord_messages_conversations_trigger_message",
 				Columns:    []*schema.Column{DiscordMessagesColumns[6]},
+				RefColumns: []*schema.Column{ConversationsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "discord_messages_conversations_response_message",
+				Columns:    []*schema.Column{DiscordMessagesColumns[7]},
+				RefColumns: []*schema.Column{ConversationsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "discord_messages_discord_channels_channel",
+				Columns:    []*schema.Column{DiscordMessagesColumns[8]},
 				RefColumns: []*schema.Column{DiscordChannelsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -137,6 +196,8 @@ var (
 	Tables = []*schema.Table{
 		CharactersTable,
 		CharacterConfigsTable,
+		ConversationsTable,
+		ConversationGroupsTable,
 		DiscordChannelsTable,
 		DiscordGuildsTable,
 		DiscordMessagesTable,
@@ -146,7 +207,10 @@ var (
 
 func init() {
 	CharacterConfigsTable.ForeignKeys[0].RefTable = CharactersTable
+	ConversationsTable.ForeignKeys[0].RefTable = ConversationGroupsTable
 	DiscordChannelsTable.ForeignKeys[0].RefTable = DiscordGuildsTable
-	DiscordMessagesTable.ForeignKeys[0].RefTable = DiscordChannelsTable
+	DiscordMessagesTable.ForeignKeys[0].RefTable = ConversationsTable
+	DiscordMessagesTable.ForeignKeys[1].RefTable = ConversationsTable
+	DiscordMessagesTable.ForeignKeys[2].RefTable = DiscordChannelsTable
 	SystemPromptsTable.ForeignKeys[0].RefTable = CharactersTable
 }

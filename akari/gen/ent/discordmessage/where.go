@@ -328,6 +328,52 @@ func HasChannelWith(preds ...predicate.DiscordChannel) predicate.DiscordMessage 
 	})
 }
 
+// HasConversationTrigger applies the HasEdge predicate on the "conversation_trigger" edge.
+func HasConversationTrigger() predicate.DiscordMessage {
+	return predicate.DiscordMessage(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, ConversationTriggerTable, ConversationTriggerColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConversationTriggerWith applies the HasEdge predicate on the "conversation_trigger" edge with a given conditions (other predicates).
+func HasConversationTriggerWith(preds ...predicate.Conversation) predicate.DiscordMessage {
+	return predicate.DiscordMessage(func(s *sql.Selector) {
+		step := newConversationTriggerStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasConversationResponse applies the HasEdge predicate on the "conversation_response" edge.
+func HasConversationResponse() predicate.DiscordMessage {
+	return predicate.DiscordMessage(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, ConversationResponseTable, ConversationResponseColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConversationResponseWith applies the HasEdge predicate on the "conversation_response" edge with a given conditions (other predicates).
+func HasConversationResponseWith(preds ...predicate.Conversation) predicate.DiscordMessage {
+	return predicate.DiscordMessage(func(s *sql.Selector) {
+		step := newConversationResponseStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.DiscordMessage) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.AndPredicates(predicates...))

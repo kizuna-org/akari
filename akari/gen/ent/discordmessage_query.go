@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
@@ -19,12 +20,14 @@ import (
 // DiscordMessageQuery is the builder for querying DiscordMessage entities.
 type DiscordMessageQuery struct {
 	config
-	ctx         *QueryContext
-	order       []discordmessage.OrderOption
-	inters      []Interceptor
-	predicates  []predicate.DiscordMessage
-	withChannel *DiscordChannelQuery
-	withFKs     bool
+	ctx                      *QueryContext
+	order                    []discordmessage.OrderOption
+	inters                   []Interceptor
+	predicates               []predicate.DiscordMessage
+	withChannel              *DiscordChannelQuery
+	withConversationTrigger  *ConversationQuery
+	withConversationResponse *ConversationQuery
+	withFKs                  bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -76,6 +79,50 @@ func (_q *DiscordMessageQuery) QueryChannel() *DiscordChannelQuery {
 			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, selector),
 			sqlgraph.To(discordchannel.Table, discordchannel.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, discordmessage.ChannelTable, discordmessage.ChannelColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryConversationTrigger chains the current query on the "conversation_trigger" edge.
+func (_q *DiscordMessageQuery) QueryConversationTrigger() *ConversationQuery {
+	query := (&ConversationClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, selector),
+			sqlgraph.To(conversation.Table, conversation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, discordmessage.ConversationTriggerTable, discordmessage.ConversationTriggerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryConversationResponse chains the current query on the "conversation_response" edge.
+func (_q *DiscordMessageQuery) QueryConversationResponse() *ConversationQuery {
+	query := (&ConversationClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, selector),
+			sqlgraph.To(conversation.Table, conversation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, discordmessage.ConversationResponseTable, discordmessage.ConversationResponseColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -270,12 +317,14 @@ func (_q *DiscordMessageQuery) Clone() *DiscordMessageQuery {
 		return nil
 	}
 	return &DiscordMessageQuery{
-		config:      _q.config,
-		ctx:         _q.ctx.Clone(),
-		order:       append([]discordmessage.OrderOption{}, _q.order...),
-		inters:      append([]Interceptor{}, _q.inters...),
-		predicates:  append([]predicate.DiscordMessage{}, _q.predicates...),
-		withChannel: _q.withChannel.Clone(),
+		config:                   _q.config,
+		ctx:                      _q.ctx.Clone(),
+		order:                    append([]discordmessage.OrderOption{}, _q.order...),
+		inters:                   append([]Interceptor{}, _q.inters...),
+		predicates:               append([]predicate.DiscordMessage{}, _q.predicates...),
+		withChannel:              _q.withChannel.Clone(),
+		withConversationTrigger:  _q.withConversationTrigger.Clone(),
+		withConversationResponse: _q.withConversationResponse.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -290,6 +339,28 @@ func (_q *DiscordMessageQuery) WithChannel(opts ...func(*DiscordChannelQuery)) *
 		opt(query)
 	}
 	_q.withChannel = query
+	return _q
+}
+
+// WithConversationTrigger tells the query-builder to eager-load the nodes that are connected to
+// the "conversation_trigger" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *DiscordMessageQuery) WithConversationTrigger(opts ...func(*ConversationQuery)) *DiscordMessageQuery {
+	query := (&ConversationClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConversationTrigger = query
+	return _q
+}
+
+// WithConversationResponse tells the query-builder to eager-load the nodes that are connected to
+// the "conversation_response" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *DiscordMessageQuery) WithConversationResponse(opts ...func(*ConversationQuery)) *DiscordMessageQuery {
+	query := (&ConversationClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConversationResponse = query
 	return _q
 }
 
@@ -372,11 +443,13 @@ func (_q *DiscordMessageQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 		nodes       = []*DiscordMessage{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [3]bool{
 			_q.withChannel != nil,
+			_q.withConversationTrigger != nil,
+			_q.withConversationResponse != nil,
 		}
 	)
-	if _q.withChannel != nil {
+	if _q.withChannel != nil || _q.withConversationTrigger != nil || _q.withConversationResponse != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -403,6 +476,18 @@ func (_q *DiscordMessageQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	if query := _q.withChannel; query != nil {
 		if err := _q.loadChannel(ctx, query, nodes, nil,
 			func(n *DiscordMessage, e *DiscordChannel) { n.Edges.Channel = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withConversationTrigger; query != nil {
+		if err := _q.loadConversationTrigger(ctx, query, nodes, nil,
+			func(n *DiscordMessage, e *Conversation) { n.Edges.ConversationTrigger = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withConversationResponse; query != nil {
+		if err := _q.loadConversationResponse(ctx, query, nodes, nil,
+			func(n *DiscordMessage, e *Conversation) { n.Edges.ConversationResponse = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -434,6 +519,70 @@ func (_q *DiscordMessageQuery) loadChannel(ctx context.Context, query *DiscordCh
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "discord_message_channel" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *DiscordMessageQuery) loadConversationTrigger(ctx context.Context, query *ConversationQuery, nodes []*DiscordMessage, init func(*DiscordMessage), assign func(*DiscordMessage, *Conversation)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*DiscordMessage)
+	for i := range nodes {
+		if nodes[i].conversation_trigger_message == nil {
+			continue
+		}
+		fk := *nodes[i].conversation_trigger_message
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(conversation.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "conversation_trigger_message" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *DiscordMessageQuery) loadConversationResponse(ctx context.Context, query *ConversationQuery, nodes []*DiscordMessage, init func(*DiscordMessage), assign func(*DiscordMessage, *Conversation)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*DiscordMessage)
+	for i := range nodes {
+		if nodes[i].conversation_response_message == nil {
+			continue
+		}
+		fk := *nodes[i].conversation_response_message
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(conversation.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "conversation_response_message" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

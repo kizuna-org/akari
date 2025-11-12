@@ -1,0 +1,49 @@
+package schema
+
+import (
+	"time"
+
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
+)
+
+type Conversation struct {
+	ent.Schema
+}
+
+func (Conversation) Fields() []ent.Field {
+	return []ent.Field{
+		field.Time("created_at").
+			Immutable().
+			Default(time.Now).
+			Comment("The time when the bot response was created"),
+	}
+}
+
+func (Conversation) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("trigger_message", DiscordMessage.Type).
+			Unique().
+			Immutable().
+			Required().
+			Comment("The message that triggered the bot"),
+		edge.To("response_message", DiscordMessage.Type).
+			Unique().
+			Immutable().
+			Required().
+			Comment("The bot's response message"),
+		edge.From("conversation_group", ConversationGroup.Type).
+			Ref("conversations").
+			Immutable().
+			Unique().
+			Comment("The conversation group this conversation belongs to"),
+	}
+}
+
+func (Conversation) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("created_at"),
+	}
+}

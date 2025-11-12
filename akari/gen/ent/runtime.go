@@ -8,6 +8,8 @@ import (
 	"github.com/kizuna-org/akari/ent/schema"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
+	"github.com/kizuna-org/akari/gen/ent/conversation"
+	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordguild"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
@@ -40,6 +42,18 @@ func init() {
 	characterconfigDescDefaultSystemPrompt := characterconfigFields[1].Descriptor()
 	// characterconfig.DefaultSystemPromptValidator is a validator for the "default_system_prompt" field. It is called by the builders before save.
 	characterconfig.DefaultSystemPromptValidator = characterconfigDescDefaultSystemPrompt.Validators[0].(func(string) error)
+	conversationFields := schema.Conversation{}.Fields()
+	_ = conversationFields
+	// conversationDescCreatedAt is the schema descriptor for created_at field.
+	conversationDescCreatedAt := conversationFields[0].Descriptor()
+	// conversation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	conversation.DefaultCreatedAt = conversationDescCreatedAt.Default.(func() time.Time)
+	conversationgroupFields := schema.ConversationGroup{}.Fields()
+	_ = conversationgroupFields
+	// conversationgroupDescCreatedAt is the schema descriptor for created_at field.
+	conversationgroupDescCreatedAt := conversationgroupFields[0].Descriptor()
+	// conversationgroup.DefaultCreatedAt holds the default value on creation for the created_at field.
+	conversationgroup.DefaultCreatedAt = conversationgroupDescCreatedAt.Default.(func() time.Time)
 	discordchannelFields := schema.DiscordChannel{}.Fields()
 	_ = discordchannelFields
 	// discordchannelDescName is the schema descriptor for name field.

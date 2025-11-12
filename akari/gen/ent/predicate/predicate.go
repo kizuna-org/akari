@@ -12,6 +12,12 @@ type Character func(*sql.Selector)
 // CharacterConfig is the predicate function for characterconfig builders.
 type CharacterConfig func(*sql.Selector)
 
+// Conversation is the predicate function for conversation builders.
+type Conversation func(*sql.Selector)
+
+// ConversationGroup is the predicate function for conversationgroup builders.
+type ConversationGroup func(*sql.Selector)
+
 // DiscordChannel is the predicate function for discordchannel builders.
 type DiscordChannel func(*sql.Selector)
 
