@@ -8,6 +8,9 @@ import (
 	"github.com/kizuna-org/akari/ent/schema"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
+	"github.com/kizuna-org/akari/gen/ent/discordchannel"
+	"github.com/kizuna-org/akari/gen/ent/discordguild"
+	"github.com/kizuna-org/akari/gen/ent/discordmessage"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -37,6 +40,52 @@ func init() {
 	characterconfigDescDefaultSystemPrompt := characterconfigFields[1].Descriptor()
 	// characterconfig.DefaultSystemPromptValidator is a validator for the "default_system_prompt" field. It is called by the builders before save.
 	characterconfig.DefaultSystemPromptValidator = characterconfigDescDefaultSystemPrompt.Validators[0].(func(string) error)
+	discordchannelFields := schema.DiscordChannel{}.Fields()
+	_ = discordchannelFields
+	// discordchannelDescName is the schema descriptor for name field.
+	discordchannelDescName := discordchannelFields[1].Descriptor()
+	// discordchannel.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	discordchannel.NameValidator = discordchannelDescName.Validators[0].(func(string) error)
+	// discordchannelDescCreatedAt is the schema descriptor for created_at field.
+	discordchannelDescCreatedAt := discordchannelFields[2].Descriptor()
+	// discordchannel.DefaultCreatedAt holds the default value on creation for the created_at field.
+	discordchannel.DefaultCreatedAt = discordchannelDescCreatedAt.Default.(func() time.Time)
+	// discordchannelDescID is the schema descriptor for id field.
+	discordchannelDescID := discordchannelFields[0].Descriptor()
+	// discordchannel.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	discordchannel.IDValidator = discordchannelDescID.Validators[0].(func(string) error)
+	discordguildFields := schema.DiscordGuild{}.Fields()
+	_ = discordguildFields
+	// discordguildDescName is the schema descriptor for name field.
+	discordguildDescName := discordguildFields[1].Descriptor()
+	// discordguild.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	discordguild.NameValidator = discordguildDescName.Validators[0].(func(string) error)
+	// discordguildDescCreatedAt is the schema descriptor for created_at field.
+	discordguildDescCreatedAt := discordguildFields[2].Descriptor()
+	// discordguild.DefaultCreatedAt holds the default value on creation for the created_at field.
+	discordguild.DefaultCreatedAt = discordguildDescCreatedAt.Default.(func() time.Time)
+	// discordguildDescID is the schema descriptor for id field.
+	discordguildDescID := discordguildFields[0].Descriptor()
+	// discordguild.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	discordguild.IDValidator = discordguildDescID.Validators[0].(func(string) error)
+	discordmessageFields := schema.DiscordMessage{}.Fields()
+	_ = discordmessageFields
+	// discordmessageDescAuthorID is the schema descriptor for author_id field.
+	discordmessageDescAuthorID := discordmessageFields[1].Descriptor()
+	// discordmessage.AuthorIDValidator is a validator for the "author_id" field. It is called by the builders before save.
+	discordmessage.AuthorIDValidator = discordmessageDescAuthorID.Validators[0].(func(string) error)
+	// discordmessageDescTimestamp is the schema descriptor for timestamp field.
+	discordmessageDescTimestamp := discordmessageFields[3].Descriptor()
+	// discordmessage.DefaultTimestamp holds the default value on creation for the timestamp field.
+	discordmessage.DefaultTimestamp = discordmessageDescTimestamp.Default.(func() time.Time)
+	// discordmessageDescCreatedAt is the schema descriptor for created_at field.
+	discordmessageDescCreatedAt := discordmessageFields[5].Descriptor()
+	// discordmessage.DefaultCreatedAt holds the default value on creation for the created_at field.
+	discordmessage.DefaultCreatedAt = discordmessageDescCreatedAt.Default.(func() time.Time)
+	// discordmessageDescID is the schema descriptor for id field.
+	discordmessageDescID := discordmessageFields[0].Descriptor()
+	// discordmessage.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	discordmessage.IDValidator = discordmessageDescID.Validators[0].(func(string) error)
 	systempromptFields := schema.SystemPrompt{}.Fields()
 	_ = systempromptFields
 	// systempromptDescTitle is the schema descriptor for title field.

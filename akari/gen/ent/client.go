@@ -17,6 +17,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
+	"github.com/kizuna-org/akari/gen/ent/discordchannel"
+	"github.com/kizuna-org/akari/gen/ent/discordguild"
+	"github.com/kizuna-org/akari/gen/ent/discordmessage"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -29,6 +32,12 @@ type Client struct {
 	Character *CharacterClient
 	// CharacterConfig is the client for interacting with the CharacterConfig builders.
 	CharacterConfig *CharacterConfigClient
+	// DiscordChannel is the client for interacting with the DiscordChannel builders.
+	DiscordChannel *DiscordChannelClient
+	// DiscordGuild is the client for interacting with the DiscordGuild builders.
+	DiscordGuild *DiscordGuildClient
+	// DiscordMessage is the client for interacting with the DiscordMessage builders.
+	DiscordMessage *DiscordMessageClient
 	// SystemPrompt is the client for interacting with the SystemPrompt builders.
 	SystemPrompt *SystemPromptClient
 }
@@ -44,6 +53,9 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Character = NewCharacterClient(c.config)
 	c.CharacterConfig = NewCharacterConfigClient(c.config)
+	c.DiscordChannel = NewDiscordChannelClient(c.config)
+	c.DiscordGuild = NewDiscordGuildClient(c.config)
+	c.DiscordMessage = NewDiscordMessageClient(c.config)
 	c.SystemPrompt = NewSystemPromptClient(c.config)
 }
 
@@ -139,6 +151,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		config:          cfg,
 		Character:       NewCharacterClient(cfg),
 		CharacterConfig: NewCharacterConfigClient(cfg),
+		DiscordChannel:  NewDiscordChannelClient(cfg),
+		DiscordGuild:    NewDiscordGuildClient(cfg),
+		DiscordMessage:  NewDiscordMessageClient(cfg),
 		SystemPrompt:    NewSystemPromptClient(cfg),
 	}, nil
 }
@@ -161,6 +176,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		config:          cfg,
 		Character:       NewCharacterClient(cfg),
 		CharacterConfig: NewCharacterConfigClient(cfg),
+		DiscordChannel:  NewDiscordChannelClient(cfg),
+		DiscordGuild:    NewDiscordGuildClient(cfg),
+		DiscordMessage:  NewDiscordMessageClient(cfg),
 		SystemPrompt:    NewSystemPromptClient(cfg),
 	}, nil
 }
@@ -190,17 +208,23 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Character.Use(hooks...)
-	c.CharacterConfig.Use(hooks...)
-	c.SystemPrompt.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.Character, c.CharacterConfig, c.DiscordChannel, c.DiscordGuild,
+		c.DiscordMessage, c.SystemPrompt,
+	} {
+		n.Use(hooks...)
+	}
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Character.Intercept(interceptors...)
-	c.CharacterConfig.Intercept(interceptors...)
-	c.SystemPrompt.Intercept(interceptors...)
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.Character, c.CharacterConfig, c.DiscordChannel, c.DiscordGuild,
+		c.DiscordMessage, c.SystemPrompt,
+	} {
+		n.Intercept(interceptors...)
+	}
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -210,6 +234,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Character.mutate(ctx, m)
 	case *CharacterConfigMutation:
 		return c.CharacterConfig.mutate(ctx, m)
+	case *DiscordChannelMutation:
+		return c.DiscordChannel.mutate(ctx, m)
+	case *DiscordGuildMutation:
+		return c.DiscordGuild.mutate(ctx, m)
+	case *DiscordMessageMutation:
+		return c.DiscordMessage.mutate(ctx, m)
 	case *SystemPromptMutation:
 		return c.SystemPrompt.mutate(ctx, m)
 	default:
@@ -531,6 +561,469 @@ func (c *CharacterConfigClient) mutate(ctx context.Context, m *CharacterConfigMu
 	}
 }
 
+// DiscordChannelClient is a client for the DiscordChannel schema.
+type DiscordChannelClient struct {
+	config
+}
+
+// NewDiscordChannelClient returns a client for the DiscordChannel from the given config.
+func NewDiscordChannelClient(c config) *DiscordChannelClient {
+	return &DiscordChannelClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `discordchannel.Hooks(f(g(h())))`.
+func (c *DiscordChannelClient) Use(hooks ...Hook) {
+	c.hooks.DiscordChannel = append(c.hooks.DiscordChannel, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `discordchannel.Intercept(f(g(h())))`.
+func (c *DiscordChannelClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DiscordChannel = append(c.inters.DiscordChannel, interceptors...)
+}
+
+// Create returns a builder for creating a DiscordChannel entity.
+func (c *DiscordChannelClient) Create() *DiscordChannelCreate {
+	mutation := newDiscordChannelMutation(c.config, OpCreate)
+	return &DiscordChannelCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DiscordChannel entities.
+func (c *DiscordChannelClient) CreateBulk(builders ...*DiscordChannelCreate) *DiscordChannelCreateBulk {
+	return &DiscordChannelCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DiscordChannelClient) MapCreateBulk(slice any, setFunc func(*DiscordChannelCreate, int)) *DiscordChannelCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DiscordChannelCreateBulk{err: fmt.Errorf("calling to DiscordChannelClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DiscordChannelCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DiscordChannelCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DiscordChannel.
+func (c *DiscordChannelClient) Update() *DiscordChannelUpdate {
+	mutation := newDiscordChannelMutation(c.config, OpUpdate)
+	return &DiscordChannelUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DiscordChannelClient) UpdateOne(_m *DiscordChannel) *DiscordChannelUpdateOne {
+	mutation := newDiscordChannelMutation(c.config, OpUpdateOne, withDiscordChannel(_m))
+	return &DiscordChannelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DiscordChannelClient) UpdateOneID(id string) *DiscordChannelUpdateOne {
+	mutation := newDiscordChannelMutation(c.config, OpUpdateOne, withDiscordChannelID(id))
+	return &DiscordChannelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DiscordChannel.
+func (c *DiscordChannelClient) Delete() *DiscordChannelDelete {
+	mutation := newDiscordChannelMutation(c.config, OpDelete)
+	return &DiscordChannelDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DiscordChannelClient) DeleteOne(_m *DiscordChannel) *DiscordChannelDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DiscordChannelClient) DeleteOneID(id string) *DiscordChannelDeleteOne {
+	builder := c.Delete().Where(discordchannel.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DiscordChannelDeleteOne{builder}
+}
+
+// Query returns a query builder for DiscordChannel.
+func (c *DiscordChannelClient) Query() *DiscordChannelQuery {
+	return &DiscordChannelQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDiscordChannel},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DiscordChannel entity by its id.
+func (c *DiscordChannelClient) Get(ctx context.Context, id string) (*DiscordChannel, error) {
+	return c.Query().Where(discordchannel.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DiscordChannelClient) GetX(ctx context.Context, id string) *DiscordChannel {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryMessages queries the messages edge of a DiscordChannel.
+func (c *DiscordChannelClient) QueryMessages(_m *DiscordChannel) *DiscordMessageQuery {
+	query := (&DiscordMessageClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordchannel.Table, discordchannel.FieldID, id),
+			sqlgraph.To(discordmessage.Table, discordmessage.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, discordchannel.MessagesTable, discordchannel.MessagesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGuild queries the guild edge of a DiscordChannel.
+func (c *DiscordChannelClient) QueryGuild(_m *DiscordChannel) *DiscordGuildQuery {
+	query := (&DiscordGuildClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordchannel.Table, discordchannel.FieldID, id),
+			sqlgraph.To(discordguild.Table, discordguild.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, discordchannel.GuildTable, discordchannel.GuildColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DiscordChannelClient) Hooks() []Hook {
+	return c.hooks.DiscordChannel
+}
+
+// Interceptors returns the client interceptors.
+func (c *DiscordChannelClient) Interceptors() []Interceptor {
+	return c.inters.DiscordChannel
+}
+
+func (c *DiscordChannelClient) mutate(ctx context.Context, m *DiscordChannelMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DiscordChannelCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DiscordChannelUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DiscordChannelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DiscordChannelDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DiscordChannel mutation op: %q", m.Op())
+	}
+}
+
+// DiscordGuildClient is a client for the DiscordGuild schema.
+type DiscordGuildClient struct {
+	config
+}
+
+// NewDiscordGuildClient returns a client for the DiscordGuild from the given config.
+func NewDiscordGuildClient(c config) *DiscordGuildClient {
+	return &DiscordGuildClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `discordguild.Hooks(f(g(h())))`.
+func (c *DiscordGuildClient) Use(hooks ...Hook) {
+	c.hooks.DiscordGuild = append(c.hooks.DiscordGuild, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `discordguild.Intercept(f(g(h())))`.
+func (c *DiscordGuildClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DiscordGuild = append(c.inters.DiscordGuild, interceptors...)
+}
+
+// Create returns a builder for creating a DiscordGuild entity.
+func (c *DiscordGuildClient) Create() *DiscordGuildCreate {
+	mutation := newDiscordGuildMutation(c.config, OpCreate)
+	return &DiscordGuildCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DiscordGuild entities.
+func (c *DiscordGuildClient) CreateBulk(builders ...*DiscordGuildCreate) *DiscordGuildCreateBulk {
+	return &DiscordGuildCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DiscordGuildClient) MapCreateBulk(slice any, setFunc func(*DiscordGuildCreate, int)) *DiscordGuildCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DiscordGuildCreateBulk{err: fmt.Errorf("calling to DiscordGuildClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DiscordGuildCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DiscordGuildCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DiscordGuild.
+func (c *DiscordGuildClient) Update() *DiscordGuildUpdate {
+	mutation := newDiscordGuildMutation(c.config, OpUpdate)
+	return &DiscordGuildUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DiscordGuildClient) UpdateOne(_m *DiscordGuild) *DiscordGuildUpdateOne {
+	mutation := newDiscordGuildMutation(c.config, OpUpdateOne, withDiscordGuild(_m))
+	return &DiscordGuildUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DiscordGuildClient) UpdateOneID(id string) *DiscordGuildUpdateOne {
+	mutation := newDiscordGuildMutation(c.config, OpUpdateOne, withDiscordGuildID(id))
+	return &DiscordGuildUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DiscordGuild.
+func (c *DiscordGuildClient) Delete() *DiscordGuildDelete {
+	mutation := newDiscordGuildMutation(c.config, OpDelete)
+	return &DiscordGuildDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DiscordGuildClient) DeleteOne(_m *DiscordGuild) *DiscordGuildDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DiscordGuildClient) DeleteOneID(id string) *DiscordGuildDeleteOne {
+	builder := c.Delete().Where(discordguild.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DiscordGuildDeleteOne{builder}
+}
+
+// Query returns a query builder for DiscordGuild.
+func (c *DiscordGuildClient) Query() *DiscordGuildQuery {
+	return &DiscordGuildQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDiscordGuild},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DiscordGuild entity by its id.
+func (c *DiscordGuildClient) Get(ctx context.Context, id string) (*DiscordGuild, error) {
+	return c.Query().Where(discordguild.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DiscordGuildClient) GetX(ctx context.Context, id string) *DiscordGuild {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryChannels queries the channels edge of a DiscordGuild.
+func (c *DiscordGuildClient) QueryChannels(_m *DiscordGuild) *DiscordChannelQuery {
+	query := (&DiscordChannelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordguild.Table, discordguild.FieldID, id),
+			sqlgraph.To(discordchannel.Table, discordchannel.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, discordguild.ChannelsTable, discordguild.ChannelsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DiscordGuildClient) Hooks() []Hook {
+	return c.hooks.DiscordGuild
+}
+
+// Interceptors returns the client interceptors.
+func (c *DiscordGuildClient) Interceptors() []Interceptor {
+	return c.inters.DiscordGuild
+}
+
+func (c *DiscordGuildClient) mutate(ctx context.Context, m *DiscordGuildMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DiscordGuildCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DiscordGuildUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DiscordGuildUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DiscordGuildDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DiscordGuild mutation op: %q", m.Op())
+	}
+}
+
+// DiscordMessageClient is a client for the DiscordMessage schema.
+type DiscordMessageClient struct {
+	config
+}
+
+// NewDiscordMessageClient returns a client for the DiscordMessage from the given config.
+func NewDiscordMessageClient(c config) *DiscordMessageClient {
+	return &DiscordMessageClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `discordmessage.Hooks(f(g(h())))`.
+func (c *DiscordMessageClient) Use(hooks ...Hook) {
+	c.hooks.DiscordMessage = append(c.hooks.DiscordMessage, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `discordmessage.Intercept(f(g(h())))`.
+func (c *DiscordMessageClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DiscordMessage = append(c.inters.DiscordMessage, interceptors...)
+}
+
+// Create returns a builder for creating a DiscordMessage entity.
+func (c *DiscordMessageClient) Create() *DiscordMessageCreate {
+	mutation := newDiscordMessageMutation(c.config, OpCreate)
+	return &DiscordMessageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DiscordMessage entities.
+func (c *DiscordMessageClient) CreateBulk(builders ...*DiscordMessageCreate) *DiscordMessageCreateBulk {
+	return &DiscordMessageCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DiscordMessageClient) MapCreateBulk(slice any, setFunc func(*DiscordMessageCreate, int)) *DiscordMessageCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DiscordMessageCreateBulk{err: fmt.Errorf("calling to DiscordMessageClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DiscordMessageCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DiscordMessageCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DiscordMessage.
+func (c *DiscordMessageClient) Update() *DiscordMessageUpdate {
+	mutation := newDiscordMessageMutation(c.config, OpUpdate)
+	return &DiscordMessageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DiscordMessageClient) UpdateOne(_m *DiscordMessage) *DiscordMessageUpdateOne {
+	mutation := newDiscordMessageMutation(c.config, OpUpdateOne, withDiscordMessage(_m))
+	return &DiscordMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DiscordMessageClient) UpdateOneID(id string) *DiscordMessageUpdateOne {
+	mutation := newDiscordMessageMutation(c.config, OpUpdateOne, withDiscordMessageID(id))
+	return &DiscordMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DiscordMessage.
+func (c *DiscordMessageClient) Delete() *DiscordMessageDelete {
+	mutation := newDiscordMessageMutation(c.config, OpDelete)
+	return &DiscordMessageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DiscordMessageClient) DeleteOne(_m *DiscordMessage) *DiscordMessageDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DiscordMessageClient) DeleteOneID(id string) *DiscordMessageDeleteOne {
+	builder := c.Delete().Where(discordmessage.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DiscordMessageDeleteOne{builder}
+}
+
+// Query returns a query builder for DiscordMessage.
+func (c *DiscordMessageClient) Query() *DiscordMessageQuery {
+	return &DiscordMessageQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDiscordMessage},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DiscordMessage entity by its id.
+func (c *DiscordMessageClient) Get(ctx context.Context, id string) (*DiscordMessage, error) {
+	return c.Query().Where(discordmessage.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DiscordMessageClient) GetX(ctx context.Context, id string) *DiscordMessage {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryChannel queries the channel edge of a DiscordMessage.
+func (c *DiscordMessageClient) QueryChannel(_m *DiscordMessage) *DiscordChannelQuery {
+	query := (&DiscordChannelClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, id),
+			sqlgraph.To(discordchannel.Table, discordchannel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, discordmessage.ChannelTable, discordmessage.ChannelColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DiscordMessageClient) Hooks() []Hook {
+	return c.hooks.DiscordMessage
+}
+
+// Interceptors returns the client interceptors.
+func (c *DiscordMessageClient) Interceptors() []Interceptor {
+	return c.inters.DiscordMessage
+}
+
+func (c *DiscordMessageClient) mutate(ctx context.Context, m *DiscordMessageMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DiscordMessageCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DiscordMessageUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DiscordMessageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DiscordMessageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DiscordMessage mutation op: %q", m.Op())
+	}
+}
+
 // SystemPromptClient is a client for the SystemPrompt schema.
 type SystemPromptClient struct {
 	config
@@ -683,9 +1176,11 @@ func (c *SystemPromptClient) mutate(ctx context.Context, m *SystemPromptMutation
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Character, CharacterConfig, SystemPrompt []ent.Hook
+		Character, CharacterConfig, DiscordChannel, DiscordGuild, DiscordMessage,
+		SystemPrompt []ent.Hook
 	}
 	inters struct {
-		Character, CharacterConfig, SystemPrompt []ent.Interceptor
+		Character, CharacterConfig, DiscordChannel, DiscordGuild, DiscordMessage,
+		SystemPrompt []ent.Interceptor
 	}
 )
