@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
 
 type Repository interface {
 	domain.DatabaseRepository
 	domain.SystemPromptRepository
+	domain.CharacterRepository
 	HealthCheck(ctx context.Context) error
 }
 
@@ -121,6 +123,125 @@ func (r *repositoryImpl) DeleteSystemPrompt(ctx context.Context, promptID int) e
 
 	r.logger.Info("system prompt deleted",
 		slog.Int("id", promptID),
+	)
+
+	return nil
+}
+
+func (r *repositoryImpl) CreateCharacter(
+	ctx context.Context,
+	name string,
+	systemPromptID int,
+) (*domain.Character, error) {
+	character, err := r.client.CharacterClient().
+		Create().
+		SetName(name).
+		SetSystemPromptID(systemPromptID).
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create character: %w", err)
+	}
+
+	r.logger.Info("character created",
+		slog.Int("id", character.ID),
+		slog.String("name", name),
+		slog.Int("system_prompt_id", systemPromptID),
+	)
+
+	return character, nil
+}
+
+func (r *repositoryImpl) GetCharacterByID(ctx context.Context, characterID int) (*domain.Character, error) {
+	char, err := r.client.CharacterClient().Get(ctx, characterID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get character by id: %w", err)
+	}
+
+	return char, nil
+}
+
+func (r *repositoryImpl) GetCharacterWithSystemPromptByID(
+	ctx context.Context,
+	characterID int,
+) (*domain.Character, error) {
+	char, err := r.client.CharacterClient().
+		Query().
+		Where(character.IDEQ(characterID)).
+		WithSystemPrompt().
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get character with system prompt: %w", err)
+	}
+
+	return char, nil
+}
+
+func (r *repositoryImpl) ListCharacters(ctx context.Context, activeOnly bool) ([]*domain.Character, error) {
+	query := r.client.CharacterClient().Query()
+
+	if activeOnly {
+		query = query.Where(character.IsActiveEQ(true))
+	}
+
+	characters, err := query.All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list characters: %w", err)
+	}
+
+	return characters, nil
+}
+
+func (r *repositoryImpl) UpdateCharacter(
+	ctx context.Context,
+	characterID int,
+	name *string,
+	isActive *bool,
+	systemPromptID *int,
+) (*domain.Character, error) {
+	updater := r.client.CharacterClient().UpdateOneID(characterID)
+
+	if name != nil {
+		updater = updater.SetName(*name)
+	}
+
+	if isActive != nil {
+		updater = updater.SetIsActive(*isActive)
+	}
+
+	if systemPromptID != nil {
+		updater = updater.SetSystemPromptID(*systemPromptID)
+	}
+
+	char, err := updater.Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update character: %w", err)
+	}
+
+	logAttrs := []any{slog.Int("id", characterID)}
+	if name != nil {
+		logAttrs = append(logAttrs, slog.String("name", *name))
+	}
+
+	if isActive != nil {
+		logAttrs = append(logAttrs, slog.Bool("is_active", *isActive))
+	}
+
+	if systemPromptID != nil {
+		logAttrs = append(logAttrs, slog.Int("system_prompt_id", *systemPromptID))
+	}
+
+	r.logger.Info("character updated", logAttrs...)
+
+	return char, nil
+}
+
+func (r *repositoryImpl) DeleteCharacter(ctx context.Context, characterID int) error {
+	if err := r.client.CharacterClient().DeleteOneID(characterID).Exec(ctx); err != nil {
+		return fmt.Errorf("failed to delete character: %w", err)
+	}
+
+	r.logger.Info("character deleted",
+		slog.Int("id", characterID),
 	)
 
 	return nil
