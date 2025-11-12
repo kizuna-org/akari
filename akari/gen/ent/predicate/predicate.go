@@ -6,5 +6,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// Character is the predicate function for character builders.
+type Character func(*sql.Selector)
+
 // SystemPrompt is the predicate function for systemprompt builders.
 type SystemPrompt func(*sql.Selector)

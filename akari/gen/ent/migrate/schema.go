@@ -8,6 +8,29 @@ import (
 )
 
 var (
+	// CharactersColumns holds the columns for the "characters" table.
+	CharactersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "is_active", Type: field.TypeBool, Default: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "character_system_prompt", Type: field.TypeInt},
+	}
+	// CharactersTable holds the schema information for the "characters" table.
+	CharactersTable = &schema.Table{
+		Name:       "characters",
+		Columns:    CharactersColumns,
+		PrimaryKey: []*schema.Column{CharactersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "characters_system_prompts_system_prompt",
+				Columns:    []*schema.Column{CharactersColumns[5]},
+				RefColumns: []*schema.Column{SystemPromptsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// SystemPromptsColumns holds the columns for the "system_prompts" table.
 	SystemPromptsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -25,9 +48,11 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		CharactersTable,
 		SystemPromptsTable,
 	}
 )
 
 func init() {
+	CharactersTable.ForeignKeys[0].RefTable = SystemPromptsTable
 }
