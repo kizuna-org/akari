@@ -164,7 +164,7 @@ func (r *repositoryImpl) GetCharacterWithSystemPromptByID(
 	char, err := r.client.CharacterClient().
 		Query().
 		Where(character.IDEQ(characterID)).
-		WithSystemPrompt().
+		WithSystemPrompts().
 		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get character with system prompt: %w", err)

@@ -9,4 +9,4 @@ CREATE TABLE "characters" (
 -- Create index "characters_name_key" to table: "characters"
 CREATE UNIQUE INDEX "characters_name_key" ON "characters" ("name");
 -- Modify "system_prompts" table
-ALTER TABLE "system_prompts" ADD COLUMN "character_system_prompt" bigint NULL, ADD CONSTRAINT "system_prompts_characters_system_prompt" FOREIGN KEY ("character_system_prompt") REFERENCES "characters" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;
+ALTER TABLE "system_prompts" ADD COLUMN "character_system_prompts" bigint NULL, ADD CONSTRAINT "system_prompts_characters_system_prompts" FOREIGN KEY ("character_system_prompts") REFERENCES "characters" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;

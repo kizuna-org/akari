@@ -20,17 +20,17 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// EdgeSystemPrompt holds the string denoting the system_prompt edge name in mutations.
-	EdgeSystemPrompt = "system_prompt"
+	// EdgeSystemPrompts holds the string denoting the system_prompts edge name in mutations.
+	EdgeSystemPrompts = "system_prompts"
 	// Table holds the table name of the character in the database.
 	Table = "characters"
-	// SystemPromptTable is the table that holds the system_prompt relation/edge.
-	SystemPromptTable = "system_prompts"
-	// SystemPromptInverseTable is the table name for the SystemPrompt entity.
+	// SystemPromptsTable is the table that holds the system_prompts relation/edge.
+	SystemPromptsTable = "system_prompts"
+	// SystemPromptsInverseTable is the table name for the SystemPrompt entity.
 	// It exists in this package in order to avoid circular dependency with the "systemprompt" package.
-	SystemPromptInverseTable = "system_prompts"
-	// SystemPromptColumn is the table column denoting the system_prompt relation/edge.
-	SystemPromptColumn = "character_system_prompt"
+	SystemPromptsInverseTable = "system_prompts"
+	// SystemPromptsColumn is the table column denoting the system_prompts relation/edge.
+	SystemPromptsColumn = "character_system_prompts"
 )
 
 // Columns holds all SQL columns for character fields.
@@ -85,23 +85,23 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// BySystemPromptCount orders the results by system_prompt count.
-func BySystemPromptCount(opts ...sql.OrderTermOption) OrderOption {
+// BySystemPromptsCount orders the results by system_prompts count.
+func BySystemPromptsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newSystemPromptStep(), opts...)
+		sqlgraph.OrderByNeighborsCount(s, newSystemPromptsStep(), opts...)
 	}
 }
 
-// BySystemPrompt orders the results by system_prompt terms.
-func BySystemPrompt(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// BySystemPrompts orders the results by system_prompts terms.
+func BySystemPrompts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newSystemPromptStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newSystemPromptsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newSystemPromptStep() *sqlgraph.Step {
+func newSystemPromptsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(SystemPromptInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, SystemPromptTable, SystemPromptColumn),
+		sqlgraph.To(SystemPromptsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SystemPromptsTable, SystemPromptsColumn),
 	)
 }

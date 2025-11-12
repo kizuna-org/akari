@@ -215,21 +215,21 @@ func UpdatedAtLTE(v time.Time) predicate.Character {
 	return predicate.Character(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// HasSystemPrompt applies the HasEdge predicate on the "system_prompt" edge.
-func HasSystemPrompt() predicate.Character {
+// HasSystemPrompts applies the HasEdge predicate on the "system_prompts" edge.
+func HasSystemPrompts() predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, SystemPromptTable, SystemPromptColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, SystemPromptsTable, SystemPromptsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasSystemPromptWith applies the HasEdge predicate on the "system_prompt" edge with a given conditions (other predicates).
-func HasSystemPromptWith(preds ...predicate.SystemPrompt) predicate.Character {
+// HasSystemPromptsWith applies the HasEdge predicate on the "system_prompts" edge with a given conditions (other predicates).
+func HasSystemPromptsWith(preds ...predicate.SystemPrompt) predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
-		step := newSystemPromptStep()
+		step := newSystemPromptsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

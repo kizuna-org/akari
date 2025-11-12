@@ -189,7 +189,7 @@ func TestCharacterInteractor_GetCharacterWithSystemPromptByID(t *testing.T) {
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 						Edges: ent.CharacterEdges{
-							SystemPrompt: []*ent.SystemPrompt{
+							SystemPrompts: []*ent.SystemPrompt{
 								{
 									ID:        1,
 									Title:     "Test Prompt",
@@ -245,7 +245,7 @@ func TestCharacterInteractor_GetCharacterWithSystemPromptByID(t *testing.T) {
 				require.NoError(t, err)
 				assert.NotNil(t, result)
 				assert.Equal(t, characterID, result.ID)
-				assert.NotEmpty(t, result.Edges.SystemPrompt)
+				assert.NotEmpty(t, result.Edges.SystemPrompts)
 			}
 		})
 	}

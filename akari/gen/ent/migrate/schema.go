@@ -29,7 +29,7 @@ var (
 		{Name: "prompt", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "character_system_prompt", Type: field.TypeInt, Nullable: true},
+		{Name: "character_system_prompts", Type: field.TypeInt, Nullable: true},
 	}
 	// SystemPromptsTable holds the schema information for the "system_prompts" table.
 	SystemPromptsTable = &schema.Table{
@@ -38,7 +38,7 @@ var (
 		PrimaryKey: []*schema.Column{SystemPromptsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "system_prompts_characters_system_prompt",
+				Symbol:     "system_prompts_characters_system_prompts",
 				Columns:    []*schema.Column{SystemPromptsColumns[6]},
 				RefColumns: []*schema.Column{CharactersColumns[0]},
 				OnDelete:   schema.SetNull,

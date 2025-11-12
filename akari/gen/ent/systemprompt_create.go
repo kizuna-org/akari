@@ -67,23 +67,23 @@ func (_c *SystemPromptCreate) SetNillableUpdatedAt(v *time.Time) *SystemPromptCr
 	return _c
 }
 
-// SetCharactersID sets the "characters" edge to the Character entity by ID.
-func (_c *SystemPromptCreate) SetCharactersID(id int) *SystemPromptCreate {
-	_c.mutation.SetCharactersID(id)
+// SetCharacterID sets the "character" edge to the Character entity by ID.
+func (_c *SystemPromptCreate) SetCharacterID(id int) *SystemPromptCreate {
+	_c.mutation.SetCharacterID(id)
 	return _c
 }
 
-// SetNillableCharactersID sets the "characters" edge to the Character entity by ID if the given value is not nil.
-func (_c *SystemPromptCreate) SetNillableCharactersID(id *int) *SystemPromptCreate {
+// SetNillableCharacterID sets the "character" edge to the Character entity by ID if the given value is not nil.
+func (_c *SystemPromptCreate) SetNillableCharacterID(id *int) *SystemPromptCreate {
 	if id != nil {
-		_c = _c.SetCharactersID(*id)
+		_c = _c.SetCharacterID(*id)
 	}
 	return _c
 }
 
-// SetCharacters sets the "characters" edge to the Character entity.
-func (_c *SystemPromptCreate) SetCharacters(v *Character) *SystemPromptCreate {
-	return _c.SetCharactersID(v.ID)
+// SetCharacter sets the "character" edge to the Character entity.
+func (_c *SystemPromptCreate) SetCharacter(v *Character) *SystemPromptCreate {
+	return _c.SetCharacterID(v.ID)
 }
 
 // Mutation returns the SystemPromptMutation object of the builder.
@@ -209,12 +209,12 @@ func (_c *SystemPromptCreate) createSpec() (*SystemPrompt, *sqlgraph.CreateSpec)
 		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if nodes := _c.mutation.CharactersIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.CharacterIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   systemprompt.CharactersTable,
-			Columns: []string{systemprompt.CharactersColumn},
+			Table:   systemprompt.CharacterTable,
+			Columns: []string{systemprompt.CharacterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),
@@ -223,7 +223,7 @@ func (_c *SystemPromptCreate) createSpec() (*SystemPrompt, *sqlgraph.CreateSpec)
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.character_system_prompt = &nodes[0]
+		_node.character_system_prompts = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

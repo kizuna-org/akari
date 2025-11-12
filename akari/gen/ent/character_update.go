@@ -49,14 +49,14 @@ func (_u *CharacterUpdate) SetUpdatedAt(v time.Time) *CharacterUpdate {
 	return _u
 }
 
-// AddSystemPromptIDs adds the "system_prompt" edge to the SystemPrompt entity by IDs.
+// AddSystemPromptIDs adds the "system_prompts" edge to the SystemPrompt entity by IDs.
 func (_u *CharacterUpdate) AddSystemPromptIDs(ids ...int) *CharacterUpdate {
 	_u.mutation.AddSystemPromptIDs(ids...)
 	return _u
 }
 
-// AddSystemPrompt adds the "system_prompt" edges to the SystemPrompt entity.
-func (_u *CharacterUpdate) AddSystemPrompt(v ...*SystemPrompt) *CharacterUpdate {
+// AddSystemPrompts adds the "system_prompts" edges to the SystemPrompt entity.
+func (_u *CharacterUpdate) AddSystemPrompts(v ...*SystemPrompt) *CharacterUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -69,20 +69,20 @@ func (_u *CharacterUpdate) Mutation() *CharacterMutation {
 	return _u.mutation
 }
 
-// ClearSystemPrompt clears all "system_prompt" edges to the SystemPrompt entity.
-func (_u *CharacterUpdate) ClearSystemPrompt() *CharacterUpdate {
-	_u.mutation.ClearSystemPrompt()
+// ClearSystemPrompts clears all "system_prompts" edges to the SystemPrompt entity.
+func (_u *CharacterUpdate) ClearSystemPrompts() *CharacterUpdate {
+	_u.mutation.ClearSystemPrompts()
 	return _u
 }
 
-// RemoveSystemPromptIDs removes the "system_prompt" edge to SystemPrompt entities by IDs.
+// RemoveSystemPromptIDs removes the "system_prompts" edge to SystemPrompt entities by IDs.
 func (_u *CharacterUpdate) RemoveSystemPromptIDs(ids ...int) *CharacterUpdate {
 	_u.mutation.RemoveSystemPromptIDs(ids...)
 	return _u
 }
 
-// RemoveSystemPrompt removes "system_prompt" edges to SystemPrompt entities.
-func (_u *CharacterUpdate) RemoveSystemPrompt(v ...*SystemPrompt) *CharacterUpdate {
+// RemoveSystemPrompts removes "system_prompts" edges to SystemPrompt entities.
+func (_u *CharacterUpdate) RemoveSystemPrompts(v ...*SystemPrompt) *CharacterUpdate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -154,12 +154,12 @@ func (_u *CharacterUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(character.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if _u.mutation.SystemPromptCleared() {
+	if _u.mutation.SystemPromptsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   character.SystemPromptTable,
-			Columns: []string{character.SystemPromptColumn},
+			Table:   character.SystemPromptsTable,
+			Columns: []string{character.SystemPromptsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),
@@ -167,12 +167,12 @@ func (_u *CharacterUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedSystemPromptIDs(); len(nodes) > 0 && !_u.mutation.SystemPromptCleared() {
+	if nodes := _u.mutation.RemovedSystemPromptsIDs(); len(nodes) > 0 && !_u.mutation.SystemPromptsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   character.SystemPromptTable,
-			Columns: []string{character.SystemPromptColumn},
+			Table:   character.SystemPromptsTable,
+			Columns: []string{character.SystemPromptsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),
@@ -183,12 +183,12 @@ func (_u *CharacterUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.SystemPromptIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.SystemPromptsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   character.SystemPromptTable,
-			Columns: []string{character.SystemPromptColumn},
+			Table:   character.SystemPromptsTable,
+			Columns: []string{character.SystemPromptsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),
@@ -239,14 +239,14 @@ func (_u *CharacterUpdateOne) SetUpdatedAt(v time.Time) *CharacterUpdateOne {
 	return _u
 }
 
-// AddSystemPromptIDs adds the "system_prompt" edge to the SystemPrompt entity by IDs.
+// AddSystemPromptIDs adds the "system_prompts" edge to the SystemPrompt entity by IDs.
 func (_u *CharacterUpdateOne) AddSystemPromptIDs(ids ...int) *CharacterUpdateOne {
 	_u.mutation.AddSystemPromptIDs(ids...)
 	return _u
 }
 
-// AddSystemPrompt adds the "system_prompt" edges to the SystemPrompt entity.
-func (_u *CharacterUpdateOne) AddSystemPrompt(v ...*SystemPrompt) *CharacterUpdateOne {
+// AddSystemPrompts adds the "system_prompts" edges to the SystemPrompt entity.
+func (_u *CharacterUpdateOne) AddSystemPrompts(v ...*SystemPrompt) *CharacterUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -259,20 +259,20 @@ func (_u *CharacterUpdateOne) Mutation() *CharacterMutation {
 	return _u.mutation
 }
 
-// ClearSystemPrompt clears all "system_prompt" edges to the SystemPrompt entity.
-func (_u *CharacterUpdateOne) ClearSystemPrompt() *CharacterUpdateOne {
-	_u.mutation.ClearSystemPrompt()
+// ClearSystemPrompts clears all "system_prompts" edges to the SystemPrompt entity.
+func (_u *CharacterUpdateOne) ClearSystemPrompts() *CharacterUpdateOne {
+	_u.mutation.ClearSystemPrompts()
 	return _u
 }
 
-// RemoveSystemPromptIDs removes the "system_prompt" edge to SystemPrompt entities by IDs.
+// RemoveSystemPromptIDs removes the "system_prompts" edge to SystemPrompt entities by IDs.
 func (_u *CharacterUpdateOne) RemoveSystemPromptIDs(ids ...int) *CharacterUpdateOne {
 	_u.mutation.RemoveSystemPromptIDs(ids...)
 	return _u
 }
 
-// RemoveSystemPrompt removes "system_prompt" edges to SystemPrompt entities.
-func (_u *CharacterUpdateOne) RemoveSystemPrompt(v ...*SystemPrompt) *CharacterUpdateOne {
+// RemoveSystemPrompts removes "system_prompts" edges to SystemPrompt entities.
+func (_u *CharacterUpdateOne) RemoveSystemPrompts(v ...*SystemPrompt) *CharacterUpdateOne {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -374,12 +374,12 @@ func (_u *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, er
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(character.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if _u.mutation.SystemPromptCleared() {
+	if _u.mutation.SystemPromptsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   character.SystemPromptTable,
-			Columns: []string{character.SystemPromptColumn},
+			Table:   character.SystemPromptsTable,
+			Columns: []string{character.SystemPromptsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),
@@ -387,12 +387,12 @@ func (_u *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.RemovedSystemPromptIDs(); len(nodes) > 0 && !_u.mutation.SystemPromptCleared() {
+	if nodes := _u.mutation.RemovedSystemPromptsIDs(); len(nodes) > 0 && !_u.mutation.SystemPromptsCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   character.SystemPromptTable,
-			Columns: []string{character.SystemPromptColumn},
+			Table:   character.SystemPromptsTable,
+			Columns: []string{character.SystemPromptsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),
@@ -403,12 +403,12 @@ func (_u *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.SystemPromptIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.SystemPromptsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   character.SystemPromptTable,
-			Columns: []string{character.SystemPromptColumn},
+			Table:   character.SystemPromptsTable,
+			Columns: []string{character.SystemPromptsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),

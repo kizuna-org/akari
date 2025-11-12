@@ -55,14 +55,14 @@ func (_c *CharacterCreate) SetNillableUpdatedAt(v *time.Time) *CharacterCreate {
 	return _c
 }
 
-// AddSystemPromptIDs adds the "system_prompt" edge to the SystemPrompt entity by IDs.
+// AddSystemPromptIDs adds the "system_prompts" edge to the SystemPrompt entity by IDs.
 func (_c *CharacterCreate) AddSystemPromptIDs(ids ...int) *CharacterCreate {
 	_c.mutation.AddSystemPromptIDs(ids...)
 	return _c
 }
 
-// AddSystemPrompt adds the "system_prompt" edges to the SystemPrompt entity.
-func (_c *CharacterCreate) AddSystemPrompt(v ...*SystemPrompt) *CharacterCreate {
+// AddSystemPrompts adds the "system_prompts" edges to the SystemPrompt entity.
+func (_c *CharacterCreate) AddSystemPrompts(v ...*SystemPrompt) *CharacterCreate {
 	ids := make([]int, len(v))
 	for i := range v {
 		ids[i] = v[i].ID
@@ -131,8 +131,8 @@ func (_c *CharacterCreate) check() error {
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Character.updated_at"`)}
 	}
-	if len(_c.mutation.SystemPromptIDs()) == 0 {
-		return &ValidationError{Name: "system_prompt", err: errors.New(`ent: missing required edge "Character.system_prompt"`)}
+	if len(_c.mutation.SystemPromptsIDs()) == 0 {
+		return &ValidationError{Name: "system_prompts", err: errors.New(`ent: missing required edge "Character.system_prompts"`)}
 	}
 	return nil
 }
@@ -172,12 +172,12 @@ func (_c *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 		_spec.SetField(character.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if nodes := _c.mutation.SystemPromptIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.SystemPromptsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   character.SystemPromptTable,
-			Columns: []string{character.SystemPromptColumn},
+			Table:   character.SystemPromptsTable,
+			Columns: []string{character.SystemPromptsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),

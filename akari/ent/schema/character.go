@@ -25,8 +25,8 @@ func (Character) Fields() []ent.Field {
 
 func (Character) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("system_prompt", SystemPrompt.Type).
+		edge.To("system_prompts", SystemPrompt.Type).
 			Required().
-			Comment("The system prompt associated with this character"),
+			Comment("The system prompts associated with this character"),
 	}
 }

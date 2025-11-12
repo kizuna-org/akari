@@ -31,20 +31,20 @@ type Character struct {
 
 // CharacterEdges holds the relations/edges for other nodes in the graph.
 type CharacterEdges struct {
-	// The system prompt associated with this character
-	SystemPrompt []*SystemPrompt `json:"system_prompt,omitempty"`
+	// The system prompts associated with this character
+	SystemPrompts []*SystemPrompt `json:"system_prompts,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
-// SystemPromptOrErr returns the SystemPrompt value or an error if the edge
+// SystemPromptsOrErr returns the SystemPrompts value or an error if the edge
 // was not loaded in eager-loading.
-func (e CharacterEdges) SystemPromptOrErr() ([]*SystemPrompt, error) {
+func (e CharacterEdges) SystemPromptsOrErr() ([]*SystemPrompt, error) {
 	if e.loadedTypes[0] {
-		return e.SystemPrompt, nil
+		return e.SystemPrompts, nil
 	}
-	return nil, &NotLoadedError{edge: "system_prompt"}
+	return nil, &NotLoadedError{edge: "system_prompts"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -110,9 +110,9 @@ func (_m *Character) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QuerySystemPrompt queries the "system_prompt" edge of the Character entity.
-func (_m *Character) QuerySystemPrompt() *SystemPromptQuery {
-	return NewCharacterClient(_m.config).QuerySystemPrompt(_m)
+// QuerySystemPrompts queries the "system_prompts" edge of the Character entity.
+func (_m *Character) QuerySystemPrompts() *SystemPromptQuery {
+	return NewCharacterClient(_m.config).QuerySystemPrompts(_m)
 }
 
 // Update returns a builder for updating this Character.

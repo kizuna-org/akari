@@ -77,23 +77,23 @@ func (_u *SystemPromptUpdate) SetUpdatedAt(v time.Time) *SystemPromptUpdate {
 	return _u
 }
 
-// SetCharactersID sets the "characters" edge to the Character entity by ID.
-func (_u *SystemPromptUpdate) SetCharactersID(id int) *SystemPromptUpdate {
-	_u.mutation.SetCharactersID(id)
+// SetCharacterID sets the "character" edge to the Character entity by ID.
+func (_u *SystemPromptUpdate) SetCharacterID(id int) *SystemPromptUpdate {
+	_u.mutation.SetCharacterID(id)
 	return _u
 }
 
-// SetNillableCharactersID sets the "characters" edge to the Character entity by ID if the given value is not nil.
-func (_u *SystemPromptUpdate) SetNillableCharactersID(id *int) *SystemPromptUpdate {
+// SetNillableCharacterID sets the "character" edge to the Character entity by ID if the given value is not nil.
+func (_u *SystemPromptUpdate) SetNillableCharacterID(id *int) *SystemPromptUpdate {
 	if id != nil {
-		_u = _u.SetCharactersID(*id)
+		_u = _u.SetCharacterID(*id)
 	}
 	return _u
 }
 
-// SetCharacters sets the "characters" edge to the Character entity.
-func (_u *SystemPromptUpdate) SetCharacters(v *Character) *SystemPromptUpdate {
-	return _u.SetCharactersID(v.ID)
+// SetCharacter sets the "character" edge to the Character entity.
+func (_u *SystemPromptUpdate) SetCharacter(v *Character) *SystemPromptUpdate {
+	return _u.SetCharacterID(v.ID)
 }
 
 // Mutation returns the SystemPromptMutation object of the builder.
@@ -101,9 +101,9 @@ func (_u *SystemPromptUpdate) Mutation() *SystemPromptMutation {
 	return _u.mutation
 }
 
-// ClearCharacters clears the "characters" edge to the Character entity.
-func (_u *SystemPromptUpdate) ClearCharacters() *SystemPromptUpdate {
-	_u.mutation.ClearCharacters()
+// ClearCharacter clears the "character" edge to the Character entity.
+func (_u *SystemPromptUpdate) ClearCharacter() *SystemPromptUpdate {
+	_u.mutation.ClearCharacter()
 	return _u
 }
 
@@ -187,12 +187,12 @@ func (_u *SystemPromptUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if _u.mutation.CharactersCleared() {
+	if _u.mutation.CharacterCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   systemprompt.CharactersTable,
-			Columns: []string{systemprompt.CharactersColumn},
+			Table:   systemprompt.CharacterTable,
+			Columns: []string{systemprompt.CharacterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),
@@ -200,12 +200,12 @@ func (_u *SystemPromptUpdate) sqlSave(ctx context.Context) (_node int, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.CharactersIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.CharacterIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   systemprompt.CharactersTable,
-			Columns: []string{systemprompt.CharactersColumn},
+			Table:   systemprompt.CharacterTable,
+			Columns: []string{systemprompt.CharacterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),
@@ -284,23 +284,23 @@ func (_u *SystemPromptUpdateOne) SetUpdatedAt(v time.Time) *SystemPromptUpdateOn
 	return _u
 }
 
-// SetCharactersID sets the "characters" edge to the Character entity by ID.
-func (_u *SystemPromptUpdateOne) SetCharactersID(id int) *SystemPromptUpdateOne {
-	_u.mutation.SetCharactersID(id)
+// SetCharacterID sets the "character" edge to the Character entity by ID.
+func (_u *SystemPromptUpdateOne) SetCharacterID(id int) *SystemPromptUpdateOne {
+	_u.mutation.SetCharacterID(id)
 	return _u
 }
 
-// SetNillableCharactersID sets the "characters" edge to the Character entity by ID if the given value is not nil.
-func (_u *SystemPromptUpdateOne) SetNillableCharactersID(id *int) *SystemPromptUpdateOne {
+// SetNillableCharacterID sets the "character" edge to the Character entity by ID if the given value is not nil.
+func (_u *SystemPromptUpdateOne) SetNillableCharacterID(id *int) *SystemPromptUpdateOne {
 	if id != nil {
-		_u = _u.SetCharactersID(*id)
+		_u = _u.SetCharacterID(*id)
 	}
 	return _u
 }
 
-// SetCharacters sets the "characters" edge to the Character entity.
-func (_u *SystemPromptUpdateOne) SetCharacters(v *Character) *SystemPromptUpdateOne {
-	return _u.SetCharactersID(v.ID)
+// SetCharacter sets the "character" edge to the Character entity.
+func (_u *SystemPromptUpdateOne) SetCharacter(v *Character) *SystemPromptUpdateOne {
+	return _u.SetCharacterID(v.ID)
 }
 
 // Mutation returns the SystemPromptMutation object of the builder.
@@ -308,9 +308,9 @@ func (_u *SystemPromptUpdateOne) Mutation() *SystemPromptMutation {
 	return _u.mutation
 }
 
-// ClearCharacters clears the "characters" edge to the Character entity.
-func (_u *SystemPromptUpdateOne) ClearCharacters() *SystemPromptUpdateOne {
-	_u.mutation.ClearCharacters()
+// ClearCharacter clears the "character" edge to the Character entity.
+func (_u *SystemPromptUpdateOne) ClearCharacter() *SystemPromptUpdateOne {
+	_u.mutation.ClearCharacter()
 	return _u
 }
 
@@ -424,12 +424,12 @@ func (_u *SystemPromptUpdateOne) sqlSave(ctx context.Context) (_node *SystemProm
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if _u.mutation.CharactersCleared() {
+	if _u.mutation.CharacterCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   systemprompt.CharactersTable,
-			Columns: []string{systemprompt.CharactersColumn},
+			Table:   systemprompt.CharacterTable,
+			Columns: []string{systemprompt.CharacterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),
@@ -437,12 +437,12 @@ func (_u *SystemPromptUpdateOne) sqlSave(ctx context.Context) (_node *SystemProm
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := _u.mutation.CharactersIDs(); len(nodes) > 0 {
+	if nodes := _u.mutation.CharacterIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   systemprompt.CharactersTable,
-			Columns: []string{systemprompt.CharactersColumn},
+			Table:   systemprompt.CharacterTable,
+			Columns: []string{systemprompt.CharacterColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),

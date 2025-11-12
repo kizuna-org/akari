@@ -20,11 +20,11 @@ import (
 // CharacterQuery is the builder for querying Character entities.
 type CharacterQuery struct {
 	config
-	ctx              *QueryContext
-	order            []character.OrderOption
-	inters           []Interceptor
-	predicates       []predicate.Character
-	withSystemPrompt *SystemPromptQuery
+	ctx               *QueryContext
+	order             []character.OrderOption
+	inters            []Interceptor
+	predicates        []predicate.Character
+	withSystemPrompts *SystemPromptQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -61,8 +61,8 @@ func (_q *CharacterQuery) Order(o ...character.OrderOption) *CharacterQuery {
 	return _q
 }
 
-// QuerySystemPrompt chains the current query on the "system_prompt" edge.
-func (_q *CharacterQuery) QuerySystemPrompt() *SystemPromptQuery {
+// QuerySystemPrompts chains the current query on the "system_prompts" edge.
+func (_q *CharacterQuery) QuerySystemPrompts() *SystemPromptQuery {
 	query := (&SystemPromptClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -75,7 +75,7 @@ func (_q *CharacterQuery) QuerySystemPrompt() *SystemPromptQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(character.Table, character.FieldID, selector),
 			sqlgraph.To(systemprompt.Table, systemprompt.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, character.SystemPromptTable, character.SystemPromptColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, character.SystemPromptsTable, character.SystemPromptsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -270,26 +270,26 @@ func (_q *CharacterQuery) Clone() *CharacterQuery {
 		return nil
 	}
 	return &CharacterQuery{
-		config:           _q.config,
-		ctx:              _q.ctx.Clone(),
-		order:            append([]character.OrderOption{}, _q.order...),
-		inters:           append([]Interceptor{}, _q.inters...),
-		predicates:       append([]predicate.Character{}, _q.predicates...),
-		withSystemPrompt: _q.withSystemPrompt.Clone(),
+		config:            _q.config,
+		ctx:               _q.ctx.Clone(),
+		order:             append([]character.OrderOption{}, _q.order...),
+		inters:            append([]Interceptor{}, _q.inters...),
+		predicates:        append([]predicate.Character{}, _q.predicates...),
+		withSystemPrompts: _q.withSystemPrompts.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
 }
 
-// WithSystemPrompt tells the query-builder to eager-load the nodes that are connected to
-// the "system_prompt" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *CharacterQuery) WithSystemPrompt(opts ...func(*SystemPromptQuery)) *CharacterQuery {
+// WithSystemPrompts tells the query-builder to eager-load the nodes that are connected to
+// the "system_prompts" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *CharacterQuery) WithSystemPrompts(opts ...func(*SystemPromptQuery)) *CharacterQuery {
 	query := (&SystemPromptClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withSystemPrompt = query
+	_q.withSystemPrompts = query
 	return _q
 }
 
@@ -372,7 +372,7 @@ func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 		nodes       = []*Character{}
 		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
-			_q.withSystemPrompt != nil,
+			_q.withSystemPrompts != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -393,17 +393,17 @@ func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withSystemPrompt; query != nil {
-		if err := _q.loadSystemPrompt(ctx, query, nodes,
-			func(n *Character) { n.Edges.SystemPrompt = []*SystemPrompt{} },
-			func(n *Character, e *SystemPrompt) { n.Edges.SystemPrompt = append(n.Edges.SystemPrompt, e) }); err != nil {
+	if query := _q.withSystemPrompts; query != nil {
+		if err := _q.loadSystemPrompts(ctx, query, nodes,
+			func(n *Character) { n.Edges.SystemPrompts = []*SystemPrompt{} },
+			func(n *Character, e *SystemPrompt) { n.Edges.SystemPrompts = append(n.Edges.SystemPrompts, e) }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (_q *CharacterQuery) loadSystemPrompt(ctx context.Context, query *SystemPromptQuery, nodes []*Character, init func(*Character), assign func(*Character, *SystemPrompt)) error {
+func (_q *CharacterQuery) loadSystemPrompts(ctx context.Context, query *SystemPromptQuery, nodes []*Character, init func(*Character), assign func(*Character, *SystemPrompt)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Character)
 	for i := range nodes {
@@ -415,20 +415,20 @@ func (_q *CharacterQuery) loadSystemPrompt(ctx context.Context, query *SystemPro
 	}
 	query.withFKs = true
 	query.Where(predicate.SystemPrompt(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(character.SystemPromptColumn), fks...))
+		s.Where(sql.InValues(s.C(character.SystemPromptsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.character_system_prompt
+		fk := n.character_system_prompts
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "character_system_prompt" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "character_system_prompts" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "character_system_prompt" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "character_system_prompts" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

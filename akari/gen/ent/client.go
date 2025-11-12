@@ -315,15 +315,15 @@ func (c *CharacterClient) GetX(ctx context.Context, id int) *Character {
 	return obj
 }
 
-// QuerySystemPrompt queries the system_prompt edge of a Character.
-func (c *CharacterClient) QuerySystemPrompt(_m *Character) *SystemPromptQuery {
+// QuerySystemPrompts queries the system_prompts edge of a Character.
+func (c *CharacterClient) QuerySystemPrompts(_m *Character) *SystemPromptQuery {
 	query := (&SystemPromptClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(character.Table, character.FieldID, id),
 			sqlgraph.To(systemprompt.Table, systemprompt.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, character.SystemPromptTable, character.SystemPromptColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, character.SystemPromptsTable, character.SystemPromptsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -464,15 +464,15 @@ func (c *SystemPromptClient) GetX(ctx context.Context, id int) *SystemPrompt {
 	return obj
 }
 
-// QueryCharacters queries the characters edge of a SystemPrompt.
-func (c *SystemPromptClient) QueryCharacters(_m *SystemPrompt) *CharacterQuery {
+// QueryCharacter queries the character edge of a SystemPrompt.
+func (c *SystemPromptClient) QueryCharacter(_m *SystemPrompt) *CharacterQuery {
 	query := (&CharacterClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(systemprompt.Table, systemprompt.FieldID, id),
 			sqlgraph.To(character.Table, character.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, systemprompt.CharactersTable, systemprompt.CharactersColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, systemprompt.CharacterTable, systemprompt.CharacterColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
