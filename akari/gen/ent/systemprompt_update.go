@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
@@ -76,9 +77,34 @@ func (_u *SystemPromptUpdate) SetUpdatedAt(v time.Time) *SystemPromptUpdate {
 	return _u
 }
 
+// SetCharactersID sets the "characters" edge to the Character entity by ID.
+func (_u *SystemPromptUpdate) SetCharactersID(id int) *SystemPromptUpdate {
+	_u.mutation.SetCharactersID(id)
+	return _u
+}
+
+// SetNillableCharactersID sets the "characters" edge to the Character entity by ID if the given value is not nil.
+func (_u *SystemPromptUpdate) SetNillableCharactersID(id *int) *SystemPromptUpdate {
+	if id != nil {
+		_u = _u.SetCharactersID(*id)
+	}
+	return _u
+}
+
+// SetCharacters sets the "characters" edge to the Character entity.
+func (_u *SystemPromptUpdate) SetCharacters(v *Character) *SystemPromptUpdate {
+	return _u.SetCharactersID(v.ID)
+}
+
 // Mutation returns the SystemPromptMutation object of the builder.
 func (_u *SystemPromptUpdate) Mutation() *SystemPromptMutation {
 	return _u.mutation
+}
+
+// ClearCharacters clears the "characters" edge to the Character entity.
+func (_u *SystemPromptUpdate) ClearCharacters() *SystemPromptUpdate {
+	_u.mutation.ClearCharacters()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -161,6 +187,35 @@ func (_u *SystemPromptUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
 	}
+	if _u.mutation.CharactersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   systemprompt.CharactersTable,
+			Columns: []string{systemprompt.CharactersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CharactersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   systemprompt.CharactersTable,
+			Columns: []string{systemprompt.CharactersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{systemprompt.Label}
@@ -229,9 +284,34 @@ func (_u *SystemPromptUpdateOne) SetUpdatedAt(v time.Time) *SystemPromptUpdateOn
 	return _u
 }
 
+// SetCharactersID sets the "characters" edge to the Character entity by ID.
+func (_u *SystemPromptUpdateOne) SetCharactersID(id int) *SystemPromptUpdateOne {
+	_u.mutation.SetCharactersID(id)
+	return _u
+}
+
+// SetNillableCharactersID sets the "characters" edge to the Character entity by ID if the given value is not nil.
+func (_u *SystemPromptUpdateOne) SetNillableCharactersID(id *int) *SystemPromptUpdateOne {
+	if id != nil {
+		_u = _u.SetCharactersID(*id)
+	}
+	return _u
+}
+
+// SetCharacters sets the "characters" edge to the Character entity.
+func (_u *SystemPromptUpdateOne) SetCharacters(v *Character) *SystemPromptUpdateOne {
+	return _u.SetCharactersID(v.ID)
+}
+
 // Mutation returns the SystemPromptMutation object of the builder.
 func (_u *SystemPromptUpdateOne) Mutation() *SystemPromptMutation {
 	return _u.mutation
+}
+
+// ClearCharacters clears the "characters" edge to the Character entity.
+func (_u *SystemPromptUpdateOne) ClearCharacters() *SystemPromptUpdateOne {
+	_u.mutation.ClearCharacters()
+	return _u
 }
 
 // Where appends a list predicates to the SystemPromptUpdate builder.
@@ -343,6 +423,35 @@ func (_u *SystemPromptUpdateOne) sqlSave(ctx context.Context) (_node *SystemProm
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.CharactersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   systemprompt.CharactersTable,
+			Columns: []string{systemprompt.CharactersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.CharactersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   systemprompt.CharactersTable,
+			Columns: []string{systemprompt.CharactersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &SystemPrompt{config: _u.config}
 	_spec.Assign = _node.assignValues

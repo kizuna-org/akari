@@ -5,9 +5,9 @@ CREATE TABLE "characters" (
   "is_active" boolean NOT NULL DEFAULT true,
   "created_at" timestamptz NOT NULL,
   "updated_at" timestamptz NOT NULL,
-  "character_system_prompt" bigint NOT NULL,
-  PRIMARY KEY ("id"),
-  CONSTRAINT "characters_system_prompts_system_prompt" FOREIGN KEY ("character_system_prompt") REFERENCES "system_prompts" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION
+  PRIMARY KEY ("id")
 );
 -- Create index "characters_name_key" to table: "characters"
 CREATE UNIQUE INDEX "characters_name_key" ON "characters" ("name");
+-- Modify "system_prompts" table
+ALTER TABLE "system_prompts" ADD COLUMN "character_system_prompt" bigint NULL, ADD CONSTRAINT "system_prompts_characters_system_prompt" FOREIGN KEY ("character_system_prompt") REFERENCES "characters" ("id") ON UPDATE NO ACTION ON DELETE SET NULL;

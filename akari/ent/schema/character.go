@@ -27,7 +27,6 @@ func (Character) Fields() []ent.Field {
 func (Character) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("system_prompt", SystemPrompt.Type).
-			Unique().
 			Required().
 			Comment("The system prompt associated with this character"),
 	}

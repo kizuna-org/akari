@@ -27,7 +27,7 @@ const (
 	// Table holds the table name of the character in the database.
 	Table = "characters"
 	// SystemPromptTable is the table that holds the system_prompt relation/edge.
-	SystemPromptTable = "characters"
+	SystemPromptTable = "system_prompts"
 	// SystemPromptInverseTable is the table name for the SystemPrompt entity.
 	// It exists in this package in order to avoid circular dependency with the "systemprompt" package.
 	SystemPromptInverseTable = "system_prompts"
@@ -44,21 +44,10 @@ var Columns = []string{
 	FieldUpdatedAt,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the "characters"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"character_system_prompt",
-}
-
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
-			return true
-		}
-	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -106,16 +95,23 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// BySystemPromptField orders the results by system_prompt field.
-func BySystemPromptField(field string, opts ...sql.OrderTermOption) OrderOption {
+// BySystemPromptCount orders the results by system_prompt count.
+func BySystemPromptCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newSystemPromptStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborsCount(s, newSystemPromptStep(), opts...)
+	}
+}
+
+// BySystemPrompt orders the results by system_prompt terms.
+func BySystemPrompt(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSystemPromptStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newSystemPromptStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SystemPromptInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2O, false, SystemPromptTable, SystemPromptColumn),
+		sqlgraph.Edge(sqlgraph.O2M, false, SystemPromptTable, SystemPromptColumn),
 	)
 }

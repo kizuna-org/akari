@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
@@ -18,10 +19,12 @@ import (
 // SystemPromptQuery is the builder for querying SystemPrompt entities.
 type SystemPromptQuery struct {
 	config
-	ctx        *QueryContext
-	order      []systemprompt.OrderOption
-	inters     []Interceptor
-	predicates []predicate.SystemPrompt
+	ctx            *QueryContext
+	order          []systemprompt.OrderOption
+	inters         []Interceptor
+	predicates     []predicate.SystemPrompt
+	withCharacters *CharacterQuery
+	withFKs        bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -56,6 +59,28 @@ func (_q *SystemPromptQuery) Unique(unique bool) *SystemPromptQuery {
 func (_q *SystemPromptQuery) Order(o ...systemprompt.OrderOption) *SystemPromptQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryCharacters chains the current query on the "characters" edge.
+func (_q *SystemPromptQuery) QueryCharacters() *CharacterQuery {
+	query := (&CharacterClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(systemprompt.Table, systemprompt.FieldID, selector),
+			sqlgraph.To(character.Table, character.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, systemprompt.CharactersTable, systemprompt.CharactersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first SystemPrompt entity from the query.
@@ -245,15 +270,27 @@ func (_q *SystemPromptQuery) Clone() *SystemPromptQuery {
 		return nil
 	}
 	return &SystemPromptQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]systemprompt.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.SystemPrompt{}, _q.predicates...),
+		config:         _q.config,
+		ctx:            _q.ctx.Clone(),
+		order:          append([]systemprompt.OrderOption{}, _q.order...),
+		inters:         append([]Interceptor{}, _q.inters...),
+		predicates:     append([]predicate.SystemPrompt{}, _q.predicates...),
+		withCharacters: _q.withCharacters.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithCharacters tells the query-builder to eager-load the nodes that are connected to
+// the "characters" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *SystemPromptQuery) WithCharacters(opts ...func(*CharacterQuery)) *SystemPromptQuery {
+	query := (&CharacterClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCharacters = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -332,15 +369,26 @@ func (_q *SystemPromptQuery) prepareQuery(ctx context.Context) error {
 
 func (_q *SystemPromptQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*SystemPrompt, error) {
 	var (
-		nodes = []*SystemPrompt{}
-		_spec = _q.querySpec()
+		nodes       = []*SystemPrompt{}
+		withFKs     = _q.withFKs
+		_spec       = _q.querySpec()
+		loadedTypes = [1]bool{
+			_q.withCharacters != nil,
+		}
 	)
+	if _q.withCharacters != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, systemprompt.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*SystemPrompt).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &SystemPrompt{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -352,7 +400,46 @@ func (_q *SystemPromptQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withCharacters; query != nil {
+		if err := _q.loadCharacters(ctx, query, nodes, nil,
+			func(n *SystemPrompt, e *Character) { n.Edges.Characters = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (_q *SystemPromptQuery) loadCharacters(ctx context.Context, query *CharacterQuery, nodes []*SystemPrompt, init func(*SystemPrompt), assign func(*SystemPrompt, *Character)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*SystemPrompt)
+	for i := range nodes {
+		if nodes[i].character_system_prompt == nil {
+			continue
+		}
+		fk := *nodes[i].character_system_prompt
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(character.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "character_system_prompt" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
 }
 
 func (_q *SystemPromptQuery) sqlCount(ctx context.Context) (int, error) {

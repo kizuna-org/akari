@@ -235,7 +235,7 @@ func HasSystemPrompt() predicate.Character {
 	return predicate.Character(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, SystemPromptTable, SystemPromptColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, SystemPromptTable, SystemPromptColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

@@ -69,15 +69,19 @@ func (_c *CharacterCreate) SetNillableUpdatedAt(v *time.Time) *CharacterCreate {
 	return _c
 }
 
-// SetSystemPromptID sets the "system_prompt" edge to the SystemPrompt entity by ID.
-func (_c *CharacterCreate) SetSystemPromptID(id int) *CharacterCreate {
-	_c.mutation.SetSystemPromptID(id)
+// AddSystemPromptIDs adds the "system_prompt" edge to the SystemPrompt entity by IDs.
+func (_c *CharacterCreate) AddSystemPromptIDs(ids ...int) *CharacterCreate {
+	_c.mutation.AddSystemPromptIDs(ids...)
 	return _c
 }
 
-// SetSystemPrompt sets the "system_prompt" edge to the SystemPrompt entity.
-func (_c *CharacterCreate) SetSystemPrompt(v *SystemPrompt) *CharacterCreate {
-	return _c.SetSystemPromptID(v.ID)
+// AddSystemPrompt adds the "system_prompt" edges to the SystemPrompt entity.
+func (_c *CharacterCreate) AddSystemPrompt(v ...*SystemPrompt) *CharacterCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSystemPromptIDs(ids...)
 }
 
 // Mutation returns the CharacterMutation object of the builder.
@@ -195,7 +199,7 @@ func (_c *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 	}
 	if nodes := _c.mutation.SystemPromptIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   character.SystemPromptTable,
 			Columns: []string{character.SystemPromptColumn},
@@ -207,7 +211,6 @@ func (_c *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.character_system_prompt = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

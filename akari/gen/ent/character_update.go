@@ -63,15 +63,19 @@ func (_u *CharacterUpdate) SetUpdatedAt(v time.Time) *CharacterUpdate {
 	return _u
 }
 
-// SetSystemPromptID sets the "system_prompt" edge to the SystemPrompt entity by ID.
-func (_u *CharacterUpdate) SetSystemPromptID(id int) *CharacterUpdate {
-	_u.mutation.SetSystemPromptID(id)
+// AddSystemPromptIDs adds the "system_prompt" edge to the SystemPrompt entity by IDs.
+func (_u *CharacterUpdate) AddSystemPromptIDs(ids ...int) *CharacterUpdate {
+	_u.mutation.AddSystemPromptIDs(ids...)
 	return _u
 }
 
-// SetSystemPrompt sets the "system_prompt" edge to the SystemPrompt entity.
-func (_u *CharacterUpdate) SetSystemPrompt(v *SystemPrompt) *CharacterUpdate {
-	return _u.SetSystemPromptID(v.ID)
+// AddSystemPrompt adds the "system_prompt" edges to the SystemPrompt entity.
+func (_u *CharacterUpdate) AddSystemPrompt(v ...*SystemPrompt) *CharacterUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSystemPromptIDs(ids...)
 }
 
 // Mutation returns the CharacterMutation object of the builder.
@@ -79,10 +83,25 @@ func (_u *CharacterUpdate) Mutation() *CharacterMutation {
 	return _u.mutation
 }
 
-// ClearSystemPrompt clears the "system_prompt" edge to the SystemPrompt entity.
+// ClearSystemPrompt clears all "system_prompt" edges to the SystemPrompt entity.
 func (_u *CharacterUpdate) ClearSystemPrompt() *CharacterUpdate {
 	_u.mutation.ClearSystemPrompt()
 	return _u
+}
+
+// RemoveSystemPromptIDs removes the "system_prompt" edge to SystemPrompt entities by IDs.
+func (_u *CharacterUpdate) RemoveSystemPromptIDs(ids ...int) *CharacterUpdate {
+	_u.mutation.RemoveSystemPromptIDs(ids...)
+	return _u
+}
+
+// RemoveSystemPrompt removes "system_prompt" edges to SystemPrompt entities.
+func (_u *CharacterUpdate) RemoveSystemPrompt(v ...*SystemPrompt) *CharacterUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSystemPromptIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -128,9 +147,6 @@ func (_u *CharacterUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Character.name": %w`, err)}
 		}
 	}
-	if _u.mutation.SystemPromptCleared() && len(_u.mutation.SystemPromptIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Character.system_prompt"`)
-	}
 	return nil
 }
 
@@ -157,7 +173,7 @@ func (_u *CharacterUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.SystemPromptCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   character.SystemPromptTable,
 			Columns: []string{character.SystemPromptColumn},
@@ -168,9 +184,25 @@ func (_u *CharacterUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := _u.mutation.RemovedSystemPromptIDs(); len(nodes) > 0 && !_u.mutation.SystemPromptCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   character.SystemPromptTable,
+			Columns: []string{character.SystemPromptColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := _u.mutation.SystemPromptIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   character.SystemPromptTable,
 			Columns: []string{character.SystemPromptColumn},
@@ -238,15 +270,19 @@ func (_u *CharacterUpdateOne) SetUpdatedAt(v time.Time) *CharacterUpdateOne {
 	return _u
 }
 
-// SetSystemPromptID sets the "system_prompt" edge to the SystemPrompt entity by ID.
-func (_u *CharacterUpdateOne) SetSystemPromptID(id int) *CharacterUpdateOne {
-	_u.mutation.SetSystemPromptID(id)
+// AddSystemPromptIDs adds the "system_prompt" edge to the SystemPrompt entity by IDs.
+func (_u *CharacterUpdateOne) AddSystemPromptIDs(ids ...int) *CharacterUpdateOne {
+	_u.mutation.AddSystemPromptIDs(ids...)
 	return _u
 }
 
-// SetSystemPrompt sets the "system_prompt" edge to the SystemPrompt entity.
-func (_u *CharacterUpdateOne) SetSystemPrompt(v *SystemPrompt) *CharacterUpdateOne {
-	return _u.SetSystemPromptID(v.ID)
+// AddSystemPrompt adds the "system_prompt" edges to the SystemPrompt entity.
+func (_u *CharacterUpdateOne) AddSystemPrompt(v ...*SystemPrompt) *CharacterUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSystemPromptIDs(ids...)
 }
 
 // Mutation returns the CharacterMutation object of the builder.
@@ -254,10 +290,25 @@ func (_u *CharacterUpdateOne) Mutation() *CharacterMutation {
 	return _u.mutation
 }
 
-// ClearSystemPrompt clears the "system_prompt" edge to the SystemPrompt entity.
+// ClearSystemPrompt clears all "system_prompt" edges to the SystemPrompt entity.
 func (_u *CharacterUpdateOne) ClearSystemPrompt() *CharacterUpdateOne {
 	_u.mutation.ClearSystemPrompt()
 	return _u
+}
+
+// RemoveSystemPromptIDs removes the "system_prompt" edge to SystemPrompt entities by IDs.
+func (_u *CharacterUpdateOne) RemoveSystemPromptIDs(ids ...int) *CharacterUpdateOne {
+	_u.mutation.RemoveSystemPromptIDs(ids...)
+	return _u
+}
+
+// RemoveSystemPrompt removes "system_prompt" edges to SystemPrompt entities.
+func (_u *CharacterUpdateOne) RemoveSystemPrompt(v ...*SystemPrompt) *CharacterUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSystemPromptIDs(ids...)
 }
 
 // Where appends a list predicates to the CharacterUpdate builder.
@@ -316,9 +367,6 @@ func (_u *CharacterUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Character.name": %w`, err)}
 		}
 	}
-	if _u.mutation.SystemPromptCleared() && len(_u.mutation.SystemPromptIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Character.system_prompt"`)
-	}
 	return nil
 }
 
@@ -362,7 +410,7 @@ func (_u *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, er
 	}
 	if _u.mutation.SystemPromptCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   character.SystemPromptTable,
 			Columns: []string{character.SystemPromptColumn},
@@ -373,9 +421,25 @@ func (_u *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, er
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
+	if nodes := _u.mutation.RemovedSystemPromptIDs(); len(nodes) > 0 && !_u.mutation.SystemPromptCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   character.SystemPromptTable,
+			Columns: []string{character.SystemPromptColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
 	if nodes := _u.mutation.SystemPromptIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
+			Rel:     sqlgraph.O2M,
 			Inverse: false,
 			Table:   character.SystemPromptTable,
 			Columns: []string{character.SystemPromptColumn},

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -24,8 +25,17 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// EdgeCharacters holds the string denoting the characters edge name in mutations.
+	EdgeCharacters = "characters"
 	// Table holds the table name of the systemprompt in the database.
 	Table = "system_prompts"
+	// CharactersTable is the table that holds the characters relation/edge.
+	CharactersTable = "system_prompts"
+	// CharactersInverseTable is the table name for the Character entity.
+	// It exists in this package in order to avoid circular dependency with the "character" package.
+	CharactersInverseTable = "characters"
+	// CharactersColumn is the table column denoting the characters relation/edge.
+	CharactersColumn = "character_system_prompt"
 )
 
 // Columns holds all SQL columns for systemprompt fields.
@@ -38,10 +48,21 @@ var Columns = []string{
 	FieldUpdatedAt,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "system_prompts"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"character_system_prompt",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -114,4 +135,18 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// ByCharactersField orders the results by characters field.
+func ByCharactersField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCharactersStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newCharactersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CharactersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, CharactersTable, CharactersColumn),
+	)
 }

@@ -323,7 +323,7 @@ func (c *CharacterClient) QuerySystemPrompt(_m *Character) *SystemPromptQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(character.Table, character.FieldID, id),
 			sqlgraph.To(systemprompt.Table, systemprompt.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, character.SystemPromptTable, character.SystemPromptColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, character.SystemPromptTable, character.SystemPromptColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -462,6 +462,22 @@ func (c *SystemPromptClient) GetX(ctx context.Context, id int) *SystemPrompt {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryCharacters queries the characters edge of a SystemPrompt.
+func (c *SystemPromptClient) QueryCharacters(_m *SystemPrompt) *CharacterQuery {
+	query := (&CharacterClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(systemprompt.Table, systemprompt.FieldID, id),
+			sqlgraph.To(character.Table, character.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, systemprompt.CharactersTable, systemprompt.CharactersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

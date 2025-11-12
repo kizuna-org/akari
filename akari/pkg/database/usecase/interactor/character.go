@@ -7,21 +7,11 @@ import (
 )
 
 type CharacterInteractor interface {
-	CreateCharacter(
-		ctx context.Context,
-		name string,
-		systemPromptID int,
-	) (*domain.Character, error)
+	CreateCharacter(ctx context.Context, name string) (*domain.Character, error)
 	GetCharacterByID(ctx context.Context, characterID int) (*domain.Character, error)
 	GetCharacterWithSystemPromptByID(ctx context.Context, characterID int) (*domain.Character, error)
 	ListCharacters(ctx context.Context, activeOnly bool) ([]*domain.Character, error)
-	UpdateCharacter(
-		ctx context.Context,
-		characterID int,
-		name *string,
-		isActive *bool,
-		systemPromptID *int,
-	) (*domain.Character, error)
+	UpdateCharacter(ctx context.Context, characterID int, name *string, isActive *bool) (*domain.Character, error)
 	DeleteCharacter(ctx context.Context, characterID int) error
 }
 
@@ -38,9 +28,8 @@ func NewCharacterInteractor(repository domain.CharacterRepository) CharacterInte
 func (c *characterInteractorImpl) CreateCharacter(
 	ctx context.Context,
 	name string,
-	systemPromptID int,
 ) (*domain.Character, error) {
-	return c.repository.CreateCharacter(ctx, name, systemPromptID)
+	return c.repository.CreateCharacter(ctx, name)
 }
 
 func (c *characterInteractorImpl) GetCharacterByID(
@@ -69,9 +58,8 @@ func (c *characterInteractorImpl) UpdateCharacter(
 	characterID int,
 	name *string,
 	isActive *bool,
-	systemPromptID *int,
 ) (*domain.Character, error) {
-	return c.repository.UpdateCharacter(ctx, characterID, name, isActive, systemPromptID)
+	return c.repository.UpdateCharacter(ctx, characterID, name, isActive)
 }
 
 func (c *characterInteractorImpl) DeleteCharacter(ctx context.Context, characterID int) error {

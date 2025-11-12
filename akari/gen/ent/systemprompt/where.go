@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 )
 
@@ -302,6 +303,29 @@ func UpdatedAtLT(v time.Time) predicate.SystemPrompt {
 // UpdatedAtLTE applies the LTE predicate on the "updated_at" field.
 func UpdatedAtLTE(v time.Time) predicate.SystemPrompt {
 	return predicate.SystemPrompt(sql.FieldLTE(FieldUpdatedAt, v))
+}
+
+// HasCharacters applies the HasEdge predicate on the "characters" edge.
+func HasCharacters() predicate.SystemPrompt {
+	return predicate.SystemPrompt(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, CharactersTable, CharactersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCharactersWith applies the HasEdge predicate on the "characters" edge with a given conditions (other predicates).
+func HasCharactersWith(preds ...predicate.Character) predicate.SystemPrompt {
+	return predicate.SystemPrompt(func(s *sql.Selector) {
+		step := newCharactersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

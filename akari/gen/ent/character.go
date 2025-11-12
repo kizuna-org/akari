@@ -10,7 +10,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/kizuna-org/akari/gen/ent/character"
-	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
 // Character is the model entity for the Character schema.
@@ -28,27 +27,24 @@ type Character struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CharacterQuery when eager-loading is set.
-	Edges                   CharacterEdges `json:"edges"`
-	character_system_prompt *int
-	selectValues            sql.SelectValues
+	Edges        CharacterEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // CharacterEdges holds the relations/edges for other nodes in the graph.
 type CharacterEdges struct {
 	// The system prompt associated with this character
-	SystemPrompt *SystemPrompt `json:"system_prompt,omitempty"`
+	SystemPrompt []*SystemPrompt `json:"system_prompt,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool
 }
 
 // SystemPromptOrErr returns the SystemPrompt value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e CharacterEdges) SystemPromptOrErr() (*SystemPrompt, error) {
-	if e.SystemPrompt != nil {
+// was not loaded in eager-loading.
+func (e CharacterEdges) SystemPromptOrErr() ([]*SystemPrompt, error) {
+	if e.loadedTypes[0] {
 		return e.SystemPrompt, nil
-	} else if e.loadedTypes[0] {
-		return nil, &NotFoundError{label: systemprompt.Label}
 	}
 	return nil, &NotLoadedError{edge: "system_prompt"}
 }
@@ -66,8 +62,6 @@ func (*Character) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case character.FieldCreatedAt, character.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
-		case character.ForeignKeys[0]: // character_system_prompt
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -112,13 +106,6 @@ func (_m *Character) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
 			} else if value.Valid {
 				_m.UpdatedAt = value.Time
-			}
-		case character.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field character_system_prompt", value)
-			} else if value.Valid {
-				_m.character_system_prompt = new(int)
-				*_m.character_system_prompt = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

@@ -40,7 +40,8 @@ type CharacterMutation struct {
 	created_at           *time.Time
 	updated_at           *time.Time
 	clearedFields        map[string]struct{}
-	system_prompt        *int
+	system_prompt        map[int]struct{}
+	removedsystem_prompt map[int]struct{}
 	clearedsystem_prompt bool
 	done                 bool
 	oldValue             func(context.Context) (*Character, error)
@@ -289,9 +290,14 @@ func (m *CharacterMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// SetSystemPromptID sets the "system_prompt" edge to the SystemPrompt entity by id.
-func (m *CharacterMutation) SetSystemPromptID(id int) {
-	m.system_prompt = &id
+// AddSystemPromptIDs adds the "system_prompt" edge to the SystemPrompt entity by ids.
+func (m *CharacterMutation) AddSystemPromptIDs(ids ...int) {
+	if m.system_prompt == nil {
+		m.system_prompt = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.system_prompt[ids[i]] = struct{}{}
+	}
 }
 
 // ClearSystemPrompt clears the "system_prompt" edge to the SystemPrompt entity.
@@ -304,20 +310,29 @@ func (m *CharacterMutation) SystemPromptCleared() bool {
 	return m.clearedsystem_prompt
 }
 
-// SystemPromptID returns the "system_prompt" edge ID in the mutation.
-func (m *CharacterMutation) SystemPromptID() (id int, exists bool) {
-	if m.system_prompt != nil {
-		return *m.system_prompt, true
+// RemoveSystemPromptIDs removes the "system_prompt" edge to the SystemPrompt entity by IDs.
+func (m *CharacterMutation) RemoveSystemPromptIDs(ids ...int) {
+	if m.removedsystem_prompt == nil {
+		m.removedsystem_prompt = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.system_prompt, ids[i])
+		m.removedsystem_prompt[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSystemPrompt returns the removed IDs of the "system_prompt" edge to the SystemPrompt entity.
+func (m *CharacterMutation) RemovedSystemPromptIDs() (ids []int) {
+	for id := range m.removedsystem_prompt {
+		ids = append(ids, id)
 	}
 	return
 }
 
 // SystemPromptIDs returns the "system_prompt" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// SystemPromptID instead. It exists only for internal usage by the builders.
 func (m *CharacterMutation) SystemPromptIDs() (ids []int) {
-	if id := m.system_prompt; id != nil {
-		ids = append(ids, *id)
+	for id := range m.system_prompt {
+		ids = append(ids, id)
 	}
 	return
 }
@@ -326,6 +341,7 @@ func (m *CharacterMutation) SystemPromptIDs() (ids []int) {
 func (m *CharacterMutation) ResetSystemPrompt() {
 	m.system_prompt = nil
 	m.clearedsystem_prompt = false
+	m.removedsystem_prompt = nil
 }
 
 // Where appends a list predicates to the CharacterMutation builder.
@@ -524,9 +540,11 @@ func (m *CharacterMutation) AddedEdges() []string {
 func (m *CharacterMutation) AddedIDs(name string) []ent.Value {
 	switch name {
 	case character.EdgeSystemPrompt:
-		if id := m.system_prompt; id != nil {
-			return []ent.Value{*id}
+		ids := make([]ent.Value, 0, len(m.system_prompt))
+		for id := range m.system_prompt {
+			ids = append(ids, id)
 		}
+		return ids
 	}
 	return nil
 }
@@ -534,12 +552,23 @@ func (m *CharacterMutation) AddedIDs(name string) []ent.Value {
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CharacterMutation) RemovedEdges() []string {
 	edges := make([]string, 0, 1)
+	if m.removedsystem_prompt != nil {
+		edges = append(edges, character.EdgeSystemPrompt)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *CharacterMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case character.EdgeSystemPrompt:
+		ids := make([]ent.Value, 0, len(m.removedsystem_prompt))
+		for id := range m.removedsystem_prompt {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
@@ -566,9 +595,6 @@ func (m *CharacterMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *CharacterMutation) ClearEdge(name string) error {
 	switch name {
-	case character.EdgeSystemPrompt:
-		m.ClearSystemPrompt()
-		return nil
 	}
 	return fmt.Errorf("unknown Character unique edge %s", name)
 }
@@ -587,18 +613,20 @@ func (m *CharacterMutation) ResetEdge(name string) error {
 // SystemPromptMutation represents an operation that mutates the SystemPrompt nodes in the graph.
 type SystemPromptMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *int
-	title         *string
-	purpose       *systemprompt.Purpose
-	prompt        *string
-	created_at    *time.Time
-	updated_at    *time.Time
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*SystemPrompt, error)
-	predicates    []predicate.SystemPrompt
+	op                Op
+	typ               string
+	id                *int
+	title             *string
+	purpose           *systemprompt.Purpose
+	prompt            *string
+	created_at        *time.Time
+	updated_at        *time.Time
+	clearedFields     map[string]struct{}
+	characters        *int
+	clearedcharacters bool
+	done              bool
+	oldValue          func(context.Context) (*SystemPrompt, error)
+	predicates        []predicate.SystemPrompt
 }
 
 var _ ent.Mutation = (*SystemPromptMutation)(nil)
@@ -879,6 +907,45 @@ func (m *SystemPromptMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
+// SetCharactersID sets the "characters" edge to the Character entity by id.
+func (m *SystemPromptMutation) SetCharactersID(id int) {
+	m.characters = &id
+}
+
+// ClearCharacters clears the "characters" edge to the Character entity.
+func (m *SystemPromptMutation) ClearCharacters() {
+	m.clearedcharacters = true
+}
+
+// CharactersCleared reports if the "characters" edge to the Character entity was cleared.
+func (m *SystemPromptMutation) CharactersCleared() bool {
+	return m.clearedcharacters
+}
+
+// CharactersID returns the "characters" edge ID in the mutation.
+func (m *SystemPromptMutation) CharactersID() (id int, exists bool) {
+	if m.characters != nil {
+		return *m.characters, true
+	}
+	return
+}
+
+// CharactersIDs returns the "characters" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CharactersID instead. It exists only for internal usage by the builders.
+func (m *SystemPromptMutation) CharactersIDs() (ids []int) {
+	if id := m.characters; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCharacters resets all changes to the "characters" edge.
+func (m *SystemPromptMutation) ResetCharacters() {
+	m.characters = nil
+	m.clearedcharacters = false
+}
+
 // Where appends a list predicates to the SystemPromptMutation builder.
 func (m *SystemPromptMutation) Where(ps ...predicate.SystemPrompt) {
 	m.predicates = append(m.predicates, ps...)
@@ -1080,19 +1147,28 @@ func (m *SystemPromptMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *SystemPromptMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.characters != nil {
+		edges = append(edges, systemprompt.EdgeCharacters)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *SystemPromptMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case systemprompt.EdgeCharacters:
+		if id := m.characters; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *SystemPromptMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
@@ -1104,24 +1180,41 @@ func (m *SystemPromptMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *SystemPromptMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedcharacters {
+		edges = append(edges, systemprompt.EdgeCharacters)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *SystemPromptMutation) EdgeCleared(name string) bool {
+	switch name {
+	case systemprompt.EdgeCharacters:
+		return m.clearedcharacters
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *SystemPromptMutation) ClearEdge(name string) error {
+	switch name {
+	case systemprompt.EdgeCharacters:
+		m.ClearCharacters()
+		return nil
+	}
 	return fmt.Errorf("unknown SystemPrompt unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *SystemPromptMutation) ResetEdge(name string) error {
+	switch name {
+	case systemprompt.EdgeCharacters:
+		m.ResetCharacters()
+		return nil
+	}
 	return fmt.Errorf("unknown SystemPrompt edge %s", name)
 }

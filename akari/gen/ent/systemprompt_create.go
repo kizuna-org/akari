@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -64,6 +65,25 @@ func (_c *SystemPromptCreate) SetNillableUpdatedAt(v *time.Time) *SystemPromptCr
 		_c.SetUpdatedAt(*v)
 	}
 	return _c
+}
+
+// SetCharactersID sets the "characters" edge to the Character entity by ID.
+func (_c *SystemPromptCreate) SetCharactersID(id int) *SystemPromptCreate {
+	_c.mutation.SetCharactersID(id)
+	return _c
+}
+
+// SetNillableCharactersID sets the "characters" edge to the Character entity by ID if the given value is not nil.
+func (_c *SystemPromptCreate) SetNillableCharactersID(id *int) *SystemPromptCreate {
+	if id != nil {
+		_c = _c.SetCharactersID(*id)
+	}
+	return _c
+}
+
+// SetCharacters sets the "characters" edge to the Character entity.
+func (_c *SystemPromptCreate) SetCharacters(v *Character) *SystemPromptCreate {
+	return _c.SetCharactersID(v.ID)
 }
 
 // Mutation returns the SystemPromptMutation object of the builder.
@@ -188,6 +208,23 @@ func (_c *SystemPromptCreate) createSpec() (*SystemPrompt, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(systemprompt.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if nodes := _c.mutation.CharactersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   systemprompt.CharactersTable,
+			Columns: []string{systemprompt.CharactersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.character_system_prompt = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

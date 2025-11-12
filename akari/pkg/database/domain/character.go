@@ -7,17 +7,11 @@ import (
 )
 
 type CharacterRepository interface {
-	CreateCharacter(ctx context.Context, name string, systemPromptID int) (*Character, error)
+	CreateCharacter(ctx context.Context, name string) (*Character, error)
 	GetCharacterByID(ctx context.Context, characterID int) (*Character, error)
 	GetCharacterWithSystemPromptByID(ctx context.Context, characterID int) (*Character, error)
 	ListCharacters(ctx context.Context, activeOnly bool) ([]*Character, error)
-	UpdateCharacter(
-		ctx context.Context,
-		characterID int,
-		name *string,
-		isActive *bool,
-		systemPromptID *int,
-	) (*Character, error)
+	UpdateCharacter(ctx context.Context, characterID int, name *string, isActive *bool) (*Character, error)
 	DeleteCharacter(ctx context.Context, characterID int) error
 }
 

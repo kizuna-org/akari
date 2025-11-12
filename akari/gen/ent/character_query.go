@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -24,7 +25,6 @@ type CharacterQuery struct {
 	inters           []Interceptor
 	predicates       []predicate.Character
 	withSystemPrompt *SystemPromptQuery
-	withFKs          bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -75,7 +75,7 @@ func (_q *CharacterQuery) QuerySystemPrompt() *SystemPromptQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(character.Table, character.FieldID, selector),
 			sqlgraph.To(systemprompt.Table, systemprompt.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, false, character.SystemPromptTable, character.SystemPromptColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, character.SystemPromptTable, character.SystemPromptColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -370,18 +370,11 @@ func (_q *CharacterQuery) prepareQuery(ctx context.Context) error {
 func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Character, error) {
 	var (
 		nodes       = []*Character{}
-		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
 		loadedTypes = [1]bool{
 			_q.withSystemPrompt != nil,
 		}
 	)
-	if _q.withSystemPrompt != nil {
-		withFKs = true
-	}
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, character.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Character).scanValues(nil, columns)
 	}
@@ -401,8 +394,9 @@ func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 		return nodes, nil
 	}
 	if query := _q.withSystemPrompt; query != nil {
-		if err := _q.loadSystemPrompt(ctx, query, nodes, nil,
-			func(n *Character, e *SystemPrompt) { n.Edges.SystemPrompt = e }); err != nil {
+		if err := _q.loadSystemPrompt(ctx, query, nodes,
+			func(n *Character) { n.Edges.SystemPrompt = []*SystemPrompt{} },
+			func(n *Character, e *SystemPrompt) { n.Edges.SystemPrompt = append(n.Edges.SystemPrompt, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -410,34 +404,33 @@ func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 }
 
 func (_q *CharacterQuery) loadSystemPrompt(ctx context.Context, query *SystemPromptQuery, nodes []*Character, init func(*Character), assign func(*Character, *SystemPrompt)) error {
-	ids := make([]int, 0, len(nodes))
-	nodeids := make(map[int][]*Character)
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Character)
 	for i := range nodes {
-		if nodes[i].character_system_prompt == nil {
-			continue
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
 		}
-		fk := *nodes[i].character_system_prompt
-		if _, ok := nodeids[fk]; !ok {
-			ids = append(ids, fk)
-		}
-		nodeids[fk] = append(nodeids[fk], nodes[i])
 	}
-	if len(ids) == 0 {
-		return nil
-	}
-	query.Where(systemprompt.IDIn(ids...))
+	query.withFKs = true
+	query.Where(predicate.SystemPrompt(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(character.SystemPromptColumn), fks...))
+	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nodeids[n.ID]
+		fk := n.character_system_prompt
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "character_system_prompt" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected foreign-key "character_system_prompt" returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "character_system_prompt" returned %v for node %v`, *fk, n.ID)
 		}
-		for i := range nodes {
-			assign(nodes[i], n)
-		}
+		assign(node, n)
 	}
 	return nil
 }

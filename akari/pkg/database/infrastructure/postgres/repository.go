@@ -131,12 +131,10 @@ func (r *repositoryImpl) DeleteSystemPrompt(ctx context.Context, promptID int) e
 func (r *repositoryImpl) CreateCharacter(
 	ctx context.Context,
 	name string,
-	systemPromptID int,
 ) (*domain.Character, error) {
 	character, err := r.client.CharacterClient().
 		Create().
 		SetName(name).
-		SetSystemPromptID(systemPromptID).
 		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create character: %w", err)
@@ -145,7 +143,6 @@ func (r *repositoryImpl) CreateCharacter(
 	r.logger.Info("character created",
 		slog.Int("id", character.ID),
 		slog.String("name", name),
-		slog.Int("system_prompt_id", systemPromptID),
 	)
 
 	return character, nil
@@ -196,7 +193,6 @@ func (r *repositoryImpl) UpdateCharacter(
 	characterID int,
 	name *string,
 	isActive *bool,
-	systemPromptID *int,
 ) (*domain.Character, error) {
 	updater := r.client.CharacterClient().UpdateOneID(characterID)
 
@@ -206,10 +202,6 @@ func (r *repositoryImpl) UpdateCharacter(
 
 	if isActive != nil {
 		updater = updater.SetIsActive(*isActive)
-	}
-
-	if systemPromptID != nil {
-		updater = updater.SetSystemPromptID(*systemPromptID)
 	}
 
 	char, err := updater.Save(ctx)
@@ -224,10 +216,6 @@ func (r *repositoryImpl) UpdateCharacter(
 
 	if isActive != nil {
 		logAttrs = append(logAttrs, slog.Bool("is_active", *isActive))
-	}
-
-	if systemPromptID != nil {
-		logAttrs = append(logAttrs, slog.Int("system_prompt_id", *systemPromptID))
 	}
 
 	r.logger.Info("character updated", logAttrs...)
