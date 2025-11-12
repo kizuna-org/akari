@@ -56,6 +56,20 @@ func (mr *MockClientMockRecorder) CharacterClient() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CharacterClient", reflect.TypeOf((*MockClient)(nil).CharacterClient))
 }
 
+// CharacterConfigClient mocks base method.
+func (m *MockClient) CharacterConfigClient() *ent.CharacterConfigClient {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CharacterConfigClient")
+	ret0, _ := ret[0].(*ent.CharacterConfigClient)
+	return ret0
+}
+
+// CharacterConfigClient indicates an expected call of CharacterConfigClient.
+func (mr *MockClientMockRecorder) CharacterConfigClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CharacterConfigClient", reflect.TypeOf((*MockClient)(nil).CharacterConfigClient))
+}
+
 // Close mocks base method.
 func (m *MockClient) Close() error {
 	m.ctrl.T.Helper()

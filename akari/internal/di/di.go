@@ -36,6 +36,7 @@ func NewModule() fx.Option {
 			postgres.NewRepository,
 			newDatabaseRepository,
 			newSystemPromptRepository,
+			newCharacterRepository,
 			newDiscordClient,
 		),
 
@@ -44,6 +45,7 @@ func NewModule() fx.Option {
 			llmInteractor.NewLLMInteractor,
 			databaseInteractor.NewDatabaseInteractor,
 			databaseInteractor.NewSystemPromptInteractor,
+			databaseInteractor.NewCharacterInteractor,
 			discordRepository.NewDiscordRepository,
 		),
 
@@ -126,6 +128,10 @@ func newDatabaseRepository(repo postgres.Repository) databaseDomain.DatabaseRepo
 }
 
 func newSystemPromptRepository(repo postgres.Repository) databaseDomain.SystemPromptRepository {
+	return repo
+}
+
+func newCharacterRepository(repo postgres.Repository) databaseDomain.CharacterRepository {
 	return repo
 }
 
