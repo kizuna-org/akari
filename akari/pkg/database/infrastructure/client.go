@@ -18,8 +18,11 @@ type Client interface {
 	Ping(ctx context.Context) error
 	Close() error
 	WithTx(ctx context.Context, txFunc domain.TxFunc) error
-	SystemPromptClient() *ent.SystemPromptClient
 	CharacterClient() *ent.CharacterClient
+	DiscordMessageClient() *ent.DiscordMessageClient
+	DiscordChannelClient() *ent.DiscordChannelClient
+	DiscordGuildClient() *ent.DiscordGuildClient
+	SystemPromptClient() *ent.SystemPromptClient
 }
 
 type client struct {
@@ -65,7 +68,9 @@ func NewClient(cfg config.DatabaseConfig) (Client, error) {
 		opts = append(opts, ent.Debug())
 	}
 
-	return &client{Client: ent.NewClient(opts...), driver: drv}, nil
+	entClient := ent.NewClient(opts...)
+
+	return &client{Client: entClient, driver: drv}, nil
 }
 
 func (c *client) Ping(ctx context.Context) error {
@@ -78,6 +83,18 @@ func (c *client) Close() error {
 
 func (c *client) CharacterClient() *ent.CharacterClient {
 	return c.Character
+}
+
+func (c *client) DiscordMessageClient() *ent.DiscordMessageClient {
+	return c.DiscordMessage
+}
+
+func (c *client) DiscordChannelClient() *ent.DiscordChannelClient {
+	return c.DiscordChannel
+}
+
+func (c *client) DiscordGuildClient() *ent.DiscordGuildClient {
+	return c.DiscordGuild
 }
 
 func (c *client) SystemPromptClient() *ent.SystemPromptClient {
