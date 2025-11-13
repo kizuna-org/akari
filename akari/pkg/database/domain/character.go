@@ -1,3 +1,5 @@
+//go:generate mockgen -package=mock -source=character.go -destination=mock/character.go
+
 package domain
 
 import (

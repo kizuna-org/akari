@@ -1,3 +1,5 @@
+//go:generate mockgen -package=mock -source=llm.go -destination=mock/llm.go
+
 package domain
 
 import (

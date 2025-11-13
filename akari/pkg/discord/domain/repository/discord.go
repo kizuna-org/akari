@@ -1,3 +1,5 @@
+//go:generate mockgen -package=mock -source=discord.go -destination=mock/discord.go
+
 package repository
 
 import (

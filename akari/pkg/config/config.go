@@ -1,3 +1,5 @@
+//go:generate mockgen -package=mock -source=config.go -destination=mock/config.go
+
 //nolint:exhaustruct
 package config
 

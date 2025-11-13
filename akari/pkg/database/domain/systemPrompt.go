@@ -1,3 +1,5 @@
+//go:generate mockgen -package=mock -source=systemPrompt.go -destination=mock/systemPrompt.go
+
 package domain
 
 import (
