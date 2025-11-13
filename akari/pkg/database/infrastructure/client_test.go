@@ -38,5 +38,8 @@ func TestNewClient(t *testing.T) {
 	}()
 
 	assert.NotNil(t, client.CharacterClient())
+	assert.NotNil(t, client.DiscordMessageClient())
+	assert.NotNil(t, client.DiscordChannelClient())
+	assert.NotNil(t, client.DiscordGuildClient())
 	assert.NotNil(t, client.SystemPromptClient())
 }
