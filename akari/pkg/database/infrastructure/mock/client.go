@@ -70,6 +70,34 @@ func (mr *MockClientMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockClient)(nil).Close))
 }
 
+// ConversationClient mocks base method.
+func (m *MockClient) ConversationClient() *ent.ConversationClient {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConversationClient")
+	ret0, _ := ret[0].(*ent.ConversationClient)
+	return ret0
+}
+
+// ConversationClient indicates an expected call of ConversationClient.
+func (mr *MockClientMockRecorder) ConversationClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConversationClient", reflect.TypeOf((*MockClient)(nil).ConversationClient))
+}
+
+// ConversationGroupClient mocks base method.
+func (m *MockClient) ConversationGroupClient() *ent.ConversationGroupClient {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConversationGroupClient")
+	ret0, _ := ret[0].(*ent.ConversationGroupClient)
+	return ret0
+}
+
+// ConversationGroupClient indicates an expected call of ConversationGroupClient.
+func (mr *MockClientMockRecorder) ConversationGroupClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConversationGroupClient", reflect.TypeOf((*MockClient)(nil).ConversationGroupClient))
+}
+
 // DiscordChannelClient mocks base method.
 func (m *MockClient) DiscordChannelClient() *ent.DiscordChannelClient {
 	m.ctrl.T.Helper()

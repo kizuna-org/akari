@@ -19,6 +19,8 @@ type Client interface {
 	Close() error
 	WithTx(ctx context.Context, txFunc domain.TxFunc) error
 	CharacterClient() *ent.CharacterClient
+	ConversationClient() *ent.ConversationClient
+	ConversationGroupClient() *ent.ConversationGroupClient
 	DiscordMessageClient() *ent.DiscordMessageClient
 	DiscordChannelClient() *ent.DiscordChannelClient
 	DiscordGuildClient() *ent.DiscordGuildClient
@@ -81,6 +83,14 @@ func (c *client) Close() error {
 
 func (c *client) CharacterClient() *ent.CharacterClient {
 	return c.Character
+}
+
+func (c *client) ConversationClient() *ent.ConversationClient {
+	return c.Conversation
+}
+
+func (c *client) ConversationGroupClient() *ent.ConversationGroupClient {
+	return c.ConversationGroup
 }
 
 func (c *client) DiscordMessageClient() *ent.DiscordMessageClient {

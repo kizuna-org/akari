@@ -12,6 +12,8 @@ import (
 type Repository interface {
 	domain.DatabaseRepository
 	domain.CharacterRepository
+	domain.ConversationRepository
+	domain.ConversationGroupRepository
 	domain.DiscordMessageRepository
 	domain.DiscordChannelRepository
 	domain.DiscordGuildRepository
