@@ -27,7 +27,7 @@ func (r *repositoryImpl) CreateConversation(
 		return nil, fmt.Errorf("failed to create conversation: %w", err)
 	}
 
-	r.logger.Info("conversation created",
+	r.logger.Info("Conversation created",
 		slog.Int("id", conv.ID),
 	)
 
@@ -69,7 +69,7 @@ func (r *repositoryImpl) DeleteConversation(ctx context.Context, conversationID 
 		return fmt.Errorf("failed to delete conversation: %w", err)
 	}
 
-	r.logger.Info("conversation deleted",
+	r.logger.Info("Conversation deleted",
 		slog.Int("id", conversationID),
 	)
 

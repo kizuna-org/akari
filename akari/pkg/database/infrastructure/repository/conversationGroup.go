@@ -14,7 +14,7 @@ func (r *repositoryImpl) CreateConversationGroup(ctx context.Context) (*domain.C
 		return nil, fmt.Errorf("failed to create conversation group: %w", err)
 	}
 
-	r.logger.Info("conversation group created",
+	r.logger.Info("Conversation group created",
 		slog.Int("id", conversationGroup.ID),
 	)
 
@@ -44,7 +44,7 @@ func (r *repositoryImpl) DeleteConversationGroup(ctx context.Context, conversati
 		return fmt.Errorf("failed to delete conversation group: %w", err)
 	}
 
-	r.logger.Info("conversation group deleted",
+	r.logger.Info("Conversation group deleted",
 		slog.Int("id", conversationGroupID),
 	)
 
