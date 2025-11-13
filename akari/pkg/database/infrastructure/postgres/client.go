@@ -1,5 +1,7 @@
 package postgres
 
+//go:generate go tool mockgen -package=mock -source=client.go -destination=mock/client.go
+
 import (
 	"context"
 	"fmt"

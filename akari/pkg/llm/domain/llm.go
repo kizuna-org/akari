@@ -1,5 +1,7 @@
 package domain
 
+//go:generate go tool mockgen -package=mock -source=llm.go -destination=mock/llm.go
+
 import (
 	"context"
 

@@ -1,6 +1,8 @@
 //nolint:exhaustruct
 package config
 
+//go:generate go tool mockgen -package=mock -source=config.go -destination=mock/config.go
+
 import (
 	"fmt"
 	"log"

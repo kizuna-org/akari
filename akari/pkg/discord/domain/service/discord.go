@@ -1,5 +1,7 @@
 package service
 
+//go:generate go tool mockgen -package=mock -source=discord.go -destination=mock/discord.go
+
 import (
 	"context"
 	"errors"
