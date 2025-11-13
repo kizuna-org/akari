@@ -168,7 +168,7 @@ func TestCharacterInteractor_GetCharacterByID(t *testing.T) {
 	}
 }
 
-func TestCharacterInteractor_GetCharacterWithSystemPromptByID(t *testing.T) {
+func TestCharacterInteractor_GetCharacterWithEdgesByID(t *testing.T) {
 	t.Parallel()
 
 	characterID := 1
@@ -182,7 +182,7 @@ func TestCharacterInteractor_GetCharacterWithSystemPromptByID(t *testing.T) {
 			name: "success",
 			mockSetup: func(m *mock.MockCharacterRepository, ctx context.Context) {
 				m.EXPECT().
-					GetCharacterWithSystemPromptByID(ctx, characterID).
+					GetCharacterWithEdgesByID(ctx, characterID).
 					Return(&ent.Character{
 						ID:        characterID,
 						Name:      "Test Character",
@@ -207,7 +207,7 @@ func TestCharacterInteractor_GetCharacterWithSystemPromptByID(t *testing.T) {
 			name: "not found",
 			mockSetup: func(m *mock.MockCharacterRepository, ctx context.Context) {
 				m.EXPECT().
-					GetCharacterWithSystemPromptByID(ctx, characterID).
+					GetCharacterWithEdgesByID(ctx, characterID).
 					Return(nil, errors.New("not found"))
 			},
 			wantErr: true,
@@ -216,7 +216,7 @@ func TestCharacterInteractor_GetCharacterWithSystemPromptByID(t *testing.T) {
 			name: "database error",
 			mockSetup: func(m *mock.MockCharacterRepository, ctx context.Context) {
 				m.EXPECT().
-					GetCharacterWithSystemPromptByID(ctx, characterID).
+					GetCharacterWithEdgesByID(ctx, characterID).
 					Return(nil, errors.New("failed to load edges"))
 			},
 			wantErr: true,
@@ -236,7 +236,7 @@ func TestCharacterInteractor_GetCharacterWithSystemPromptByID(t *testing.T) {
 			ctx := t.Context()
 			testCase.mockSetup(mockRepo, ctx)
 
-			result, err := interactor.GetCharacterWithSystemPromptByID(ctx, characterID)
+			result, err := interactor.GetCharacterWithEdgesByID(ctx, characterID)
 
 			if testCase.wantErr {
 				require.Error(t, err)

@@ -157,13 +157,14 @@ func (r *repositoryImpl) GetCharacterByID(ctx context.Context, characterID int) 
 	return char, nil
 }
 
-func (r *repositoryImpl) GetCharacterWithSystemPromptByID(
+func (r *repositoryImpl) GetCharacterWithEdgesByID(
 	ctx context.Context,
 	characterID int,
 ) (*domain.Character, error) {
 	char, err := r.client.CharacterClient().
 		Query().
 		Where(character.IDEQ(characterID)).
+		WithConfig().
 		WithSystemPrompts().
 		Only(ctx)
 	if err != nil {

@@ -27,7 +27,7 @@ func RunDiscordBot(ctx context.Context) error {
 			characterInteractor databaseInteractor.CharacterInteractor,
 			client *infrastructure.DiscordClient,
 		) {
-			character, err := characterInteractor.GetCharacterByID(context.Background(), defaultCharacterID)
+			character, err := characterInteractor.GetCharacterWithEdgesByID(context.Background(), defaultCharacterID)
 			if err != nil {
 				slog.Error("Failed to get character", "error", err)
 

@@ -9,7 +9,7 @@ import (
 type CharacterInteractor interface {
 	CreateCharacter(ctx context.Context, name string) (*domain.Character, error)
 	GetCharacterByID(ctx context.Context, characterID int) (*domain.Character, error)
-	GetCharacterWithSystemPromptByID(ctx context.Context, characterID int) (*domain.Character, error)
+	GetCharacterWithEdgesByID(ctx context.Context, characterID int) (*domain.Character, error)
 	ListCharacters(ctx context.Context) ([]*domain.Character, error)
 	UpdateCharacter(ctx context.Context, characterID int, name *string) (*domain.Character, error)
 	DeleteCharacter(ctx context.Context, characterID int) error
@@ -39,11 +39,11 @@ func (c *characterInteractorImpl) GetCharacterByID(
 	return c.repository.GetCharacterByID(ctx, characterID)
 }
 
-func (c *characterInteractorImpl) GetCharacterWithSystemPromptByID(
+func (c *characterInteractorImpl) GetCharacterWithEdgesByID(
 	ctx context.Context,
 	characterID int,
 ) (*domain.Character, error) {
-	return c.repository.GetCharacterWithSystemPromptByID(ctx, characterID)
+	return c.repository.GetCharacterWithEdgesByID(ctx, characterID)
 }
 
 func (c *characterInteractorImpl) ListCharacters(

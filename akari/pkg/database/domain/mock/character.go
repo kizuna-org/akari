@@ -85,19 +85,19 @@ func (mr *MockCharacterRepositoryMockRecorder) GetCharacterByID(ctx, characterID
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCharacterByID", reflect.TypeOf((*MockCharacterRepository)(nil).GetCharacterByID), ctx, characterID)
 }
 
-// GetCharacterWithSystemPromptByID mocks base method.
-func (m *MockCharacterRepository) GetCharacterWithSystemPromptByID(ctx context.Context, characterID int) (*domain.Character, error) {
+// GetCharacterWithEdgesByID mocks base method.
+func (m *MockCharacterRepository) GetCharacterWithEdgesByID(ctx context.Context, characterID int) (*domain.Character, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCharacterWithSystemPromptByID", ctx, characterID)
+	ret := m.ctrl.Call(m, "GetCharacterWithEdgesByID", ctx, characterID)
 	ret0, _ := ret[0].(*domain.Character)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetCharacterWithSystemPromptByID indicates an expected call of GetCharacterWithSystemPromptByID.
-func (mr *MockCharacterRepositoryMockRecorder) GetCharacterWithSystemPromptByID(ctx, characterID any) *gomock.Call {
+// GetCharacterWithEdgesByID indicates an expected call of GetCharacterWithEdgesByID.
+func (mr *MockCharacterRepositoryMockRecorder) GetCharacterWithEdgesByID(ctx, characterID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCharacterWithSystemPromptByID", reflect.TypeOf((*MockCharacterRepository)(nil).GetCharacterWithSystemPromptByID), ctx, characterID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCharacterWithEdgesByID", reflect.TypeOf((*MockCharacterRepository)(nil).GetCharacterWithEdgesByID), ctx, characterID)
 }
 
 // ListCharacters mocks base method.
