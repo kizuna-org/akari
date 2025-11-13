@@ -1,3 +1,3 @@
 package ent
 
-//go:generate go run -mod=mod entgo.io/ent/cmd/ent generate --target ../gen/ent github.com/kizuna-org/akari/ent/schema
+//go:generate go tool ent generate --target ../gen/ent github.com/kizuna-org/akari/ent/schema

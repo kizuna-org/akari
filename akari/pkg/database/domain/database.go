@@ -1,6 +1,6 @@
-//go:generate mockgen -package=mock -source=database.go -destination=mock/database.go
-
 package domain
+
+//go:generate go tool mockgen -package=mock -source=database.go -destination=mock/database.go
 
 import (
 	"context"

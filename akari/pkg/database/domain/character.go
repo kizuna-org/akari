@@ -1,6 +1,6 @@
-//go:generate mockgen -package=mock -source=character.go -destination=mock/character.go
-
 package domain
+
+//go:generate go tool mockgen -package=mock -source=character.go -destination=mock/character.go
 
 import (
 	"context"
