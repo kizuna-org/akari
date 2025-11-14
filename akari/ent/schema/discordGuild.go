@@ -21,6 +21,10 @@ func (DiscordGuild) Fields() []ent.Field {
 			Immutable().
 			Default(time.Now).
 			Comment("The time when the record was created in the database"),
+		field.Time("updated_at").
+			Default(time.Now).
+			UpdateDefault(time.Now).
+			Comment("The time when the guild name was last updated"),
 	}
 }
 

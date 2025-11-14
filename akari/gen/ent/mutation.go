@@ -1098,8 +1098,10 @@ type DiscordChannelMutation struct {
 	op              Op
 	typ             string
 	id              *string
+	_type           *discordchannel.Type
 	name            *string
 	created_at      *time.Time
+	updated_at      *time.Time
 	clearedFields   map[string]struct{}
 	messages        map[string]struct{}
 	removedmessages map[string]struct{}
@@ -1215,6 +1217,42 @@ func (m *DiscordChannelMutation) IDs(ctx context.Context) ([]string, error) {
 	}
 }
 
+// SetType sets the "type" field.
+func (m *DiscordChannelMutation) SetType(d discordchannel.Type) {
+	m._type = &d
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *DiscordChannelMutation) GetType() (r discordchannel.Type, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the DiscordChannel entity.
+// If the DiscordChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordChannelMutation) OldType(ctx context.Context) (v discordchannel.Type, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *DiscordChannelMutation) ResetType() {
+	m._type = nil
+}
+
 // SetName sets the "name" field.
 func (m *DiscordChannelMutation) SetName(s string) {
 	m.name = &s
@@ -1285,6 +1323,42 @@ func (m *DiscordChannelMutation) OldCreatedAt(ctx context.Context) (v time.Time,
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *DiscordChannelMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *DiscordChannelMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *DiscordChannelMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the DiscordChannel entity.
+// If the DiscordChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordChannelMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *DiscordChannelMutation) ResetUpdatedAt() {
+	m.updated_at = nil
 }
 
 // AddMessageIDs adds the "messages" edge to the DiscordMessage entity by ids.
@@ -1414,12 +1488,18 @@ func (m *DiscordChannelMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DiscordChannelMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 4)
+	if m._type != nil {
+		fields = append(fields, discordchannel.FieldType)
+	}
 	if m.name != nil {
 		fields = append(fields, discordchannel.FieldName)
 	}
 	if m.created_at != nil {
 		fields = append(fields, discordchannel.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, discordchannel.FieldUpdatedAt)
 	}
 	return fields
 }
@@ -1429,10 +1509,14 @@ func (m *DiscordChannelMutation) Fields() []string {
 // schema.
 func (m *DiscordChannelMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case discordchannel.FieldType:
+		return m.GetType()
 	case discordchannel.FieldName:
 		return m.Name()
 	case discordchannel.FieldCreatedAt:
 		return m.CreatedAt()
+	case discordchannel.FieldUpdatedAt:
+		return m.UpdatedAt()
 	}
 	return nil, false
 }
@@ -1442,10 +1526,14 @@ func (m *DiscordChannelMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *DiscordChannelMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case discordchannel.FieldType:
+		return m.OldType(ctx)
 	case discordchannel.FieldName:
 		return m.OldName(ctx)
 	case discordchannel.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case discordchannel.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown DiscordChannel field %s", name)
 }
@@ -1455,6 +1543,13 @@ func (m *DiscordChannelMutation) OldField(ctx context.Context, name string) (ent
 // type.
 func (m *DiscordChannelMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case discordchannel.FieldType:
+		v, ok := value.(discordchannel.Type)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
+		return nil
 	case discordchannel.FieldName:
 		v, ok := value.(string)
 		if !ok {
@@ -1468,6 +1563,13 @@ func (m *DiscordChannelMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case discordchannel.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
 		return nil
 	}
 	return fmt.Errorf("unknown DiscordChannel field %s", name)
@@ -1518,11 +1620,17 @@ func (m *DiscordChannelMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *DiscordChannelMutation) ResetField(name string) error {
 	switch name {
+	case discordchannel.FieldType:
+		m.ResetType()
+		return nil
 	case discordchannel.FieldName:
 		m.ResetName()
 		return nil
 	case discordchannel.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case discordchannel.FieldUpdatedAt:
+		m.ResetUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown DiscordChannel field %s", name)
@@ -1638,6 +1746,7 @@ type DiscordGuildMutation struct {
 	id              *string
 	name            *string
 	created_at      *time.Time
+	updated_at      *time.Time
 	clearedFields   map[string]struct{}
 	channels        map[string]struct{}
 	removedchannels map[string]struct{}
@@ -1823,6 +1932,42 @@ func (m *DiscordGuildMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (m *DiscordGuildMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *DiscordGuildMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the DiscordGuild entity.
+// If the DiscordGuild object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordGuildMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *DiscordGuildMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
 // AddChannelIDs adds the "channels" edge to the DiscordChannel entity by ids.
 func (m *DiscordGuildMutation) AddChannelIDs(ids ...string) {
 	if m.channels == nil {
@@ -1911,12 +2056,15 @@ func (m *DiscordGuildMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DiscordGuildMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, discordguild.FieldName)
 	}
 	if m.created_at != nil {
 		fields = append(fields, discordguild.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, discordguild.FieldUpdatedAt)
 	}
 	return fields
 }
@@ -1930,6 +2078,8 @@ func (m *DiscordGuildMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case discordguild.FieldCreatedAt:
 		return m.CreatedAt()
+	case discordguild.FieldUpdatedAt:
+		return m.UpdatedAt()
 	}
 	return nil, false
 }
@@ -1943,6 +2093,8 @@ func (m *DiscordGuildMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldName(ctx)
 	case discordguild.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case discordguild.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown DiscordGuild field %s", name)
 }
@@ -1965,6 +2117,13 @@ func (m *DiscordGuildMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case discordguild.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
 		return nil
 	}
 	return fmt.Errorf("unknown DiscordGuild field %s", name)
@@ -2020,6 +2179,9 @@ func (m *DiscordGuildMutation) ResetField(name string) error {
 		return nil
 	case discordguild.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case discordguild.FieldUpdatedAt:
+		m.ResetUpdatedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown DiscordGuild field %s", name)

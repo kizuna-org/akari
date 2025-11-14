@@ -12,30 +12,22 @@ import (
 type DiscordChannelRepository interface {
 	CreateDiscordChannel(ctx context.Context, params DiscordChannel) (*DiscordChannel, error)
 	GetDiscordChannelByID(ctx context.Context, id string) (*DiscordChannel, error)
-	ListDiscordChannels(ctx context.Context) ([]*DiscordChannel, error)
+	GetDiscordChannelByMessageID(ctx context.Context, messageID string) (*DiscordChannel, error)
+	GetDiscordChannelsByGuildID(ctx context.Context, guildID string) ([]*DiscordChannel, error)
 	DeleteDiscordChannel(ctx context.Context, id string) error
 }
 
 type DiscordChannel struct {
 	ID        string
 	Name      string
-	Messages  []string
 	GuildID   string
 	CreatedAt time.Time
 }
 
 func ToDomainDiscordChannelFromDB(model *ent.DiscordChannel) *DiscordChannel {
 	return &DiscordChannel{
-		ID:   model.ID,
-		Name: model.Name,
-		Messages: func() []string {
-			ids := make([]string, len(model.Edges.Messages))
-			for i, message := range model.Edges.Messages {
-				ids[i] = message.ID
-			}
-
-			return ids
-		}(),
+		ID:        model.ID,
+		Name:      model.Name,
 		GuildID:   model.Edges.Guild.ID,
 		CreatedAt: model.CreatedAt,
 	}

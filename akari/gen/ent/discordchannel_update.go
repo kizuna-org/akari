@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
@@ -40,6 +41,12 @@ func (_u *DiscordChannelUpdate) SetNillableName(v *string) *DiscordChannelUpdate
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *DiscordChannelUpdate) SetUpdatedAt(v time.Time) *DiscordChannelUpdate {
+	_u.mutation.SetUpdatedAt(v)
 	return _u
 }
 
@@ -103,6 +110,7 @@ func (_u *DiscordChannelUpdate) ClearGuild() *DiscordChannelUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (_u *DiscordChannelUpdate) Save(ctx context.Context) (int, error) {
+	_u.defaults()
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -125,6 +133,14 @@ func (_u *DiscordChannelUpdate) Exec(ctx context.Context) error {
 func (_u *DiscordChannelUpdate) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (_u *DiscordChannelUpdate) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		v := discordchannel.UpdateDefaultUpdatedAt()
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -155,6 +171,9 @@ func (_u *DiscordChannelUpdate) sqlSave(ctx context.Context) (_node int, err err
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(discordchannel.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(discordchannel.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _u.mutation.MessagesCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -264,6 +283,12 @@ func (_u *DiscordChannelUpdateOne) SetNillableName(v *string) *DiscordChannelUpd
 	return _u
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (_u *DiscordChannelUpdateOne) SetUpdatedAt(v time.Time) *DiscordChannelUpdateOne {
+	_u.mutation.SetUpdatedAt(v)
+	return _u
+}
+
 // AddMessageIDs adds the "messages" edge to the DiscordMessage entity by IDs.
 func (_u *DiscordChannelUpdateOne) AddMessageIDs(ids ...string) *DiscordChannelUpdateOne {
 	_u.mutation.AddMessageIDs(ids...)
@@ -337,6 +362,7 @@ func (_u *DiscordChannelUpdateOne) Select(field string, fields ...string) *Disco
 
 // Save executes the query and returns the updated DiscordChannel entity.
 func (_u *DiscordChannelUpdateOne) Save(ctx context.Context) (*DiscordChannel, error) {
+	_u.defaults()
 	return withHooks(ctx, _u.sqlSave, _u.mutation, _u.hooks)
 }
 
@@ -359,6 +385,14 @@ func (_u *DiscordChannelUpdateOne) Exec(ctx context.Context) error {
 func (_u *DiscordChannelUpdateOne) ExecX(ctx context.Context) {
 	if err := _u.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (_u *DiscordChannelUpdateOne) defaults() {
+	if _, ok := _u.mutation.UpdatedAt(); !ok {
+		v := discordchannel.UpdateDefaultUpdatedAt()
+		_u.mutation.SetUpdatedAt(v)
 	}
 }
 
@@ -406,6 +440,9 @@ func (_u *DiscordChannelUpdateOne) sqlSave(ctx context.Context) (_node *DiscordC
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(discordchannel.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.UpdatedAt(); ok {
+		_spec.SetField(discordchannel.FieldUpdatedAt, field.TypeTime, value)
 	}
 	if _u.mutation.MessagesCleared() {
 		edge := &sqlgraph.EdgeSpec{

@@ -3,13 +3,16 @@ CREATE TABLE "discord_guilds" (
   "id" character varying NOT NULL,
   "name" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NOT NULL,
   PRIMARY KEY ("id")
 );
 -- Create "discord_channels" table
 CREATE TABLE "discord_channels" (
   "id" character varying NOT NULL,
+  "type" character varying NOT NULL,
   "name" character varying NOT NULL,
   "created_at" timestamptz NOT NULL,
+  "updated_at" timestamptz NOT NULL,
   "discord_channel_guild" character varying NOT NULL,
   PRIMARY KEY ("id"),
   CONSTRAINT "discord_channels_discord_guilds_guild" FOREIGN KEY ("discord_channel_guild") REFERENCES "discord_guilds" ("id") ON UPDATE NO ACTION ON DELETE NO ACTION

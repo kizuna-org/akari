@@ -1,4 +1,3 @@
-//nolint:dupl
 package interactor
 
 import (
@@ -16,7 +15,8 @@ type DiscordChannelInteractor interface {
 		ctx context.Context,
 		channelID string,
 	) (*domain.DiscordChannel, error)
-	ListDiscordChannels(ctx context.Context) ([]*domain.DiscordChannel, error)
+	GetDiscordChannelByMessageID(ctx context.Context, messageID string) (*domain.DiscordChannel, error)
+	GetDiscordChannelsByGuildID(ctx context.Context, guildID string) ([]*domain.DiscordChannel, error)
 	DeleteDiscordChannel(ctx context.Context, id string) error
 }
 
@@ -44,8 +44,18 @@ func (d *discordChannelInteractorImpl) GetDiscordChannelByID(
 	return d.repository.GetDiscordChannelByID(ctx, channelID)
 }
 
-func (d *discordChannelInteractorImpl) ListDiscordChannels(ctx context.Context) ([]*domain.DiscordChannel, error) {
-	return d.repository.ListDiscordChannels(ctx)
+func (d *discordChannelInteractorImpl) GetDiscordChannelByMessageID(
+	ctx context.Context,
+	messageID string,
+) (*domain.DiscordChannel, error) {
+	return d.repository.GetDiscordChannelByMessageID(ctx, messageID)
+}
+
+func (d *discordChannelInteractorImpl) GetDiscordChannelsByGuildID(
+	ctx context.Context,
+	guildID string,
+) ([]*domain.DiscordChannel, error) {
+	return d.repository.GetDiscordChannelsByGuildID(ctx, guildID)
 }
 
 func (d *discordChannelInteractorImpl) DeleteDiscordChannel(ctx context.Context, id string) error {

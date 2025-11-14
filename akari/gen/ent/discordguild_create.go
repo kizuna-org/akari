@@ -41,6 +41,20 @@ func (_c *DiscordGuildCreate) SetNillableCreatedAt(v *time.Time) *DiscordGuildCr
 	return _c
 }
 
+// SetUpdatedAt sets the "updated_at" field.
+func (_c *DiscordGuildCreate) SetUpdatedAt(v time.Time) *DiscordGuildCreate {
+	_c.mutation.SetUpdatedAt(v)
+	return _c
+}
+
+// SetNillableUpdatedAt sets the "updated_at" field if the given value is not nil.
+func (_c *DiscordGuildCreate) SetNillableUpdatedAt(v *time.Time) *DiscordGuildCreate {
+	if v != nil {
+		_c.SetUpdatedAt(*v)
+	}
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *DiscordGuildCreate) SetID(v string) *DiscordGuildCreate {
 	_c.mutation.SetID(v)
@@ -101,6 +115,10 @@ func (_c *DiscordGuildCreate) defaults() {
 		v := discordguild.DefaultCreatedAt()
 		_c.mutation.SetCreatedAt(v)
 	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		v := discordguild.DefaultUpdatedAt()
+		_c.mutation.SetUpdatedAt(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -115,6 +133,9 @@ func (_c *DiscordGuildCreate) check() error {
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "DiscordGuild.created_at"`)}
+	}
+	if _, ok := _c.mutation.UpdatedAt(); !ok {
+		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "DiscordGuild.updated_at"`)}
 	}
 	if v, ok := _c.mutation.ID(); ok {
 		if err := discordguild.IDValidator(v); err != nil {
@@ -163,6 +184,10 @@ func (_c *DiscordGuildCreate) createSpec() (*DiscordGuild, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(discordguild.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := _c.mutation.UpdatedAt(); ok {
+		_spec.SetField(discordguild.FieldUpdatedAt, field.TypeTime, value)
+		_node.UpdatedAt = value
 	}
 	if nodes := _c.mutation.ChannelsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

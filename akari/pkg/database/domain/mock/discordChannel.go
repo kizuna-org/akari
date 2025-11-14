@@ -85,17 +85,32 @@ func (mr *MockDiscordChannelRepositoryMockRecorder) GetDiscordChannelByID(ctx, i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDiscordChannelByID", reflect.TypeOf((*MockDiscordChannelRepository)(nil).GetDiscordChannelByID), ctx, id)
 }
 
-// ListDiscordChannels mocks base method.
-func (m *MockDiscordChannelRepository) ListDiscordChannels(ctx context.Context) ([]*domain.DiscordChannel, error) {
+// GetDiscordChannelByMessageID mocks base method.
+func (m *MockDiscordChannelRepository) GetDiscordChannelByMessageID(ctx context.Context, messageID string) (*domain.DiscordChannel, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDiscordChannels", ctx)
+	ret := m.ctrl.Call(m, "GetDiscordChannelByMessageID", ctx, messageID)
+	ret0, _ := ret[0].(*domain.DiscordChannel)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDiscordChannelByMessageID indicates an expected call of GetDiscordChannelByMessageID.
+func (mr *MockDiscordChannelRepositoryMockRecorder) GetDiscordChannelByMessageID(ctx, messageID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDiscordChannelByMessageID", reflect.TypeOf((*MockDiscordChannelRepository)(nil).GetDiscordChannelByMessageID), ctx, messageID)
+}
+
+// GetDiscordChannelsByGuildID mocks base method.
+func (m *MockDiscordChannelRepository) GetDiscordChannelsByGuildID(ctx context.Context, guildID string) ([]*domain.DiscordChannel, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDiscordChannelsByGuildID", ctx, guildID)
 	ret0, _ := ret[0].([]*domain.DiscordChannel)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListDiscordChannels indicates an expected call of ListDiscordChannels.
-func (mr *MockDiscordChannelRepositoryMockRecorder) ListDiscordChannels(ctx any) *gomock.Call {
+// GetDiscordChannelsByGuildID indicates an expected call of GetDiscordChannelsByGuildID.
+func (mr *MockDiscordChannelRepositoryMockRecorder) GetDiscordChannelsByGuildID(ctx, guildID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDiscordChannels", reflect.TypeOf((*MockDiscordChannelRepository)(nil).ListDiscordChannels), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDiscordChannelsByGuildID", reflect.TypeOf((*MockDiscordChannelRepository)(nil).GetDiscordChannelsByGuildID), ctx, guildID)
 }

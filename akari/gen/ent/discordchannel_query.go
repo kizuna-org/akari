@@ -336,12 +336,12 @@ func (_q *DiscordChannelQuery) WithGuild(opts ...func(*DiscordGuildQuery)) *Disc
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Type discordchannel.Type `json:"type,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.DiscordChannel.Query().
-//		GroupBy(discordchannel.FieldName).
+//		GroupBy(discordchannel.FieldType).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *DiscordChannelQuery) GroupBy(field string, fields ...string) *DiscordChannelGroupBy {
@@ -359,11 +359,11 @@ func (_q *DiscordChannelQuery) GroupBy(field string, fields ...string) *DiscordC
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Type discordchannel.Type `json:"type,omitempty"`
 //	}
 //
 //	client.DiscordChannel.Query().
-//		Select(discordchannel.FieldName).
+//		Select(discordchannel.FieldType).
 //		Scan(ctx, &v)
 func (_q *DiscordChannelQuery) Select(fields ...string) *DiscordChannelSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

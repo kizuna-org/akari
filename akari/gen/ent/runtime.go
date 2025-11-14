@@ -43,13 +43,19 @@ func init() {
 	discordchannelFields := schema.DiscordChannel{}.Fields()
 	_ = discordchannelFields
 	// discordchannelDescName is the schema descriptor for name field.
-	discordchannelDescName := discordchannelFields[1].Descriptor()
+	discordchannelDescName := discordchannelFields[2].Descriptor()
 	// discordchannel.NameValidator is a validator for the "name" field. It is called by the builders before save.
 	discordchannel.NameValidator = discordchannelDescName.Validators[0].(func(string) error)
 	// discordchannelDescCreatedAt is the schema descriptor for created_at field.
-	discordchannelDescCreatedAt := discordchannelFields[2].Descriptor()
+	discordchannelDescCreatedAt := discordchannelFields[3].Descriptor()
 	// discordchannel.DefaultCreatedAt holds the default value on creation for the created_at field.
 	discordchannel.DefaultCreatedAt = discordchannelDescCreatedAt.Default.(func() time.Time)
+	// discordchannelDescUpdatedAt is the schema descriptor for updated_at field.
+	discordchannelDescUpdatedAt := discordchannelFields[4].Descriptor()
+	// discordchannel.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	discordchannel.DefaultUpdatedAt = discordchannelDescUpdatedAt.Default.(func() time.Time)
+	// discordchannel.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	discordchannel.UpdateDefaultUpdatedAt = discordchannelDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// discordchannelDescID is the schema descriptor for id field.
 	discordchannelDescID := discordchannelFields[0].Descriptor()
 	// discordchannel.IDValidator is a validator for the "id" field. It is called by the builders before save.
@@ -64,6 +70,12 @@ func init() {
 	discordguildDescCreatedAt := discordguildFields[2].Descriptor()
 	// discordguild.DefaultCreatedAt holds the default value on creation for the created_at field.
 	discordguild.DefaultCreatedAt = discordguildDescCreatedAt.Default.(func() time.Time)
+	// discordguildDescUpdatedAt is the schema descriptor for updated_at field.
+	discordguildDescUpdatedAt := discordguildFields[3].Descriptor()
+	// discordguild.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	discordguild.DefaultUpdatedAt = discordguildDescUpdatedAt.Default.(func() time.Time)
+	// discordguild.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	discordguild.UpdateDefaultUpdatedAt = discordguildDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// discordguildDescID is the schema descriptor for id field.
 	discordguildDescID := discordguildFields[0].Descriptor()
 	// discordguild.IDValidator is a validator for the "id" field. It is called by the builders before save.

@@ -3,6 +3,7 @@
 package discordchannel
 
 import (
+	"fmt"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
@@ -14,10 +15,14 @@ const (
 	Label = "discord_channel"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldType holds the string denoting the type field in the database.
+	FieldType = "type"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
+	FieldUpdatedAt = "updated_at"
 	// EdgeMessages holds the string denoting the messages edge name in mutations.
 	EdgeMessages = "messages"
 	// EdgeGuild holds the string denoting the guild edge name in mutations.
@@ -43,8 +48,10 @@ const (
 // Columns holds all SQL columns for discordchannel fields.
 var Columns = []string{
 	FieldID,
+	FieldType,
 	FieldName,
 	FieldCreatedAt,
+	FieldUpdatedAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "discord_channels"
@@ -73,9 +80,47 @@ var (
 	NameValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
+	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
+	DefaultUpdatedAt func() time.Time
+	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
+	UpdateDefaultUpdatedAt func() time.Time
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
+
+// Type defines the type for the "type" enum field.
+type Type string
+
+// Type values.
+const (
+	TypeGUILD_TEXT          Type = "GUILD_TEXT"
+	TypeDM                  Type = "DM"
+	TypeGUILD_VOICE         Type = "GUILD_VOICE"
+	TypeGROUP_DM            Type = "GROUP_DM"
+	TypeGUILD_CATEGORY      Type = "GUILD_CATEGORY"
+	TypeGUILD_ANNOUNCEMENT  Type = "GUILD_ANNOUNCEMENT"
+	TypeANNOUNCEMENT_THREAD Type = "ANNOUNCEMENT_THREAD"
+	TypePUBLIC_THREAD       Type = "PUBLIC_THREAD"
+	TypePRIVATE_THREAD      Type = "PRIVATE_THREAD"
+	TypeGUILD_STAGE_VOICE   Type = "GUILD_STAGE_VOICE"
+	TypeGUILD_DIRECTORY     Type = "GUILD_DIRECTORY"
+	TypeGUILD_FORUM         Type = "GUILD_FORUM"
+	TypeGUILD_MEDIA         Type = "GUILD_MEDIA"
+)
+
+func (_type Type) String() string {
+	return string(_type)
+}
+
+// TypeValidator is a validator for the "type" field enum values. It is called by the builders before save.
+func TypeValidator(_type Type) error {
+	switch _type {
+	case TypeGUILD_TEXT, TypeDM, TypeGUILD_VOICE, TypeGROUP_DM, TypeGUILD_CATEGORY, TypeGUILD_ANNOUNCEMENT, TypeANNOUNCEMENT_THREAD, TypePUBLIC_THREAD, TypePRIVATE_THREAD, TypeGUILD_STAGE_VOICE, TypeGUILD_DIRECTORY, TypeGUILD_FORUM, TypeGUILD_MEDIA:
+		return nil
+	default:
+		return fmt.Errorf("discordchannel: invalid enum value for type field: %q", _type)
+	}
+}
 
 // OrderOption defines the ordering options for the DiscordChannel queries.
 type OrderOption func(*sql.Selector)
@@ -83,6 +128,11 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByType orders the results by the type field.
+func ByType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldType, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.
@@ -93,6 +143,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByUpdatedAt orders the results by the updated_at field.
+func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
 // ByMessagesCount orders the results by messages count.

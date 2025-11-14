@@ -19,10 +19,14 @@ type DiscordChannel struct {
 	// ID of the ent.
 	// the id of this channel
 	ID string `json:"id,omitempty"`
+	// the type of channel
+	Type discordchannel.Type `json:"type,omitempty"`
 	// the name of the channel
 	Name string `json:"name,omitempty"`
 	// The time when the record was created in the database
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// The time when the channel name was last updated
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DiscordChannelQuery when eager-loading is set.
 	Edges                 DiscordChannelEdges `json:"edges"`
@@ -66,9 +70,9 @@ func (*DiscordChannel) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case discordchannel.FieldID, discordchannel.FieldName:
+		case discordchannel.FieldID, discordchannel.FieldType, discordchannel.FieldName:
 			values[i] = new(sql.NullString)
-		case discordchannel.FieldCreatedAt:
+		case discordchannel.FieldCreatedAt, discordchannel.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		case discordchannel.ForeignKeys[0]: // discord_channel_guild
 			values[i] = new(sql.NullString)
@@ -93,6 +97,12 @@ func (_m *DiscordChannel) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.ID = value.String
 			}
+		case discordchannel.FieldType:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field type", values[i])
+			} else if value.Valid {
+				_m.Type = discordchannel.Type(value.String)
+			}
 		case discordchannel.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -104,6 +114,12 @@ func (_m *DiscordChannel) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				_m.CreatedAt = value.Time
+			}
+		case discordchannel.FieldUpdatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field updated_at", values[i])
+			} else if value.Valid {
+				_m.UpdatedAt = value.Time
 			}
 		case discordchannel.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -158,11 +174,17 @@ func (_m *DiscordChannel) String() string {
 	var builder strings.Builder
 	builder.WriteString("DiscordChannel(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString("type=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Type))
+	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("updated_at=")
+	builder.WriteString(_m.UpdatedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

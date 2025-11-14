@@ -45,8 +45,10 @@ var (
 	// DiscordChannelsColumns holds the columns for the "discord_channels" table.
 	DiscordChannelsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"GUILD_TEXT", "DM", "GUILD_VOICE", "GROUP_DM", "GUILD_CATEGORY", "GUILD_ANNOUNCEMENT", "ANNOUNCEMENT_THREAD", "PUBLIC_THREAD", "PRIVATE_THREAD", "GUILD_STAGE_VOICE", "GUILD_DIRECTORY", "GUILD_FORUM", "GUILD_MEDIA"}},
 		{Name: "name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "discord_channel_guild", Type: field.TypeString},
 	}
 	// DiscordChannelsTable holds the schema information for the "discord_channels" table.
@@ -57,7 +59,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "discord_channels_discord_guilds_guild",
-				Columns:    []*schema.Column{DiscordChannelsColumns[3]},
+				Columns:    []*schema.Column{DiscordChannelsColumns[5]},
 				RefColumns: []*schema.Column{DiscordGuildsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -68,6 +70,7 @@ var (
 		{Name: "id", Type: field.TypeString, Unique: true},
 		{Name: "name", Type: field.TypeString},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 	}
 	// DiscordGuildsTable holds the schema information for the "discord_guilds" table.
 	DiscordGuildsTable = &schema.Table{

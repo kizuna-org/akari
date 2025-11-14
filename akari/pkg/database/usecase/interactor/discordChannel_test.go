@@ -135,8 +135,10 @@ func TestDiscordChannelInteractor_GetDiscordChannelByID(t *testing.T) {
 	}
 }
 
-func TestDiscordChannelInteractor_ListDiscordChannels(t *testing.T) {
+func TestDiscordChannelInteractor_GetDiscordChannelByMessageID(t *testing.T) {
 	t.Parallel()
+
+	messageID := "msg1"
 
 	tests := []struct {
 		name      string
@@ -146,14 +148,15 @@ func TestDiscordChannelInteractor_ListDiscordChannels(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockDiscordChannelRepository, ctx context.Context) {
-				m.EXPECT().ListDiscordChannels(ctx).Return([]*domain.DiscordChannel{{ID: "m1", CreatedAt: time.Now()}}, nil)
+				m.EXPECT().GetDiscordChannelByMessageID(ctx, messageID).
+					Return(&domain.DiscordChannel{ID: "m1", CreatedAt: time.Now()}, nil)
 			},
 			wantErr: false,
 		},
 		{
-			name: "failure",
+			name: "not found",
 			mockSetup: func(m *mock.MockDiscordChannelRepository, ctx context.Context) {
-				m.EXPECT().ListDiscordChannels(ctx).Return(nil, errors.New("list failed"))
+				m.EXPECT().GetDiscordChannelByMessageID(ctx, messageID).Return(nil, errors.New("not found"))
 			},
 			wantErr: true,
 		},
@@ -172,7 +175,60 @@ func TestDiscordChannelInteractor_ListDiscordChannels(t *testing.T) {
 			ctx := t.Context()
 			testCase.mockSetup(m, ctx)
 
-			res, err := i.ListDiscordChannels(ctx)
+			res, err := i.GetDiscordChannelByMessageID(ctx, messageID)
+
+			if testCase.wantErr {
+				require.Error(t, err)
+				assert.Nil(t, res)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, res)
+			}
+		})
+	}
+}
+
+func TestDiscordChannelInteractor_GetDiscordChannelsByGuildID(t *testing.T) {
+	t.Parallel()
+
+	guildID := "g1"
+
+	tests := []struct {
+		name      string
+		mockSetup func(*mock.MockDiscordChannelRepository, context.Context)
+		wantErr   bool
+	}{
+		{
+			name: "success",
+			mockSetup: func(m *mock.MockDiscordChannelRepository, ctx context.Context) {
+				m.EXPECT().GetDiscordChannelsByGuildID(ctx, guildID).
+					Return([]*domain.DiscordChannel{{ID: "m1", GuildID: guildID, CreatedAt: time.Now()}}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "failure",
+			mockSetup: func(m *mock.MockDiscordChannelRepository, ctx context.Context) {
+				m.EXPECT().GetDiscordChannelsByGuildID(ctx, guildID).Return(nil, errors.New("list failed"))
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			m := mock.NewMockDiscordChannelRepository(ctrl)
+			i := interactor.NewDiscordChannelInteractor(m)
+
+			ctx := t.Context()
+			testCase.mockSetup(m, ctx)
+
+			res, err := i.GetDiscordChannelsByGuildID(ctx, guildID)
 
 			if testCase.wantErr {
 				require.Error(t, err)

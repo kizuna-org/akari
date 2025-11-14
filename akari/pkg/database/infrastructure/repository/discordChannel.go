@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/kizuna-org/akari/gen/ent/discordchannel"
+	"github.com/kizuna-org/akari/gen/ent/discordguild"
+	"github.com/kizuna-org/akari/gen/ent/discordmessage"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
 
@@ -43,10 +46,31 @@ func (r *repositoryImpl) GetDiscordChannelByID(
 	return domain.ToDomainDiscordChannelFromDB(channel), nil
 }
 
-func (r *repositoryImpl) ListDiscordChannels(ctx context.Context) ([]*domain.DiscordChannel, error) {
-	channels, err := r.client.DiscordChannelClient().Query().All(ctx)
+func (r *repositoryImpl) GetDiscordChannelByMessageID(
+	ctx context.Context,
+	messageID string,
+) (*domain.DiscordChannel, error) {
+	channel, err := r.client.DiscordChannelClient().
+		Query().
+		Where(discordchannel.HasMessagesWith(discordmessage.IDEQ(messageID))).
+		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list discord channels: %w", err)
+		return nil, fmt.Errorf("failed to get discord channel by message id: %w", err)
+	}
+
+	return domain.ToDomainDiscordChannelFromDB(channel), nil
+}
+
+func (r *repositoryImpl) GetDiscordChannelsByGuildID(
+	ctx context.Context,
+	guildID string,
+) ([]*domain.DiscordChannel, error) {
+	channels, err := r.client.DiscordChannelClient().
+		Query().
+		Where(discordchannel.HasGuildWith(discordguild.IDEQ(guildID))).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get discord channels by guild id: %w", err)
 	}
 
 	domainDiscordChannels := make([]*domain.DiscordChannel, 0, len(channels))
