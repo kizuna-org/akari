@@ -89,20 +89,20 @@ func registerDatabaseHooks(
 ) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			logger.Info("verifying database connection")
+			logger.Info("Verifying database connection")
 			if err := repository.HealthCheck(ctx); err != nil {
 				return fmt.Errorf("database health check failed: %w", err)
 			}
-			logger.Info("database connection verified successfully")
+			logger.Info("Database connection verified successfully")
 
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			logger.Info("disconnecting from database")
+			logger.Info("Disconnecting from database")
 			if err := client.Close(); err != nil {
 				return fmt.Errorf("failed to disconnect from database: %w", err)
 			}
-			logger.Info("database disconnected successfully")
+			logger.Info("Database disconnected successfully")
 
 			return nil
 		},
