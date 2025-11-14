@@ -11,6 +11,7 @@ import (
 	"github.com/kizuna-org/akari/pkg/config"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	databaseInfra "github.com/kizuna-org/akari/pkg/database/infrastructure"
+	databaseRepo "github.com/kizuna-org/akari/pkg/database/infrastructure/repository"
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
 	discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
@@ -34,7 +35,7 @@ func NewModule() fx.Option {
 			newEntClient,
 			gemini.NewRepository,
 			newPostgresClient,
-			databaseInfra.NewRepository,
+			databaseRepo.NewRepository,
 			newDatabaseRepository,
 			newSystemPromptRepository,
 			newCharacterRepository,
@@ -83,7 +84,7 @@ func newEntClient(configRepo config.ConfigRepository) (*ent.Client, error) {
 func registerDatabaseHooks(
 	lc fx.Lifecycle,
 	client databaseInfra.Client,
-	repository databaseInfra.Repository,
+	repository databaseRepo.Repository,
 	logger *slog.Logger,
 ) {
 	lc.Append(fx.Hook{
@@ -125,15 +126,15 @@ func newPostgresClient(configRepo config.ConfigRepository, logger *slog.Logger) 
 	return client, nil
 }
 
-func newDatabaseRepository(repo databaseInfra.Repository) databaseDomain.DatabaseRepository {
+func newDatabaseRepository(repo databaseRepo.Repository) databaseDomain.DatabaseRepository {
 	return repo
 }
 
-func newSystemPromptRepository(repo databaseInfra.Repository) databaseDomain.SystemPromptRepository {
+func newSystemPromptRepository(repo databaseRepo.Repository) databaseDomain.SystemPromptRepository {
 	return repo
 }
 
-func newCharacterRepository(repo databaseInfra.Repository) databaseDomain.CharacterRepository {
+func newCharacterRepository(repo databaseRepo.Repository) databaseDomain.CharacterRepository {
 	return repo
 }
 
