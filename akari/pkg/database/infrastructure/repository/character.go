@@ -19,7 +19,7 @@ func (r *repositoryImpl) GetCharacterByID(
 		WithSystemPrompts().
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get character with system prompt: %w", err)
+		return nil, fmt.Errorf("failed to get character: %w", err)
 	}
 
 	return character, nil
