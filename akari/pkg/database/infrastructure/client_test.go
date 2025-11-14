@@ -1,11 +1,11 @@
-package postgres_test
+package infrastructure_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/kizuna-org/akari/pkg/config"
-	"github.com/kizuna-org/akari/pkg/database/infrastructure/postgres"
+	"github.com/kizuna-org/akari/pkg/database/infrastructure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +29,7 @@ func TestNewClient(t *testing.T) {
 		Debug:              true,
 	}
 
-	client, err := postgres.NewClient(cfg)
+	client, err := infrastructure.NewClient(cfg)
 	require.NoError(t, err)
 	require.NotNil(t, client)
 

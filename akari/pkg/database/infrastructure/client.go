@@ -1,4 +1,4 @@
-package postgres
+package infrastructure
 
 //go:generate go tool mockgen -package=mock -source=client.go -destination=mock/client.go
 

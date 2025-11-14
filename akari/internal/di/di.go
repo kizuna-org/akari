@@ -10,7 +10,7 @@ import (
 	internalDiscordUsecase "github.com/kizuna-org/akari/internal/app/usecase/discord"
 	"github.com/kizuna-org/akari/pkg/config"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
-	"github.com/kizuna-org/akari/pkg/database/infrastructure/postgres"
+	databaseInfra "github.com/kizuna-org/akari/pkg/database/infrastructure"
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
 	discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
@@ -34,7 +34,7 @@ func NewModule() fx.Option {
 			newEntClient,
 			gemini.NewRepository,
 			newPostgresClient,
-			postgres.NewRepository,
+			databaseInfra.NewRepository,
 			newDatabaseRepository,
 			newSystemPromptRepository,
 			newCharacterRepository,
@@ -82,8 +82,8 @@ func newEntClient(configRepo config.ConfigRepository) (*ent.Client, error) {
 
 func registerDatabaseHooks(
 	lc fx.Lifecycle,
-	client postgres.Client,
-	repository postgres.Repository,
+	client databaseInfra.Client,
+	repository databaseInfra.Repository,
 	logger *slog.Logger,
 ) {
 	lc.Append(fx.Hook{
@@ -108,10 +108,10 @@ func registerDatabaseHooks(
 	})
 }
 
-func newPostgresClient(configRepo config.ConfigRepository, logger *slog.Logger) (postgres.Client, error) {
+func newPostgresClient(configRepo config.ConfigRepository, logger *slog.Logger) (databaseInfra.Client, error) {
 	cfg := configRepo.GetConfig().Database
 
-	client, err := postgres.NewClient(cfg)
+	client, err := databaseInfra.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create database client: %w", err)
 	}
@@ -125,15 +125,15 @@ func newPostgresClient(configRepo config.ConfigRepository, logger *slog.Logger) 
 	return client, nil
 }
 
-func newDatabaseRepository(repo postgres.Repository) databaseDomain.DatabaseRepository {
+func newDatabaseRepository(repo databaseInfra.Repository) databaseDomain.DatabaseRepository {
 	return repo
 }
 
-func newSystemPromptRepository(repo postgres.Repository) databaseDomain.SystemPromptRepository {
+func newSystemPromptRepository(repo databaseInfra.Repository) databaseDomain.SystemPromptRepository {
 	return repo
 }
 
-func newCharacterRepository(repo postgres.Repository) databaseDomain.CharacterRepository {
+func newCharacterRepository(repo databaseInfra.Repository) databaseDomain.CharacterRepository {
 	return repo
 }
 
