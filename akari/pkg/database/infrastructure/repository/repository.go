@@ -24,7 +24,7 @@ type repositoryImpl struct {
 func NewRepository(client infrastructure.Client, logger *slog.Logger) Repository {
 	return &repositoryImpl{
 		client: client,
-		logger: logger.With("component", "postgres_repository"),
+		logger: logger.With("component", "database_repository"),
 	}
 }
 

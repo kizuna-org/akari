@@ -34,7 +34,7 @@ func NewModule() fx.Option {
 		fx.Provide(
 			newEntClient,
 			gemini.NewRepository,
-			newPostgresClient,
+			newDatabaseClient,
 			databaseRepo.NewRepository,
 			newDatabaseRepository,
 			newSystemPromptRepository,
@@ -109,7 +109,7 @@ func registerDatabaseHooks(
 	})
 }
 
-func newPostgresClient(configRepo config.ConfigRepository, logger *slog.Logger) (databaseInfra.Client, error) {
+func newDatabaseClient(configRepo config.ConfigRepository, logger *slog.Logger) (databaseInfra.Client, error) {
 	cfg := configRepo.GetConfig().Database
 
 	client, err := databaseInfra.NewClient(cfg)
