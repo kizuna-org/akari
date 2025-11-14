@@ -137,56 +137,6 @@ func TestDiscordMessageInteractor_GetDiscordMessageByID(t *testing.T) {
 	}
 }
 
-func TestDiscordMessageInteractor_ListDiscordMessages(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name      string
-		mockSetup func(*mock.MockDiscordMessageRepository, context.Context)
-		wantErr   bool
-	}{
-		{
-			name: "success",
-			mockSetup: func(m *mock.MockDiscordMessageRepository, ctx context.Context) {
-				m.EXPECT().ListDiscordMessages(ctx).Return([]*domain.DiscordMessage{{ID: "m1", CreatedAt: time.Now()}}, nil)
-			},
-			wantErr: false,
-		},
-		{
-			name: "failure",
-			mockSetup: func(m *mock.MockDiscordMessageRepository, ctx context.Context) {
-				m.EXPECT().ListDiscordMessages(ctx).Return(nil, errors.New("list failed"))
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			m := mock.NewMockDiscordMessageRepository(ctrl)
-			i := interactor.NewDiscordMessageInteractor(m)
-
-			ctx := t.Context()
-			testCase.mockSetup(m, ctx)
-
-			res, err := i.ListDiscordMessages(ctx)
-
-			if testCase.wantErr {
-				require.Error(t, err)
-				assert.Nil(t, res)
-			} else {
-				require.NoError(t, err)
-				assert.NotEmpty(t, res)
-			}
-		})
-	}
-}
-
 func TestDiscordMessageInteractor_DeleteDiscordMessage(t *testing.T) {
 	t.Parallel()
 

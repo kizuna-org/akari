@@ -70,6 +70,21 @@ func (mr *MockDiscordGuildRepositoryMockRecorder) DeleteDiscordGuild(ctx, id any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDiscordGuild", reflect.TypeOf((*MockDiscordGuildRepository)(nil).DeleteDiscordGuild), ctx, id)
 }
 
+// GetDiscordGuildByChannelID mocks base method.
+func (m *MockDiscordGuildRepository) GetDiscordGuildByChannelID(ctx context.Context, channelID string) (*domain.DiscordGuild, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDiscordGuildByChannelID", ctx, channelID)
+	ret0, _ := ret[0].(*domain.DiscordGuild)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDiscordGuildByChannelID indicates an expected call of GetDiscordGuildByChannelID.
+func (mr *MockDiscordGuildRepositoryMockRecorder) GetDiscordGuildByChannelID(ctx, channelID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDiscordGuildByChannelID", reflect.TypeOf((*MockDiscordGuildRepository)(nil).GetDiscordGuildByChannelID), ctx, channelID)
+}
+
 // GetDiscordGuildByID mocks base method.
 func (m *MockDiscordGuildRepository) GetDiscordGuildByID(ctx context.Context, id string) (*domain.DiscordGuild, error) {
 	m.ctrl.T.Helper()

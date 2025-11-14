@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/kizuna-org/akari/gen/ent/discordchannel"
+	"github.com/kizuna-org/akari/gen/ent/discordguild"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
 
@@ -40,8 +42,24 @@ func (r *repositoryImpl) GetDiscordGuildByID(
 	return domain.ToDomainDiscordGuildFromDB(guild), nil
 }
 
+func (r *repositoryImpl) GetDiscordGuildByChannelID(
+	ctx context.Context,
+	channelID string,
+) (*domain.DiscordGuild, error) {
+	guild, err := r.client.DiscordGuildClient().
+		Query().
+		Where(discordguild.HasChannelsWith(discordchannel.IDEQ(channelID))).
+		WithChannels().
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get discord channel: %w", err)
+	}
+
+	return domain.ToDomainDiscordGuildFromDB(guild), nil
+}
+
 func (r *repositoryImpl) ListDiscordGuilds(ctx context.Context) ([]*domain.DiscordGuild, error) {
-	guilds, err := r.client.DiscordGuildClient().Query().All(ctx)
+	guilds, err := r.client.DiscordGuildClient().Query().WithChannels().All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list discord guilds: %w", err)
 	}

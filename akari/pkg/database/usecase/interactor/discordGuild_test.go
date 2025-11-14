@@ -134,6 +134,59 @@ func TestDiscordGuildInteractor_GetDiscordGuildByID(t *testing.T) {
 	}
 }
 
+func TestDiscordGuildInteractor_GetDiscordGuildByChannelID(t *testing.T) {
+	t.Parallel()
+
+	channelID := "c1"
+
+	tests := []struct {
+		name      string
+		mockSetup func(*mock.MockDiscordGuildRepository, context.Context)
+		wantErr   bool
+	}{
+		{
+			name: "success",
+			mockSetup: func(m *mock.MockDiscordGuildRepository, ctx context.Context) {
+				m.EXPECT().GetDiscordGuildByChannelID(ctx, channelID).
+					Return(&domain.DiscordGuild{ID: "g1", CreatedAt: time.Now()}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "not found",
+			mockSetup: func(m *mock.MockDiscordGuildRepository, ctx context.Context) {
+				m.EXPECT().GetDiscordGuildByChannelID(ctx, channelID).Return(nil, errors.New("not found"))
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			m := mock.NewMockDiscordGuildRepository(ctrl)
+			i := interactor.NewDiscordGuildInteractor(m)
+
+			ctx := t.Context()
+			testCase.mockSetup(m, ctx)
+
+			res, err := i.GetDiscordGuildByChannelID(ctx, channelID)
+
+			if testCase.wantErr {
+				require.Error(t, err)
+				assert.Nil(t, res)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, res)
+			}
+		})
+	}
+}
+
 func TestDiscordGuildInteractor_ListDiscordGuilds(t *testing.T) {
 	t.Parallel()
 

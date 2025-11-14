@@ -38,7 +38,11 @@ func (r *repositoryImpl) GetDiscordChannelByID(
 	ctx context.Context,
 	channelID string,
 ) (*domain.DiscordChannel, error) {
-	channel, err := r.client.DiscordChannelClient().Get(ctx, channelID)
+	channel, err := r.client.DiscordChannelClient().
+		Query().
+		Where(discordchannel.IDEQ(channelID)).
+		WithGuild().
+		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get discord channel by id: %w", err)
 	}
@@ -53,9 +57,10 @@ func (r *repositoryImpl) GetDiscordChannelByMessageID(
 	channel, err := r.client.DiscordChannelClient().
 		Query().
 		Where(discordchannel.HasMessagesWith(discordmessage.IDEQ(messageID))).
+		WithGuild().
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get discord channel by message id: %w", err)
+		return nil, fmt.Errorf("failed to get discord channel: %w", err)
 	}
 
 	return domain.ToDomainDiscordChannelFromDB(channel), nil
@@ -68,9 +73,10 @@ func (r *repositoryImpl) GetDiscordChannelsByGuildID(
 	channels, err := r.client.DiscordChannelClient().
 		Query().
 		Where(discordchannel.HasGuildWith(discordguild.IDEQ(guildID))).
+		WithGuild().
 		All(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get discord channels by guild id: %w", err)
+		return nil, fmt.Errorf("failed to get discord channels: %w", err)
 	}
 
 	domainDiscordChannels := make([]*domain.DiscordChannel, 0, len(channels))

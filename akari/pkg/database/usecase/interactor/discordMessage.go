@@ -1,4 +1,3 @@
-//nolint:dupl
 package interactor
 
 import (
@@ -16,7 +15,6 @@ type DiscordMessageInteractor interface {
 		ctx context.Context,
 		messageID string,
 	) (*domain.DiscordMessage, error)
-	ListDiscordMessages(ctx context.Context) ([]*domain.DiscordMessage, error)
 	DeleteDiscordMessage(ctx context.Context, id string) error
 }
 
@@ -42,10 +40,6 @@ func (d *discordMessageInteractorImpl) GetDiscordMessageByID(
 	messageID string,
 ) (*domain.DiscordMessage, error) {
 	return d.repository.GetDiscordMessageByID(ctx, messageID)
-}
-
-func (d *discordMessageInteractorImpl) ListDiscordMessages(ctx context.Context) ([]*domain.DiscordMessage, error) {
-	return d.repository.ListDiscordMessages(ctx)
 }
 
 func (d *discordMessageInteractorImpl) DeleteDiscordMessage(ctx context.Context, id string) error {

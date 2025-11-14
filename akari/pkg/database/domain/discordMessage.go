@@ -12,7 +12,6 @@ import (
 type DiscordMessageRepository interface {
 	CreateDiscordMessage(ctx context.Context, params DiscordMessage) (*DiscordMessage, error)
 	GetDiscordMessageByID(ctx context.Context, id string) (*DiscordMessage, error)
-	ListDiscordMessages(ctx context.Context) ([]*DiscordMessage, error)
 	DeleteDiscordMessage(ctx context.Context, id string) error
 }
 

@@ -84,18 +84,3 @@ func (mr *MockDiscordMessageRepositoryMockRecorder) GetDiscordMessageByID(ctx, i
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDiscordMessageByID", reflect.TypeOf((*MockDiscordMessageRepository)(nil).GetDiscordMessageByID), ctx, id)
 }
-
-// ListDiscordMessages mocks base method.
-func (m *MockDiscordMessageRepository) ListDiscordMessages(ctx context.Context) ([]*domain.DiscordMessage, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ListDiscordMessages", ctx)
-	ret0, _ := ret[0].([]*domain.DiscordMessage)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// ListDiscordMessages indicates an expected call of ListDiscordMessages.
-func (mr *MockDiscordMessageRepositoryMockRecorder) ListDiscordMessages(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListDiscordMessages", reflect.TypeOf((*MockDiscordMessageRepository)(nil).ListDiscordMessages), ctx)
-}

@@ -1,4 +1,3 @@
-//nolint:dupl
 package interactor
 
 import (
@@ -16,6 +15,7 @@ type DiscordGuildInteractor interface {
 		ctx context.Context,
 		guildID string,
 	) (*domain.DiscordGuild, error)
+	GetDiscordGuildByChannelID(ctx context.Context, channelID string) (*domain.DiscordGuild, error)
 	ListDiscordGuilds(ctx context.Context) ([]*domain.DiscordGuild, error)
 	DeleteDiscordGuild(ctx context.Context, id string) error
 }
@@ -42,6 +42,13 @@ func (d *discordGuildInteractorImpl) GetDiscordGuildByID(
 	guildID string,
 ) (*domain.DiscordGuild, error) {
 	return d.repository.GetDiscordGuildByID(ctx, guildID)
+}
+
+func (d *discordGuildInteractorImpl) GetDiscordGuildByChannelID(
+	ctx context.Context,
+	channelID string,
+) (*domain.DiscordGuild, error) {
+	return d.repository.GetDiscordGuildByChannelID(ctx, channelID)
 }
 
 func (d *discordGuildInteractorImpl) ListDiscordGuilds(ctx context.Context) ([]*domain.DiscordGuild, error) {
