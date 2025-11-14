@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/kizuna-org/akari/gen/ent/character"
+	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
@@ -25,8 +26,9 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeCharacter    = "Character"
-	TypeSystemPrompt = "SystemPrompt"
+	TypeCharacter       = "Character"
+	TypeCharacterConfig = "CharacterConfig"
+	TypeSystemPrompt    = "SystemPrompt"
 )
 
 // CharacterMutation represents an operation that mutates the Character nodes in the graph.
@@ -39,6 +41,8 @@ type CharacterMutation struct {
 	created_at            *time.Time
 	updated_at            *time.Time
 	clearedFields         map[string]struct{}
+	_config               *int
+	cleared_config        bool
 	system_prompts        map[int]struct{}
 	removedsystem_prompts map[int]struct{}
 	clearedsystem_prompts bool
@@ -251,6 +255,45 @@ func (m *CharacterMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err 
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *CharacterMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+}
+
+// SetConfigID sets the "config" edge to the CharacterConfig entity by id.
+func (m *CharacterMutation) SetConfigID(id int) {
+	m._config = &id
+}
+
+// ClearConfig clears the "config" edge to the CharacterConfig entity.
+func (m *CharacterMutation) ClearConfig() {
+	m.cleared_config = true
+}
+
+// ConfigCleared reports if the "config" edge to the CharacterConfig entity was cleared.
+func (m *CharacterMutation) ConfigCleared() bool {
+	return m.cleared_config
+}
+
+// ConfigID returns the "config" edge ID in the mutation.
+func (m *CharacterMutation) ConfigID() (id int, exists bool) {
+	if m._config != nil {
+		return *m._config, true
+	}
+	return
+}
+
+// ConfigIDs returns the "config" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ConfigID instead. It exists only for internal usage by the builders.
+func (m *CharacterMutation) ConfigIDs() (ids []int) {
+	if id := m._config; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetConfig resets all changes to the "config" edge.
+func (m *CharacterMutation) ResetConfig() {
+	m._config = nil
+	m.cleared_config = false
 }
 
 // AddSystemPromptIDs adds the "system_prompts" edge to the SystemPrompt entity by ids.
@@ -474,7 +517,10 @@ func (m *CharacterMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CharacterMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m._config != nil {
+		edges = append(edges, character.EdgeConfig)
+	}
 	if m.system_prompts != nil {
 		edges = append(edges, character.EdgeSystemPrompts)
 	}
@@ -485,6 +531,10 @@ func (m *CharacterMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *CharacterMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case character.EdgeConfig:
+		if id := m._config; id != nil {
+			return []ent.Value{*id}
+		}
 	case character.EdgeSystemPrompts:
 		ids := make([]ent.Value, 0, len(m.system_prompts))
 		for id := range m.system_prompts {
@@ -497,7 +547,7 @@ func (m *CharacterMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CharacterMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedsystem_prompts != nil {
 		edges = append(edges, character.EdgeSystemPrompts)
 	}
@@ -520,7 +570,10 @@ func (m *CharacterMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CharacterMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.cleared_config {
+		edges = append(edges, character.EdgeConfig)
+	}
 	if m.clearedsystem_prompts {
 		edges = append(edges, character.EdgeSystemPrompts)
 	}
@@ -531,6 +584,8 @@ func (m *CharacterMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *CharacterMutation) EdgeCleared(name string) bool {
 	switch name {
+	case character.EdgeConfig:
+		return m.cleared_config
 	case character.EdgeSystemPrompts:
 		return m.clearedsystem_prompts
 	}
@@ -541,6 +596,9 @@ func (m *CharacterMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *CharacterMutation) ClearEdge(name string) error {
 	switch name {
+	case character.EdgeConfig:
+		m.ClearConfig()
+		return nil
 	}
 	return fmt.Errorf("unknown Character unique edge %s", name)
 }
@@ -549,11 +607,483 @@ func (m *CharacterMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *CharacterMutation) ResetEdge(name string) error {
 	switch name {
+	case character.EdgeConfig:
+		m.ResetConfig()
+		return nil
 	case character.EdgeSystemPrompts:
 		m.ResetSystemPrompts()
 		return nil
 	}
 	return fmt.Errorf("unknown Character edge %s", name)
+}
+
+// CharacterConfigMutation represents an operation that mutates the CharacterConfig nodes in the graph.
+type CharacterConfigMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *int
+	name_regexp           *string
+	default_system_prompt *string
+	clearedFields         map[string]struct{}
+	character             *int
+	clearedcharacter      bool
+	done                  bool
+	oldValue              func(context.Context) (*CharacterConfig, error)
+	predicates            []predicate.CharacterConfig
+}
+
+var _ ent.Mutation = (*CharacterConfigMutation)(nil)
+
+// characterconfigOption allows management of the mutation configuration using functional options.
+type characterconfigOption func(*CharacterConfigMutation)
+
+// newCharacterConfigMutation creates new mutation for the CharacterConfig entity.
+func newCharacterConfigMutation(c config, op Op, opts ...characterconfigOption) *CharacterConfigMutation {
+	m := &CharacterConfigMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCharacterConfig,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCharacterConfigID sets the ID field of the mutation.
+func withCharacterConfigID(id int) characterconfigOption {
+	return func(m *CharacterConfigMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CharacterConfig
+		)
+		m.oldValue = func(ctx context.Context) (*CharacterConfig, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CharacterConfig.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCharacterConfig sets the old CharacterConfig of the mutation.
+func withCharacterConfig(node *CharacterConfig) characterconfigOption {
+	return func(m *CharacterConfigMutation) {
+		m.oldValue = func(context.Context) (*CharacterConfig, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CharacterConfigMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CharacterConfigMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CharacterConfigMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CharacterConfigMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CharacterConfig.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetNameRegexp sets the "name_regexp" field.
+func (m *CharacterConfigMutation) SetNameRegexp(s string) {
+	m.name_regexp = &s
+}
+
+// NameRegexp returns the value of the "name_regexp" field in the mutation.
+func (m *CharacterConfigMutation) NameRegexp() (r string, exists bool) {
+	v := m.name_regexp
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNameRegexp returns the old "name_regexp" field's value of the CharacterConfig entity.
+// If the CharacterConfig object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CharacterConfigMutation) OldNameRegexp(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNameRegexp is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNameRegexp requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNameRegexp: %w", err)
+	}
+	return oldValue.NameRegexp, nil
+}
+
+// ClearNameRegexp clears the value of the "name_regexp" field.
+func (m *CharacterConfigMutation) ClearNameRegexp() {
+	m.name_regexp = nil
+	m.clearedFields[characterconfig.FieldNameRegexp] = struct{}{}
+}
+
+// NameRegexpCleared returns if the "name_regexp" field was cleared in this mutation.
+func (m *CharacterConfigMutation) NameRegexpCleared() bool {
+	_, ok := m.clearedFields[characterconfig.FieldNameRegexp]
+	return ok
+}
+
+// ResetNameRegexp resets all changes to the "name_regexp" field.
+func (m *CharacterConfigMutation) ResetNameRegexp() {
+	m.name_regexp = nil
+	delete(m.clearedFields, characterconfig.FieldNameRegexp)
+}
+
+// SetDefaultSystemPrompt sets the "default_system_prompt" field.
+func (m *CharacterConfigMutation) SetDefaultSystemPrompt(s string) {
+	m.default_system_prompt = &s
+}
+
+// DefaultSystemPrompt returns the value of the "default_system_prompt" field in the mutation.
+func (m *CharacterConfigMutation) DefaultSystemPrompt() (r string, exists bool) {
+	v := m.default_system_prompt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDefaultSystemPrompt returns the old "default_system_prompt" field's value of the CharacterConfig entity.
+// If the CharacterConfig object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CharacterConfigMutation) OldDefaultSystemPrompt(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDefaultSystemPrompt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDefaultSystemPrompt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDefaultSystemPrompt: %w", err)
+	}
+	return oldValue.DefaultSystemPrompt, nil
+}
+
+// ResetDefaultSystemPrompt resets all changes to the "default_system_prompt" field.
+func (m *CharacterConfigMutation) ResetDefaultSystemPrompt() {
+	m.default_system_prompt = nil
+}
+
+// SetCharacterID sets the "character" edge to the Character entity by id.
+func (m *CharacterConfigMutation) SetCharacterID(id int) {
+	m.character = &id
+}
+
+// ClearCharacter clears the "character" edge to the Character entity.
+func (m *CharacterConfigMutation) ClearCharacter() {
+	m.clearedcharacter = true
+}
+
+// CharacterCleared reports if the "character" edge to the Character entity was cleared.
+func (m *CharacterConfigMutation) CharacterCleared() bool {
+	return m.clearedcharacter
+}
+
+// CharacterID returns the "character" edge ID in the mutation.
+func (m *CharacterConfigMutation) CharacterID() (id int, exists bool) {
+	if m.character != nil {
+		return *m.character, true
+	}
+	return
+}
+
+// CharacterIDs returns the "character" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CharacterID instead. It exists only for internal usage by the builders.
+func (m *CharacterConfigMutation) CharacterIDs() (ids []int) {
+	if id := m.character; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCharacter resets all changes to the "character" edge.
+func (m *CharacterConfigMutation) ResetCharacter() {
+	m.character = nil
+	m.clearedcharacter = false
+}
+
+// Where appends a list predicates to the CharacterConfigMutation builder.
+func (m *CharacterConfigMutation) Where(ps ...predicate.CharacterConfig) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CharacterConfigMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CharacterConfigMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CharacterConfig, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CharacterConfigMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CharacterConfigMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CharacterConfig).
+func (m *CharacterConfigMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CharacterConfigMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.name_regexp != nil {
+		fields = append(fields, characterconfig.FieldNameRegexp)
+	}
+	if m.default_system_prompt != nil {
+		fields = append(fields, characterconfig.FieldDefaultSystemPrompt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CharacterConfigMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case characterconfig.FieldNameRegexp:
+		return m.NameRegexp()
+	case characterconfig.FieldDefaultSystemPrompt:
+		return m.DefaultSystemPrompt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CharacterConfigMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case characterconfig.FieldNameRegexp:
+		return m.OldNameRegexp(ctx)
+	case characterconfig.FieldDefaultSystemPrompt:
+		return m.OldDefaultSystemPrompt(ctx)
+	}
+	return nil, fmt.Errorf("unknown CharacterConfig field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CharacterConfigMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case characterconfig.FieldNameRegexp:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNameRegexp(v)
+		return nil
+	case characterconfig.FieldDefaultSystemPrompt:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDefaultSystemPrompt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CharacterConfig field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CharacterConfigMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CharacterConfigMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CharacterConfigMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CharacterConfig numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CharacterConfigMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(characterconfig.FieldNameRegexp) {
+		fields = append(fields, characterconfig.FieldNameRegexp)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CharacterConfigMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CharacterConfigMutation) ClearField(name string) error {
+	switch name {
+	case characterconfig.FieldNameRegexp:
+		m.ClearNameRegexp()
+		return nil
+	}
+	return fmt.Errorf("unknown CharacterConfig nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CharacterConfigMutation) ResetField(name string) error {
+	switch name {
+	case characterconfig.FieldNameRegexp:
+		m.ResetNameRegexp()
+		return nil
+	case characterconfig.FieldDefaultSystemPrompt:
+		m.ResetDefaultSystemPrompt()
+		return nil
+	}
+	return fmt.Errorf("unknown CharacterConfig field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CharacterConfigMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.character != nil {
+		edges = append(edges, characterconfig.EdgeCharacter)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CharacterConfigMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case characterconfig.EdgeCharacter:
+		if id := m.character; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CharacterConfigMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CharacterConfigMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CharacterConfigMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedcharacter {
+		edges = append(edges, characterconfig.EdgeCharacter)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CharacterConfigMutation) EdgeCleared(name string) bool {
+	switch name {
+	case characterconfig.EdgeCharacter:
+		return m.clearedcharacter
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CharacterConfigMutation) ClearEdge(name string) error {
+	switch name {
+	case characterconfig.EdgeCharacter:
+		m.ClearCharacter()
+		return nil
+	}
+	return fmt.Errorf("unknown CharacterConfig unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CharacterConfigMutation) ResetEdge(name string) error {
+	switch name {
+	case characterconfig.EdgeCharacter:
+		m.ResetCharacter()
+		return nil
+	}
+	return fmt.Errorf("unknown CharacterConfig edge %s", name)
 }
 
 // SystemPromptMutation represents an operation that mutates the SystemPrompt nodes in the graph.

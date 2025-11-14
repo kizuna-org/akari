@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/character"
+	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
@@ -49,6 +50,17 @@ func (_u *CharacterUpdate) SetUpdatedAt(v time.Time) *CharacterUpdate {
 	return _u
 }
 
+// SetConfigID sets the "config" edge to the CharacterConfig entity by ID.
+func (_u *CharacterUpdate) SetConfigID(id int) *CharacterUpdate {
+	_u.mutation.SetConfigID(id)
+	return _u
+}
+
+// SetConfig sets the "config" edge to the CharacterConfig entity.
+func (_u *CharacterUpdate) SetConfig(v *CharacterConfig) *CharacterUpdate {
+	return _u.SetConfigID(v.ID)
+}
+
 // AddSystemPromptIDs adds the "system_prompts" edge to the SystemPrompt entity by IDs.
 func (_u *CharacterUpdate) AddSystemPromptIDs(ids ...int) *CharacterUpdate {
 	_u.mutation.AddSystemPromptIDs(ids...)
@@ -67,6 +79,12 @@ func (_u *CharacterUpdate) AddSystemPrompts(v ...*SystemPrompt) *CharacterUpdate
 // Mutation returns the CharacterMutation object of the builder.
 func (_u *CharacterUpdate) Mutation() *CharacterMutation {
 	return _u.mutation
+}
+
+// ClearConfig clears the "config" edge to the CharacterConfig entity.
+func (_u *CharacterUpdate) ClearConfig() *CharacterUpdate {
+	_u.mutation.ClearConfig()
+	return _u
 }
 
 // ClearSystemPrompts clears all "system_prompts" edges to the SystemPrompt entity.
@@ -133,6 +151,9 @@ func (_u *CharacterUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Character.name": %w`, err)}
 		}
 	}
+	if _u.mutation.ConfigCleared() && len(_u.mutation.ConfigIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Character.config"`)
+	}
 	return nil
 }
 
@@ -153,6 +174,35 @@ func (_u *CharacterUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(character.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ConfigCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   character.ConfigTable,
+			Columns: []string{character.ConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(characterconfig.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConfigIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   character.ConfigTable,
+			Columns: []string{character.ConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(characterconfig.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.SystemPromptsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -239,6 +289,17 @@ func (_u *CharacterUpdateOne) SetUpdatedAt(v time.Time) *CharacterUpdateOne {
 	return _u
 }
 
+// SetConfigID sets the "config" edge to the CharacterConfig entity by ID.
+func (_u *CharacterUpdateOne) SetConfigID(id int) *CharacterUpdateOne {
+	_u.mutation.SetConfigID(id)
+	return _u
+}
+
+// SetConfig sets the "config" edge to the CharacterConfig entity.
+func (_u *CharacterUpdateOne) SetConfig(v *CharacterConfig) *CharacterUpdateOne {
+	return _u.SetConfigID(v.ID)
+}
+
 // AddSystemPromptIDs adds the "system_prompts" edge to the SystemPrompt entity by IDs.
 func (_u *CharacterUpdateOne) AddSystemPromptIDs(ids ...int) *CharacterUpdateOne {
 	_u.mutation.AddSystemPromptIDs(ids...)
@@ -257,6 +318,12 @@ func (_u *CharacterUpdateOne) AddSystemPrompts(v ...*SystemPrompt) *CharacterUpd
 // Mutation returns the CharacterMutation object of the builder.
 func (_u *CharacterUpdateOne) Mutation() *CharacterMutation {
 	return _u.mutation
+}
+
+// ClearConfig clears the "config" edge to the CharacterConfig entity.
+func (_u *CharacterUpdateOne) ClearConfig() *CharacterUpdateOne {
+	_u.mutation.ClearConfig()
+	return _u
 }
 
 // ClearSystemPrompts clears all "system_prompts" edges to the SystemPrompt entity.
@@ -336,6 +403,9 @@ func (_u *CharacterUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Character.name": %w`, err)}
 		}
 	}
+	if _u.mutation.ConfigCleared() && len(_u.mutation.ConfigIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Character.config"`)
+	}
 	return nil
 }
 
@@ -373,6 +443,35 @@ func (_u *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, er
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(character.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.ConfigCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   character.ConfigTable,
+			Columns: []string{character.ConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(characterconfig.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConfigIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   character.ConfigTable,
+			Columns: []string{character.ConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(characterconfig.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.SystemPromptsCleared() {
 		edge := &sqlgraph.EdgeSpec{

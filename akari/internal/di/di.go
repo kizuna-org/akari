@@ -7,6 +7,7 @@ import (
 
 	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
+	internalDiscordUsecase "github.com/kizuna-org/akari/internal/app/usecase/discord"
 	"github.com/kizuna-org/akari/pkg/config"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/database/infrastructure/postgres"
@@ -36,6 +37,7 @@ func NewModule() fx.Option {
 			postgres.NewRepository,
 			newDatabaseRepository,
 			newSystemPromptRepository,
+			newCharacterRepository,
 			newDiscordClient,
 		),
 
@@ -44,7 +46,9 @@ func NewModule() fx.Option {
 			llmInteractor.NewLLMInteractor,
 			databaseInteractor.NewDatabaseInteractor,
 			databaseInteractor.NewSystemPromptInteractor,
+			databaseInteractor.NewCharacterInteractor,
 			discordRepository.NewDiscordRepository,
+			internalDiscordUsecase.NewDiscordMessageUsecase,
 		),
 
 		// Service
@@ -126,6 +130,10 @@ func newDatabaseRepository(repo postgres.Repository) databaseDomain.DatabaseRepo
 }
 
 func newSystemPromptRepository(repo postgres.Repository) databaseDomain.SystemPromptRepository {
+	return repo
+}
+
+func newCharacterRepository(repo postgres.Repository) databaseDomain.CharacterRepository {
 	return repo
 }
 

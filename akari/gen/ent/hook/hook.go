@@ -21,6 +21,18 @@ func (f CharacterFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, e
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CharacterMutation", m)
 }
 
+// The CharacterConfigFunc type is an adapter to allow the use of ordinary
+// function as CharacterConfig mutator.
+type CharacterConfigFunc func(context.Context, *ent.CharacterConfigMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CharacterConfigFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CharacterConfigMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CharacterConfigMutation", m)
+}
+
 // The SystemPromptFunc type is an adapter to allow the use of ordinary
 // function as SystemPrompt mutator.
 type SystemPromptFunc func(context.Context, *ent.SystemPromptMutation) (ent.Value, error)

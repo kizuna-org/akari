@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/character"
+	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -53,6 +54,17 @@ func (_c *CharacterCreate) SetNillableUpdatedAt(v *time.Time) *CharacterCreate {
 		_c.SetUpdatedAt(*v)
 	}
 	return _c
+}
+
+// SetConfigID sets the "config" edge to the CharacterConfig entity by ID.
+func (_c *CharacterCreate) SetConfigID(id int) *CharacterCreate {
+	_c.mutation.SetConfigID(id)
+	return _c
+}
+
+// SetConfig sets the "config" edge to the CharacterConfig entity.
+func (_c *CharacterCreate) SetConfig(v *CharacterConfig) *CharacterCreate {
+	return _c.SetConfigID(v.ID)
 }
 
 // AddSystemPromptIDs adds the "system_prompts" edge to the SystemPrompt entity by IDs.
@@ -131,6 +143,9 @@ func (_c *CharacterCreate) check() error {
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Character.updated_at"`)}
 	}
+	if len(_c.mutation.ConfigIDs()) == 0 {
+		return &ValidationError{Name: "config", err: errors.New(`ent: missing required edge "Character.config"`)}
+	}
 	if len(_c.mutation.SystemPromptsIDs()) == 0 {
 		return &ValidationError{Name: "system_prompts", err: errors.New(`ent: missing required edge "Character.system_prompts"`)}
 	}
@@ -171,6 +186,22 @@ func (_c *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(character.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if nodes := _c.mutation.ConfigIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   character.ConfigTable,
+			Columns: []string{character.ConfigColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(characterconfig.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.SystemPromptsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

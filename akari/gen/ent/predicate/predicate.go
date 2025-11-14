@@ -9,5 +9,8 @@ import (
 // Character is the predicate function for character builders.
 type Character func(*sql.Selector)
 
+// CharacterConfig is the predicate function for characterconfig builders.
+type CharacterConfig func(*sql.Selector)
+
 // SystemPrompt is the predicate function for systemprompt builders.
 type SystemPrompt func(*sql.Selector)

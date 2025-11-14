@@ -25,6 +25,10 @@ func (Character) Fields() []ent.Field {
 
 func (Character) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("config", CharacterConfig.Type).
+			Unique().
+			Required().
+			Comment("The configuration associated with this character"),
 		edge.To("system_prompts", SystemPrompt.Type).
 			Required().
 			Comment("The system prompts associated with this character"),

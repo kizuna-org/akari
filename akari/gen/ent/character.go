@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/kizuna-org/akari/gen/ent/character"
+	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 )
 
 // Character is the model entity for the Character schema.
@@ -31,17 +32,30 @@ type Character struct {
 
 // CharacterEdges holds the relations/edges for other nodes in the graph.
 type CharacterEdges struct {
+	// The configuration associated with this character
+	Config *CharacterConfig `json:"config,omitempty"`
 	// The system prompts associated with this character
 	SystemPrompts []*SystemPrompt `json:"system_prompts,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
+}
+
+// ConfigOrErr returns the Config value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e CharacterEdges) ConfigOrErr() (*CharacterConfig, error) {
+	if e.Config != nil {
+		return e.Config, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: characterconfig.Label}
+	}
+	return nil, &NotLoadedError{edge: "config"}
 }
 
 // SystemPromptsOrErr returns the SystemPrompts value or an error if the edge
 // was not loaded in eager-loading.
 func (e CharacterEdges) SystemPromptsOrErr() ([]*SystemPrompt, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.SystemPrompts, nil
 	}
 	return nil, &NotLoadedError{edge: "system_prompts"}
@@ -108,6 +122,11 @@ func (_m *Character) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Character) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryConfig queries the "config" edge of the Character entity.
+func (_m *Character) QueryConfig() *CharacterConfigQuery {
+	return NewCharacterClient(_m.config).QueryConfig(_m)
 }
 
 // QuerySystemPrompts queries the "system_prompts" edge of the Character entity.
