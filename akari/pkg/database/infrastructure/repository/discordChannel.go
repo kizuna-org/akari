@@ -17,6 +17,7 @@ func (r *repositoryImpl) CreateDiscordChannel(
 ) (*domain.DiscordChannel, error) {
 	builder := r.client.DiscordChannelClient().Create().
 		SetID(params.ID).
+		SetType(discordchannel.Type(params.Type)).
 		SetName(params.Name).
 		SetGuildID(params.GuildID)
 
