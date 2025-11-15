@@ -89,7 +89,7 @@ func TestDiscordUserInteractor_CreateDiscordUser(t *testing.T) {
 		m := mock.NewMockDiscordUserRepository(ctrl)
 		i := interactor.NewDiscordUserInteractor(m)
 
-		ctx := context.Background()
+		ctx := t.Context()
 
 		_, err := i.CreateDiscordUser(ctx, domain.DiscordUser{ID: ""})
 		require.Error(t, err)
@@ -157,7 +157,7 @@ func TestDiscordUserInteractor_GetDiscordUserByID(t *testing.T) {
 		m := mock.NewMockDiscordUserRepository(ctrl)
 		i := interactor.NewDiscordUserInteractor(m)
 
-		ctx := context.Background()
+		ctx := t.Context()
 
 		_, err := i.GetDiscordUserByID(ctx, "")
 		require.Error(t, err)
@@ -273,7 +273,7 @@ func TestDiscordUserInteractor_DeleteDiscordUser(t *testing.T) {
 		m := mock.NewMockDiscordUserRepository(ctrl)
 		i := interactor.NewDiscordUserInteractor(m)
 
-		ctx := context.Background()
+		ctx := t.Context()
 
 		err := i.DeleteDiscordUser(ctx, "")
 		require.Error(t, err)
