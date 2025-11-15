@@ -14,13 +14,13 @@ init:
 		cp .env.test.example .env.test; \
 	fi
 
-build: init generate
+build: generate clean
 	$(GO) build -o $(BIN) ./cmd/akari
 
-run: init generate migrate-apply
+run: generate migrate-apply
 	$(GO) run ./cmd/akari
 
-test: init generate migrate-apply
+test: generate migrate-apply
 	$(GO) test ./...
 
 fmt:
@@ -35,7 +35,7 @@ tidy:
 generate: init
 	go generate ./...
 
-lint:
+lint: fmt vet
 	@if [ ! -f custom-gcl ]; then \
 		golangci-lint custom; \
 	fi
@@ -44,7 +44,7 @@ lint:
 clean:
 	rm -rf bin
 
-up:
+up: init
 	docker compose up -d
 
 down:
@@ -53,7 +53,7 @@ down:
 down-volumes:
 	docker compose down -v
 
-migrate-new: up
+migrate-new: migrate-hash
 	@if [ -z "$(NAME)" ]; then \
 		echo "Error: NAME is required. Usage: make migrate-new NAME=migration_name"; \
 		exit 1; \
