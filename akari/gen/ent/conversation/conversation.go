@@ -16,28 +16,19 @@ const (
 	FieldID = "id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
-	// EdgeTriggerMessage holds the string denoting the trigger_message edge name in mutations.
-	EdgeTriggerMessage = "trigger_message"
-	// EdgeResponseMessage holds the string denoting the response_message edge name in mutations.
-	EdgeResponseMessage = "response_message"
+	// EdgeDiscordMessage holds the string denoting the discord_message edge name in mutations.
+	EdgeDiscordMessage = "discord_message"
 	// EdgeConversationGroup holds the string denoting the conversation_group edge name in mutations.
 	EdgeConversationGroup = "conversation_group"
 	// Table holds the table name of the conversation in the database.
 	Table = "conversations"
-	// TriggerMessageTable is the table that holds the trigger_message relation/edge.
-	TriggerMessageTable = "discord_messages"
-	// TriggerMessageInverseTable is the table name for the DiscordMessage entity.
+	// DiscordMessageTable is the table that holds the discord_message relation/edge.
+	DiscordMessageTable = "discord_messages"
+	// DiscordMessageInverseTable is the table name for the DiscordMessage entity.
 	// It exists in this package in order to avoid circular dependency with the "discordmessage" package.
-	TriggerMessageInverseTable = "discord_messages"
-	// TriggerMessageColumn is the table column denoting the trigger_message relation/edge.
-	TriggerMessageColumn = "conversation_trigger_message"
-	// ResponseMessageTable is the table that holds the response_message relation/edge.
-	ResponseMessageTable = "discord_messages"
-	// ResponseMessageInverseTable is the table name for the DiscordMessage entity.
-	// It exists in this package in order to avoid circular dependency with the "discordmessage" package.
-	ResponseMessageInverseTable = "discord_messages"
-	// ResponseMessageColumn is the table column denoting the response_message relation/edge.
-	ResponseMessageColumn = "conversation_response_message"
+	DiscordMessageInverseTable = "discord_messages"
+	// DiscordMessageColumn is the table column denoting the discord_message relation/edge.
+	DiscordMessageColumn = "conversation_discord_message"
 	// ConversationGroupTable is the table that holds the conversation_group relation/edge.
 	ConversationGroupTable = "conversations"
 	// ConversationGroupInverseTable is the table name for the ConversationGroup entity.
@@ -92,17 +83,10 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
-// ByTriggerMessageField orders the results by trigger_message field.
-func ByTriggerMessageField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByDiscordMessageField orders the results by discord_message field.
+func ByDiscordMessageField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newTriggerMessageStep(), sql.OrderByField(field, opts...))
-	}
-}
-
-// ByResponseMessageField orders the results by response_message field.
-func ByResponseMessageField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newResponseMessageStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newDiscordMessageStep(), sql.OrderByField(field, opts...))
 	}
 }
 
@@ -112,18 +96,11 @@ func ByConversationGroupField(field string, opts ...sql.OrderTermOption) OrderOp
 		sqlgraph.OrderByNeighborTerms(s, newConversationGroupStep(), sql.OrderByField(field, opts...))
 	}
 }
-func newTriggerMessageStep() *sqlgraph.Step {
+func newDiscordMessageStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(TriggerMessageInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, TriggerMessageTable, TriggerMessageColumn),
-	)
-}
-func newResponseMessageStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ResponseMessageInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, false, ResponseMessageTable, ResponseMessageColumn),
+		sqlgraph.To(DiscordMessageInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, DiscordMessageTable, DiscordMessageColumn),
 	)
 }
 func newConversationGroupStep() *sqlgraph.Step {

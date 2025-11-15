@@ -100,44 +100,21 @@ func CreatedAtLTE(v time.Time) predicate.Conversation {
 	return predicate.Conversation(sql.FieldLTE(FieldCreatedAt, v))
 }
 
-// HasTriggerMessage applies the HasEdge predicate on the "trigger_message" edge.
-func HasTriggerMessage() predicate.Conversation {
+// HasDiscordMessage applies the HasEdge predicate on the "discord_message" edge.
+func HasDiscordMessage() predicate.Conversation {
 	return predicate.Conversation(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, TriggerMessageTable, TriggerMessageColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, DiscordMessageTable, DiscordMessageColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasTriggerMessageWith applies the HasEdge predicate on the "trigger_message" edge with a given conditions (other predicates).
-func HasTriggerMessageWith(preds ...predicate.DiscordMessage) predicate.Conversation {
+// HasDiscordMessageWith applies the HasEdge predicate on the "discord_message" edge with a given conditions (other predicates).
+func HasDiscordMessageWith(preds ...predicate.DiscordMessage) predicate.Conversation {
 	return predicate.Conversation(func(s *sql.Selector) {
-		step := newTriggerMessageStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
-// HasResponseMessage applies the HasEdge predicate on the "response_message" edge.
-func HasResponseMessage() predicate.Conversation {
-	return predicate.Conversation(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, ResponseMessageTable, ResponseMessageColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasResponseMessageWith applies the HasEdge predicate on the "response_message" edge with a given conditions (other predicates).
-func HasResponseMessageWith(preds ...predicate.DiscordMessage) predicate.Conversation {
-	return predicate.Conversation(func(s *sql.Selector) {
-		step := newResponseMessageStep()
+		step := newDiscordMessageStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

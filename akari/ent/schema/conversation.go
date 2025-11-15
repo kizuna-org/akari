@@ -24,16 +24,11 @@ func (Conversation) Fields() []ent.Field {
 
 func (Conversation) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("trigger_message", DiscordMessage.Type).
+		edge.To("discord_message", DiscordMessage.Type).
 			Unique().
 			Immutable().
 			Required().
-			Comment("The message that triggered the bot"),
-		edge.To("response_message", DiscordMessage.Type).
-			Unique().
-			Immutable().
-			Required().
-			Comment("The bot's response message"),
+			Comment("The Discord message that related to this conversation"),
 		edge.From("conversation_group", ConversationGroup.Type).
 			Ref("conversations").
 			Immutable().

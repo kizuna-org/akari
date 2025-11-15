@@ -11,12 +11,11 @@ import (
 
 func (r *repositoryImpl) CreateConversation(
 	ctx context.Context,
-	triggerMessageID, responseMessageID string,
+	messageID string,
 	conversationGroupID *int,
 ) (*domain.Conversation, error) {
 	builder := r.client.ConversationClient().Create().
-		SetTriggerMessageID(triggerMessageID).
-		SetResponseMessageID(responseMessageID)
+		SetDiscordMessageID(messageID)
 
 	if conversationGroupID != nil {
 		builder = builder.SetNillableConversationGroupID(conversationGroupID)
@@ -38,8 +37,7 @@ func (r *repositoryImpl) GetConversationByID(ctx context.Context, id int) (*doma
 	conv, err := r.client.ConversationClient().
 		Query().
 		Where(conversation.IDEQ(id)).
-		WithTriggerMessage().
-		WithResponseMessage().
+		WithDiscordMessage().
 		WithConversationGroup().
 		Only(ctx)
 	if err != nil {
@@ -53,8 +51,7 @@ func (r *repositoryImpl) ListConversations(ctx context.Context) ([]*domain.Conve
 	convs, err := r.client.ConversationClient().
 		Query().
 		Order(conversation.ByID()).
-		WithTriggerMessage().
-		WithResponseMessage().
+		WithDiscordMessage().
 		WithConversationGroup().
 		All(ctx)
 	if err != nil {

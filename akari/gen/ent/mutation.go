@@ -1104,10 +1104,8 @@ type ConversationMutation struct {
 	id                        *int
 	created_at                *time.Time
 	clearedFields             map[string]struct{}
-	trigger_message           *string
-	clearedtrigger_message    bool
-	response_message          *string
-	clearedresponse_message   bool
+	discord_message           *string
+	cleareddiscord_message    bool
 	conversation_group        *int
 	clearedconversation_group bool
 	done                      bool
@@ -1249,82 +1247,43 @@ func (m *ConversationMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
-// SetTriggerMessageID sets the "trigger_message" edge to the DiscordMessage entity by id.
-func (m *ConversationMutation) SetTriggerMessageID(id string) {
-	m.trigger_message = &id
+// SetDiscordMessageID sets the "discord_message" edge to the DiscordMessage entity by id.
+func (m *ConversationMutation) SetDiscordMessageID(id string) {
+	m.discord_message = &id
 }
 
-// ClearTriggerMessage clears the "trigger_message" edge to the DiscordMessage entity.
-func (m *ConversationMutation) ClearTriggerMessage() {
-	m.clearedtrigger_message = true
+// ClearDiscordMessage clears the "discord_message" edge to the DiscordMessage entity.
+func (m *ConversationMutation) ClearDiscordMessage() {
+	m.cleareddiscord_message = true
 }
 
-// TriggerMessageCleared reports if the "trigger_message" edge to the DiscordMessage entity was cleared.
-func (m *ConversationMutation) TriggerMessageCleared() bool {
-	return m.clearedtrigger_message
+// DiscordMessageCleared reports if the "discord_message" edge to the DiscordMessage entity was cleared.
+func (m *ConversationMutation) DiscordMessageCleared() bool {
+	return m.cleareddiscord_message
 }
 
-// TriggerMessageID returns the "trigger_message" edge ID in the mutation.
-func (m *ConversationMutation) TriggerMessageID() (id string, exists bool) {
-	if m.trigger_message != nil {
-		return *m.trigger_message, true
+// DiscordMessageID returns the "discord_message" edge ID in the mutation.
+func (m *ConversationMutation) DiscordMessageID() (id string, exists bool) {
+	if m.discord_message != nil {
+		return *m.discord_message, true
 	}
 	return
 }
 
-// TriggerMessageIDs returns the "trigger_message" edge IDs in the mutation.
+// DiscordMessageIDs returns the "discord_message" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// TriggerMessageID instead. It exists only for internal usage by the builders.
-func (m *ConversationMutation) TriggerMessageIDs() (ids []string) {
-	if id := m.trigger_message; id != nil {
+// DiscordMessageID instead. It exists only for internal usage by the builders.
+func (m *ConversationMutation) DiscordMessageIDs() (ids []string) {
+	if id := m.discord_message; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetTriggerMessage resets all changes to the "trigger_message" edge.
-func (m *ConversationMutation) ResetTriggerMessage() {
-	m.trigger_message = nil
-	m.clearedtrigger_message = false
-}
-
-// SetResponseMessageID sets the "response_message" edge to the DiscordMessage entity by id.
-func (m *ConversationMutation) SetResponseMessageID(id string) {
-	m.response_message = &id
-}
-
-// ClearResponseMessage clears the "response_message" edge to the DiscordMessage entity.
-func (m *ConversationMutation) ClearResponseMessage() {
-	m.clearedresponse_message = true
-}
-
-// ResponseMessageCleared reports if the "response_message" edge to the DiscordMessage entity was cleared.
-func (m *ConversationMutation) ResponseMessageCleared() bool {
-	return m.clearedresponse_message
-}
-
-// ResponseMessageID returns the "response_message" edge ID in the mutation.
-func (m *ConversationMutation) ResponseMessageID() (id string, exists bool) {
-	if m.response_message != nil {
-		return *m.response_message, true
-	}
-	return
-}
-
-// ResponseMessageIDs returns the "response_message" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// ResponseMessageID instead. It exists only for internal usage by the builders.
-func (m *ConversationMutation) ResponseMessageIDs() (ids []string) {
-	if id := m.response_message; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetResponseMessage resets all changes to the "response_message" edge.
-func (m *ConversationMutation) ResetResponseMessage() {
-	m.response_message = nil
-	m.clearedresponse_message = false
+// ResetDiscordMessage resets all changes to the "discord_message" edge.
+func (m *ConversationMutation) ResetDiscordMessage() {
+	m.discord_message = nil
+	m.cleareddiscord_message = false
 }
 
 // SetConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by id.
@@ -1499,12 +1458,9 @@ func (m *ConversationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ConversationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.trigger_message != nil {
-		edges = append(edges, conversation.EdgeTriggerMessage)
-	}
-	if m.response_message != nil {
-		edges = append(edges, conversation.EdgeResponseMessage)
+	edges := make([]string, 0, 2)
+	if m.discord_message != nil {
+		edges = append(edges, conversation.EdgeDiscordMessage)
 	}
 	if m.conversation_group != nil {
 		edges = append(edges, conversation.EdgeConversationGroup)
@@ -1516,12 +1472,8 @@ func (m *ConversationMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ConversationMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case conversation.EdgeTriggerMessage:
-		if id := m.trigger_message; id != nil {
-			return []ent.Value{*id}
-		}
-	case conversation.EdgeResponseMessage:
-		if id := m.response_message; id != nil {
+	case conversation.EdgeDiscordMessage:
+		if id := m.discord_message; id != nil {
 			return []ent.Value{*id}
 		}
 	case conversation.EdgeConversationGroup:
@@ -1534,7 +1486,7 @@ func (m *ConversationMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ConversationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -1546,12 +1498,9 @@ func (m *ConversationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ConversationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.clearedtrigger_message {
-		edges = append(edges, conversation.EdgeTriggerMessage)
-	}
-	if m.clearedresponse_message {
-		edges = append(edges, conversation.EdgeResponseMessage)
+	edges := make([]string, 0, 2)
+	if m.cleareddiscord_message {
+		edges = append(edges, conversation.EdgeDiscordMessage)
 	}
 	if m.clearedconversation_group {
 		edges = append(edges, conversation.EdgeConversationGroup)
@@ -1563,10 +1512,8 @@ func (m *ConversationMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ConversationMutation) EdgeCleared(name string) bool {
 	switch name {
-	case conversation.EdgeTriggerMessage:
-		return m.clearedtrigger_message
-	case conversation.EdgeResponseMessage:
-		return m.clearedresponse_message
+	case conversation.EdgeDiscordMessage:
+		return m.cleareddiscord_message
 	case conversation.EdgeConversationGroup:
 		return m.clearedconversation_group
 	}
@@ -1577,11 +1524,8 @@ func (m *ConversationMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ConversationMutation) ClearEdge(name string) error {
 	switch name {
-	case conversation.EdgeTriggerMessage:
-		m.ClearTriggerMessage()
-		return nil
-	case conversation.EdgeResponseMessage:
-		m.ClearResponseMessage()
+	case conversation.EdgeDiscordMessage:
+		m.ClearDiscordMessage()
 		return nil
 	case conversation.EdgeConversationGroup:
 		m.ClearConversationGroup()
@@ -1594,11 +1538,8 @@ func (m *ConversationMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ConversationMutation) ResetEdge(name string) error {
 	switch name {
-	case conversation.EdgeTriggerMessage:
-		m.ResetTriggerMessage()
-		return nil
-	case conversation.EdgeResponseMessage:
-		m.ResetResponseMessage()
+	case conversation.EdgeDiscordMessage:
+		m.ResetDiscordMessage()
 		return nil
 	case conversation.EdgeConversationGroup:
 		m.ResetConversationGroup()
@@ -3208,25 +3149,23 @@ func (m *DiscordGuildMutation) ResetEdge(name string) error {
 // DiscordMessageMutation represents an operation that mutates the DiscordMessage nodes in the graph.
 type DiscordMessageMutation struct {
 	config
-	op                           Op
-	typ                          string
-	id                           *string
-	author_id                    *string
-	content                      *string
-	timestamp                    *time.Time
-	mentions                     *[]string
-	appendmentions               []string
-	created_at                   *time.Time
-	clearedFields                map[string]struct{}
-	channel                      *string
-	clearedchannel               bool
-	conversation_trigger         *int
-	clearedconversation_trigger  bool
-	conversation_response        *int
-	clearedconversation_response bool
-	done                         bool
-	oldValue                     func(context.Context) (*DiscordMessage, error)
-	predicates                   []predicate.DiscordMessage
+	op                          Op
+	typ                         string
+	id                          *string
+	author_id                   *string
+	content                     *string
+	timestamp                   *time.Time
+	mentions                    *[]string
+	appendmentions              []string
+	created_at                  *time.Time
+	clearedFields               map[string]struct{}
+	channel                     *string
+	clearedchannel              bool
+	conversation_message        *int
+	clearedconversation_message bool
+	done                        bool
+	oldValue                    func(context.Context) (*DiscordMessage, error)
+	predicates                  []predicate.DiscordMessage
 }
 
 var _ ent.Mutation = (*DiscordMessageMutation)(nil)
@@ -3581,82 +3520,43 @@ func (m *DiscordMessageMutation) ResetChannel() {
 	m.clearedchannel = false
 }
 
-// SetConversationTriggerID sets the "conversation_trigger" edge to the Conversation entity by id.
-func (m *DiscordMessageMutation) SetConversationTriggerID(id int) {
-	m.conversation_trigger = &id
+// SetConversationMessageID sets the "conversation_message" edge to the Conversation entity by id.
+func (m *DiscordMessageMutation) SetConversationMessageID(id int) {
+	m.conversation_message = &id
 }
 
-// ClearConversationTrigger clears the "conversation_trigger" edge to the Conversation entity.
-func (m *DiscordMessageMutation) ClearConversationTrigger() {
-	m.clearedconversation_trigger = true
+// ClearConversationMessage clears the "conversation_message" edge to the Conversation entity.
+func (m *DiscordMessageMutation) ClearConversationMessage() {
+	m.clearedconversation_message = true
 }
 
-// ConversationTriggerCleared reports if the "conversation_trigger" edge to the Conversation entity was cleared.
-func (m *DiscordMessageMutation) ConversationTriggerCleared() bool {
-	return m.clearedconversation_trigger
+// ConversationMessageCleared reports if the "conversation_message" edge to the Conversation entity was cleared.
+func (m *DiscordMessageMutation) ConversationMessageCleared() bool {
+	return m.clearedconversation_message
 }
 
-// ConversationTriggerID returns the "conversation_trigger" edge ID in the mutation.
-func (m *DiscordMessageMutation) ConversationTriggerID() (id int, exists bool) {
-	if m.conversation_trigger != nil {
-		return *m.conversation_trigger, true
+// ConversationMessageID returns the "conversation_message" edge ID in the mutation.
+func (m *DiscordMessageMutation) ConversationMessageID() (id int, exists bool) {
+	if m.conversation_message != nil {
+		return *m.conversation_message, true
 	}
 	return
 }
 
-// ConversationTriggerIDs returns the "conversation_trigger" edge IDs in the mutation.
+// ConversationMessageIDs returns the "conversation_message" edge IDs in the mutation.
 // Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// ConversationTriggerID instead. It exists only for internal usage by the builders.
-func (m *DiscordMessageMutation) ConversationTriggerIDs() (ids []int) {
-	if id := m.conversation_trigger; id != nil {
+// ConversationMessageID instead. It exists only for internal usage by the builders.
+func (m *DiscordMessageMutation) ConversationMessageIDs() (ids []int) {
+	if id := m.conversation_message; id != nil {
 		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetConversationTrigger resets all changes to the "conversation_trigger" edge.
-func (m *DiscordMessageMutation) ResetConversationTrigger() {
-	m.conversation_trigger = nil
-	m.clearedconversation_trigger = false
-}
-
-// SetConversationResponseID sets the "conversation_response" edge to the Conversation entity by id.
-func (m *DiscordMessageMutation) SetConversationResponseID(id int) {
-	m.conversation_response = &id
-}
-
-// ClearConversationResponse clears the "conversation_response" edge to the Conversation entity.
-func (m *DiscordMessageMutation) ClearConversationResponse() {
-	m.clearedconversation_response = true
-}
-
-// ConversationResponseCleared reports if the "conversation_response" edge to the Conversation entity was cleared.
-func (m *DiscordMessageMutation) ConversationResponseCleared() bool {
-	return m.clearedconversation_response
-}
-
-// ConversationResponseID returns the "conversation_response" edge ID in the mutation.
-func (m *DiscordMessageMutation) ConversationResponseID() (id int, exists bool) {
-	if m.conversation_response != nil {
-		return *m.conversation_response, true
-	}
-	return
-}
-
-// ConversationResponseIDs returns the "conversation_response" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// ConversationResponseID instead. It exists only for internal usage by the builders.
-func (m *DiscordMessageMutation) ConversationResponseIDs() (ids []int) {
-	if id := m.conversation_response; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetConversationResponse resets all changes to the "conversation_response" edge.
-func (m *DiscordMessageMutation) ResetConversationResponse() {
-	m.conversation_response = nil
-	m.clearedconversation_response = false
+// ResetConversationMessage resets all changes to the "conversation_message" edge.
+func (m *DiscordMessageMutation) ResetConversationMessage() {
+	m.conversation_message = nil
+	m.clearedconversation_message = false
 }
 
 // Where appends a list predicates to the DiscordMessageMutation builder.
@@ -3869,15 +3769,12 @@ func (m *DiscordMessageMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DiscordMessageMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.channel != nil {
 		edges = append(edges, discordmessage.EdgeChannel)
 	}
-	if m.conversation_trigger != nil {
-		edges = append(edges, discordmessage.EdgeConversationTrigger)
-	}
-	if m.conversation_response != nil {
-		edges = append(edges, discordmessage.EdgeConversationResponse)
+	if m.conversation_message != nil {
+		edges = append(edges, discordmessage.EdgeConversationMessage)
 	}
 	return edges
 }
@@ -3890,12 +3787,8 @@ func (m *DiscordMessageMutation) AddedIDs(name string) []ent.Value {
 		if id := m.channel; id != nil {
 			return []ent.Value{*id}
 		}
-	case discordmessage.EdgeConversationTrigger:
-		if id := m.conversation_trigger; id != nil {
-			return []ent.Value{*id}
-		}
-	case discordmessage.EdgeConversationResponse:
-		if id := m.conversation_response; id != nil {
+	case discordmessage.EdgeConversationMessage:
+		if id := m.conversation_message; id != nil {
 			return []ent.Value{*id}
 		}
 	}
@@ -3904,7 +3797,7 @@ func (m *DiscordMessageMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DiscordMessageMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -3916,15 +3809,12 @@ func (m *DiscordMessageMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DiscordMessageMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 2)
 	if m.clearedchannel {
 		edges = append(edges, discordmessage.EdgeChannel)
 	}
-	if m.clearedconversation_trigger {
-		edges = append(edges, discordmessage.EdgeConversationTrigger)
-	}
-	if m.clearedconversation_response {
-		edges = append(edges, discordmessage.EdgeConversationResponse)
+	if m.clearedconversation_message {
+		edges = append(edges, discordmessage.EdgeConversationMessage)
 	}
 	return edges
 }
@@ -3935,10 +3825,8 @@ func (m *DiscordMessageMutation) EdgeCleared(name string) bool {
 	switch name {
 	case discordmessage.EdgeChannel:
 		return m.clearedchannel
-	case discordmessage.EdgeConversationTrigger:
-		return m.clearedconversation_trigger
-	case discordmessage.EdgeConversationResponse:
-		return m.clearedconversation_response
+	case discordmessage.EdgeConversationMessage:
+		return m.clearedconversation_message
 	}
 	return false
 }
@@ -3950,11 +3838,8 @@ func (m *DiscordMessageMutation) ClearEdge(name string) error {
 	case discordmessage.EdgeChannel:
 		m.ClearChannel()
 		return nil
-	case discordmessage.EdgeConversationTrigger:
-		m.ClearConversationTrigger()
-		return nil
-	case discordmessage.EdgeConversationResponse:
-		m.ClearConversationResponse()
+	case discordmessage.EdgeConversationMessage:
+		m.ClearConversationMessage()
 		return nil
 	}
 	return fmt.Errorf("unknown DiscordMessage unique edge %s", name)
@@ -3967,11 +3852,8 @@ func (m *DiscordMessageMutation) ResetEdge(name string) error {
 	case discordmessage.EdgeChannel:
 		m.ResetChannel()
 		return nil
-	case discordmessage.EdgeConversationTrigger:
-		m.ResetConversationTrigger()
-		return nil
-	case discordmessage.EdgeConversationResponse:
-		m.ResetConversationResponse()
+	case discordmessage.EdgeConversationMessage:
+		m.ResetConversationMessage()
 		return nil
 	}
 	return fmt.Errorf("unknown DiscordMessage edge %s", name)

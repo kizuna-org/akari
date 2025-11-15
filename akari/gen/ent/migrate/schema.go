@@ -131,8 +131,7 @@ var (
 		{Name: "timestamp", Type: field.TypeTime},
 		{Name: "mentions", Type: field.TypeJSON, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "conversation_trigger_message", Type: field.TypeInt, Unique: true, Nullable: true},
-		{Name: "conversation_response_message", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "conversation_discord_message", Type: field.TypeInt, Unique: true, Nullable: true},
 		{Name: "discord_message_channel", Type: field.TypeString},
 	}
 	// DiscordMessagesTable holds the schema information for the "discord_messages" table.
@@ -142,20 +141,14 @@ var (
 		PrimaryKey: []*schema.Column{DiscordMessagesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "discord_messages_conversations_trigger_message",
+				Symbol:     "discord_messages_conversations_discord_message",
 				Columns:    []*schema.Column{DiscordMessagesColumns[6]},
 				RefColumns: []*schema.Column{ConversationsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
-				Symbol:     "discord_messages_conversations_response_message",
-				Columns:    []*schema.Column{DiscordMessagesColumns[7]},
-				RefColumns: []*schema.Column{ConversationsColumns[0]},
-				OnDelete:   schema.SetNull,
-			},
-			{
 				Symbol:     "discord_messages_discord_channels_channel",
-				Columns:    []*schema.Column{DiscordMessagesColumns[8]},
+				Columns:    []*schema.Column{DiscordMessagesColumns[7]},
 				RefColumns: []*schema.Column{DiscordChannelsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -210,7 +203,6 @@ func init() {
 	ConversationsTable.ForeignKeys[0].RefTable = ConversationGroupsTable
 	DiscordChannelsTable.ForeignKeys[0].RefTable = DiscordGuildsTable
 	DiscordMessagesTable.ForeignKeys[0].RefTable = ConversationsTable
-	DiscordMessagesTable.ForeignKeys[1].RefTable = ConversationsTable
-	DiscordMessagesTable.ForeignKeys[2].RefTable = DiscordChannelsTable
+	DiscordMessagesTable.ForeignKeys[1].RefTable = DiscordChannelsTable
 	SystemPromptsTable.ForeignKeys[0].RefTable = CharactersTable
 }

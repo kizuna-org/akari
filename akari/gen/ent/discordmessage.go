@@ -33,24 +33,21 @@ type DiscordMessage struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DiscordMessageQuery when eager-loading is set.
-	Edges                         DiscordMessageEdges `json:"edges"`
-	conversation_trigger_message  *int
-	conversation_response_message *int
-	discord_message_channel       *string
-	selectValues                  sql.SelectValues
+	Edges                        DiscordMessageEdges `json:"edges"`
+	conversation_discord_message *int
+	discord_message_channel      *string
+	selectValues                 sql.SelectValues
 }
 
 // DiscordMessageEdges holds the relations/edges for other nodes in the graph.
 type DiscordMessageEdges struct {
 	// the channel this message was sent in
 	Channel *DiscordChannel `json:"channel,omitempty"`
-	// the conversation this message triggered
-	ConversationTrigger *Conversation `json:"conversation_trigger,omitempty"`
-	// the conversation this message is a response to
-	ConversationResponse *Conversation `json:"conversation_response,omitempty"`
+	// the conversation this message relates to
+	ConversationMessage *Conversation `json:"conversation_message,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 }
 
 // ChannelOrErr returns the Channel value or an error if the edge
@@ -64,26 +61,15 @@ func (e DiscordMessageEdges) ChannelOrErr() (*DiscordChannel, error) {
 	return nil, &NotLoadedError{edge: "channel"}
 }
 
-// ConversationTriggerOrErr returns the ConversationTrigger value or an error if the edge
+// ConversationMessageOrErr returns the ConversationMessage value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e DiscordMessageEdges) ConversationTriggerOrErr() (*Conversation, error) {
-	if e.ConversationTrigger != nil {
-		return e.ConversationTrigger, nil
+func (e DiscordMessageEdges) ConversationMessageOrErr() (*Conversation, error) {
+	if e.ConversationMessage != nil {
+		return e.ConversationMessage, nil
 	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: conversation.Label}
 	}
-	return nil, &NotLoadedError{edge: "conversation_trigger"}
-}
-
-// ConversationResponseOrErr returns the ConversationResponse value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e DiscordMessageEdges) ConversationResponseOrErr() (*Conversation, error) {
-	if e.ConversationResponse != nil {
-		return e.ConversationResponse, nil
-	} else if e.loadedTypes[2] {
-		return nil, &NotFoundError{label: conversation.Label}
-	}
-	return nil, &NotLoadedError{edge: "conversation_response"}
+	return nil, &NotLoadedError{edge: "conversation_message"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -97,11 +83,9 @@ func (*DiscordMessage) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case discordmessage.FieldTimestamp, discordmessage.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case discordmessage.ForeignKeys[0]: // conversation_trigger_message
+		case discordmessage.ForeignKeys[0]: // conversation_discord_message
 			values[i] = new(sql.NullInt64)
-		case discordmessage.ForeignKeys[1]: // conversation_response_message
-			values[i] = new(sql.NullInt64)
-		case discordmessage.ForeignKeys[2]: // discord_message_channel
+		case discordmessage.ForeignKeys[1]: // discord_message_channel
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -158,19 +142,12 @@ func (_m *DiscordMessage) assignValues(columns []string, values []any) error {
 			}
 		case discordmessage.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field conversation_trigger_message", value)
+				return fmt.Errorf("unexpected type %T for edge-field conversation_discord_message", value)
 			} else if value.Valid {
-				_m.conversation_trigger_message = new(int)
-				*_m.conversation_trigger_message = int(value.Int64)
+				_m.conversation_discord_message = new(int)
+				*_m.conversation_discord_message = int(value.Int64)
 			}
 		case discordmessage.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field conversation_response_message", value)
-			} else if value.Valid {
-				_m.conversation_response_message = new(int)
-				*_m.conversation_response_message = int(value.Int64)
-			}
-		case discordmessage.ForeignKeys[2]:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field discord_message_channel", values[i])
 			} else if value.Valid {
@@ -195,14 +172,9 @@ func (_m *DiscordMessage) QueryChannel() *DiscordChannelQuery {
 	return NewDiscordMessageClient(_m.config).QueryChannel(_m)
 }
 
-// QueryConversationTrigger queries the "conversation_trigger" edge of the DiscordMessage entity.
-func (_m *DiscordMessage) QueryConversationTrigger() *ConversationQuery {
-	return NewDiscordMessageClient(_m.config).QueryConversationTrigger(_m)
-}
-
-// QueryConversationResponse queries the "conversation_response" edge of the DiscordMessage entity.
-func (_m *DiscordMessage) QueryConversationResponse() *ConversationQuery {
-	return NewDiscordMessageClient(_m.config).QueryConversationResponse(_m)
+// QueryConversationMessage queries the "conversation_message" edge of the DiscordMessage entity.
+func (_m *DiscordMessage) QueryConversationMessage() *ConversationQuery {
+	return NewDiscordMessageClient(_m.config).QueryConversationMessage(_m)
 }
 
 // Update returns a builder for updating this DiscordMessage.

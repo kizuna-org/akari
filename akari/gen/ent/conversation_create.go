@@ -36,26 +36,15 @@ func (_c *ConversationCreate) SetNillableCreatedAt(v *time.Time) *ConversationCr
 	return _c
 }
 
-// SetTriggerMessageID sets the "trigger_message" edge to the DiscordMessage entity by ID.
-func (_c *ConversationCreate) SetTriggerMessageID(id string) *ConversationCreate {
-	_c.mutation.SetTriggerMessageID(id)
+// SetDiscordMessageID sets the "discord_message" edge to the DiscordMessage entity by ID.
+func (_c *ConversationCreate) SetDiscordMessageID(id string) *ConversationCreate {
+	_c.mutation.SetDiscordMessageID(id)
 	return _c
 }
 
-// SetTriggerMessage sets the "trigger_message" edge to the DiscordMessage entity.
-func (_c *ConversationCreate) SetTriggerMessage(v *DiscordMessage) *ConversationCreate {
-	return _c.SetTriggerMessageID(v.ID)
-}
-
-// SetResponseMessageID sets the "response_message" edge to the DiscordMessage entity by ID.
-func (_c *ConversationCreate) SetResponseMessageID(id string) *ConversationCreate {
-	_c.mutation.SetResponseMessageID(id)
-	return _c
-}
-
-// SetResponseMessage sets the "response_message" edge to the DiscordMessage entity.
-func (_c *ConversationCreate) SetResponseMessage(v *DiscordMessage) *ConversationCreate {
-	return _c.SetResponseMessageID(v.ID)
+// SetDiscordMessage sets the "discord_message" edge to the DiscordMessage entity.
+func (_c *ConversationCreate) SetDiscordMessage(v *DiscordMessage) *ConversationCreate {
+	return _c.SetDiscordMessageID(v.ID)
 }
 
 // SetConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by ID.
@@ -123,11 +112,8 @@ func (_c *ConversationCreate) check() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Conversation.created_at"`)}
 	}
-	if len(_c.mutation.TriggerMessageIDs()) == 0 {
-		return &ValidationError{Name: "trigger_message", err: errors.New(`ent: missing required edge "Conversation.trigger_message"`)}
-	}
-	if len(_c.mutation.ResponseMessageIDs()) == 0 {
-		return &ValidationError{Name: "response_message", err: errors.New(`ent: missing required edge "Conversation.response_message"`)}
+	if len(_c.mutation.DiscordMessageIDs()) == 0 {
+		return &ValidationError{Name: "discord_message", err: errors.New(`ent: missing required edge "Conversation.discord_message"`)}
 	}
 	return nil
 }
@@ -159,28 +145,12 @@ func (_c *ConversationCreate) createSpec() (*Conversation, *sqlgraph.CreateSpec)
 		_spec.SetField(conversation.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
-	if nodes := _c.mutation.TriggerMessageIDs(); len(nodes) > 0 {
+	if nodes := _c.mutation.DiscordMessageIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2O,
 			Inverse: false,
-			Table:   conversation.TriggerMessageTable,
-			Columns: []string{conversation.TriggerMessageColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(discordmessage.FieldID, field.TypeString),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.ResponseMessageIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2O,
-			Inverse: false,
-			Table:   conversation.ResponseMessageTable,
-			Columns: []string{conversation.ResponseMessageColumn},
+			Table:   conversation.DiscordMessageTable,
+			Columns: []string{conversation.DiscordMessageColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(discordmessage.FieldID, field.TypeString),

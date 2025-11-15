@@ -26,10 +26,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// EdgeChannel holds the string denoting the channel edge name in mutations.
 	EdgeChannel = "channel"
-	// EdgeConversationTrigger holds the string denoting the conversation_trigger edge name in mutations.
-	EdgeConversationTrigger = "conversation_trigger"
-	// EdgeConversationResponse holds the string denoting the conversation_response edge name in mutations.
-	EdgeConversationResponse = "conversation_response"
+	// EdgeConversationMessage holds the string denoting the conversation_message edge name in mutations.
+	EdgeConversationMessage = "conversation_message"
 	// Table holds the table name of the discordmessage in the database.
 	Table = "discord_messages"
 	// ChannelTable is the table that holds the channel relation/edge.
@@ -39,20 +37,13 @@ const (
 	ChannelInverseTable = "discord_channels"
 	// ChannelColumn is the table column denoting the channel relation/edge.
 	ChannelColumn = "discord_message_channel"
-	// ConversationTriggerTable is the table that holds the conversation_trigger relation/edge.
-	ConversationTriggerTable = "discord_messages"
-	// ConversationTriggerInverseTable is the table name for the Conversation entity.
+	// ConversationMessageTable is the table that holds the conversation_message relation/edge.
+	ConversationMessageTable = "discord_messages"
+	// ConversationMessageInverseTable is the table name for the Conversation entity.
 	// It exists in this package in order to avoid circular dependency with the "conversation" package.
-	ConversationTriggerInverseTable = "conversations"
-	// ConversationTriggerColumn is the table column denoting the conversation_trigger relation/edge.
-	ConversationTriggerColumn = "conversation_trigger_message"
-	// ConversationResponseTable is the table that holds the conversation_response relation/edge.
-	ConversationResponseTable = "discord_messages"
-	// ConversationResponseInverseTable is the table name for the Conversation entity.
-	// It exists in this package in order to avoid circular dependency with the "conversation" package.
-	ConversationResponseInverseTable = "conversations"
-	// ConversationResponseColumn is the table column denoting the conversation_response relation/edge.
-	ConversationResponseColumn = "conversation_response_message"
+	ConversationMessageInverseTable = "conversations"
+	// ConversationMessageColumn is the table column denoting the conversation_message relation/edge.
+	ConversationMessageColumn = "conversation_discord_message"
 )
 
 // Columns holds all SQL columns for discordmessage fields.
@@ -68,8 +59,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "discord_messages"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"conversation_trigger_message",
-	"conversation_response_message",
+	"conversation_discord_message",
 	"discord_message_channel",
 }
 
@@ -134,17 +124,10 @@ func ByChannelField(field string, opts ...sql.OrderTermOption) OrderOption {
 	}
 }
 
-// ByConversationTriggerField orders the results by conversation_trigger field.
-func ByConversationTriggerField(field string, opts ...sql.OrderTermOption) OrderOption {
+// ByConversationMessageField orders the results by conversation_message field.
+func ByConversationMessageField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newConversationTriggerStep(), sql.OrderByField(field, opts...))
-	}
-}
-
-// ByConversationResponseField orders the results by conversation_response field.
-func ByConversationResponseField(field string, opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newConversationResponseStep(), sql.OrderByField(field, opts...))
+		sqlgraph.OrderByNeighborTerms(s, newConversationMessageStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newChannelStep() *sqlgraph.Step {
@@ -154,17 +137,10 @@ func newChannelStep() *sqlgraph.Step {
 		sqlgraph.Edge(sqlgraph.M2O, false, ChannelTable, ChannelColumn),
 	)
 }
-func newConversationTriggerStep() *sqlgraph.Step {
+func newConversationMessageStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ConversationTriggerInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, true, ConversationTriggerTable, ConversationTriggerColumn),
-	)
-}
-func newConversationResponseStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(ConversationResponseInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2O, true, ConversationResponseTable, ConversationResponseColumn),
+		sqlgraph.To(ConversationMessageInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, ConversationMessageTable, ConversationMessageColumn),
 	)
 }

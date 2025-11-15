@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 )
@@ -27,9 +28,45 @@ func (_u *ConversationGroupUpdate) Where(ps ...predicate.ConversationGroup) *Con
 	return _u
 }
 
+// AddConversationIDs adds the "conversations" edge to the Conversation entity by IDs.
+func (_u *ConversationGroupUpdate) AddConversationIDs(ids ...int) *ConversationGroupUpdate {
+	_u.mutation.AddConversationIDs(ids...)
+	return _u
+}
+
+// AddConversations adds the "conversations" edges to the Conversation entity.
+func (_u *ConversationGroupUpdate) AddConversations(v ...*Conversation) *ConversationGroupUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConversationIDs(ids...)
+}
+
 // Mutation returns the ConversationGroupMutation object of the builder.
 func (_u *ConversationGroupUpdate) Mutation() *ConversationGroupMutation {
 	return _u.mutation
+}
+
+// ClearConversations clears all "conversations" edges to the Conversation entity.
+func (_u *ConversationGroupUpdate) ClearConversations() *ConversationGroupUpdate {
+	_u.mutation.ClearConversations()
+	return _u
+}
+
+// RemoveConversationIDs removes the "conversations" edge to Conversation entities by IDs.
+func (_u *ConversationGroupUpdate) RemoveConversationIDs(ids ...int) *ConversationGroupUpdate {
+	_u.mutation.RemoveConversationIDs(ids...)
+	return _u
+}
+
+// RemoveConversations removes "conversations" edges to Conversation entities.
+func (_u *ConversationGroupUpdate) RemoveConversations(v ...*Conversation) *ConversationGroupUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConversationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -68,6 +105,51 @@ func (_u *ConversationGroupUpdate) sqlSave(ctx context.Context) (_node int, err 
 			}
 		}
 	}
+	if _u.mutation.ConversationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   conversationgroup.ConversationsTable,
+			Columns: []string{conversationgroup.ConversationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConversationsIDs(); len(nodes) > 0 && !_u.mutation.ConversationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   conversationgroup.ConversationsTable,
+			Columns: []string{conversationgroup.ConversationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConversationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   conversationgroup.ConversationsTable,
+			Columns: []string{conversationgroup.ConversationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{conversationgroup.Label}
@@ -88,9 +170,45 @@ type ConversationGroupUpdateOne struct {
 	mutation *ConversationGroupMutation
 }
 
+// AddConversationIDs adds the "conversations" edge to the Conversation entity by IDs.
+func (_u *ConversationGroupUpdateOne) AddConversationIDs(ids ...int) *ConversationGroupUpdateOne {
+	_u.mutation.AddConversationIDs(ids...)
+	return _u
+}
+
+// AddConversations adds the "conversations" edges to the Conversation entity.
+func (_u *ConversationGroupUpdateOne) AddConversations(v ...*Conversation) *ConversationGroupUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConversationIDs(ids...)
+}
+
 // Mutation returns the ConversationGroupMutation object of the builder.
 func (_u *ConversationGroupUpdateOne) Mutation() *ConversationGroupMutation {
 	return _u.mutation
+}
+
+// ClearConversations clears all "conversations" edges to the Conversation entity.
+func (_u *ConversationGroupUpdateOne) ClearConversations() *ConversationGroupUpdateOne {
+	_u.mutation.ClearConversations()
+	return _u
+}
+
+// RemoveConversationIDs removes the "conversations" edge to Conversation entities by IDs.
+func (_u *ConversationGroupUpdateOne) RemoveConversationIDs(ids ...int) *ConversationGroupUpdateOne {
+	_u.mutation.RemoveConversationIDs(ids...)
+	return _u
+}
+
+// RemoveConversations removes "conversations" edges to Conversation entities.
+func (_u *ConversationGroupUpdateOne) RemoveConversations(v ...*Conversation) *ConversationGroupUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConversationIDs(ids...)
 }
 
 // Where appends a list predicates to the ConversationGroupUpdate builder.
@@ -158,6 +276,51 @@ func (_u *ConversationGroupUpdateOne) sqlSave(ctx context.Context) (_node *Conve
 				ps[i](selector)
 			}
 		}
+	}
+	if _u.mutation.ConversationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   conversationgroup.ConversationsTable,
+			Columns: []string{conversationgroup.ConversationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConversationsIDs(); len(nodes) > 0 && !_u.mutation.ConversationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   conversationgroup.ConversationsTable,
+			Columns: []string{conversationgroup.ConversationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConversationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   conversationgroup.ConversationsTable,
+			Columns: []string{conversationgroup.ConversationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &ConversationGroup{config: _u.config}
 	_spec.Assign = _node.assignValues

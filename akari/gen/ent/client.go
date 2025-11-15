@@ -685,31 +685,15 @@ func (c *ConversationClient) GetX(ctx context.Context, id int) *Conversation {
 	return obj
 }
 
-// QueryTriggerMessage queries the trigger_message edge of a Conversation.
-func (c *ConversationClient) QueryTriggerMessage(_m *Conversation) *DiscordMessageQuery {
+// QueryDiscordMessage queries the discord_message edge of a Conversation.
+func (c *ConversationClient) QueryDiscordMessage(_m *Conversation) *DiscordMessageQuery {
 	query := (&DiscordMessageClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(conversation.Table, conversation.FieldID, id),
 			sqlgraph.To(discordmessage.Table, discordmessage.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, conversation.TriggerMessageTable, conversation.TriggerMessageColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryResponseMessage queries the response_message edge of a Conversation.
-func (c *ConversationClient) QueryResponseMessage(_m *Conversation) *DiscordMessageQuery {
-	query := (&DiscordMessageClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(conversation.Table, conversation.FieldID, id),
-			sqlgraph.To(discordmessage.Table, discordmessage.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, conversation.ResponseMessageTable, conversation.ResponseMessageColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, conversation.DiscordMessageTable, conversation.DiscordMessageColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1345,31 +1329,15 @@ func (c *DiscordMessageClient) QueryChannel(_m *DiscordMessage) *DiscordChannelQ
 	return query
 }
 
-// QueryConversationTrigger queries the conversation_trigger edge of a DiscordMessage.
-func (c *DiscordMessageClient) QueryConversationTrigger(_m *DiscordMessage) *ConversationQuery {
+// QueryConversationMessage queries the conversation_message edge of a DiscordMessage.
+func (c *DiscordMessageClient) QueryConversationMessage(_m *DiscordMessage) *ConversationQuery {
 	query := (&ConversationClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := _m.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, id),
 			sqlgraph.To(conversation.Table, conversation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, discordmessage.ConversationTriggerTable, discordmessage.ConversationTriggerColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryConversationResponse queries the conversation_response edge of a DiscordMessage.
-func (c *DiscordMessageClient) QueryConversationResponse(_m *DiscordMessage) *ConversationQuery {
-	query := (&ConversationClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, id),
-			sqlgraph.To(conversation.Table, conversation.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, true, discordmessage.ConversationResponseTable, discordmessage.ConversationResponseColumn),
+			sqlgraph.Edge(sqlgraph.O2O, true, discordmessage.ConversationMessageTable, discordmessage.ConversationMessageColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil

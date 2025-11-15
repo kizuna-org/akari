@@ -61,11 +61,8 @@ func (_u *ConversationUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ConversationUpdate) check() error {
-	if _u.mutation.TriggerMessageCleared() && len(_u.mutation.TriggerMessageIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Conversation.trigger_message"`)
-	}
-	if _u.mutation.ResponseMessageCleared() && len(_u.mutation.ResponseMessageIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Conversation.response_message"`)
+	if _u.mutation.DiscordMessageCleared() && len(_u.mutation.DiscordMessageIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Conversation.discord_message"`)
 	}
 	return nil
 }
@@ -149,11 +146,8 @@ func (_u *ConversationUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ConversationUpdateOne) check() error {
-	if _u.mutation.TriggerMessageCleared() && len(_u.mutation.TriggerMessageIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Conversation.trigger_message"`)
-	}
-	if _u.mutation.ResponseMessageCleared() && len(_u.mutation.ResponseMessageIDs()) > 0 {
-		return errors.New(`ent: clearing a required unique edge "Conversation.response_message"`)
+	if _u.mutation.DiscordMessageCleared() && len(_u.mutation.DiscordMessageIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Conversation.discord_message"`)
 	}
 	return nil
 }

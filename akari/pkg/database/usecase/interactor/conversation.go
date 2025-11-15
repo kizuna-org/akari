@@ -7,12 +7,7 @@ import (
 )
 
 type ConversationInteractor interface {
-	CreateConversation(
-		ctx context.Context,
-		triggerMessageID string,
-		responseMessageID string,
-		conversationGroupID *int,
-	) (*domain.Conversation, error)
+	CreateConversation(ctx context.Context, messageID string, conversationGroupID *int) (*domain.Conversation, error)
 	GetConversationByID(ctx context.Context, id int) (*domain.Conversation, error)
 	ListConversations(ctx context.Context) ([]*domain.Conversation, error)
 	DeleteConversation(ctx context.Context, id int) error
@@ -30,11 +25,10 @@ func NewConversationInteractor(repository domain.ConversationRepository) Convers
 
 func (c *conversationInteractorImpl) CreateConversation(
 	ctx context.Context,
-	triggerMessageID string,
-	responseMessageID string,
+	messageID string,
 	conversationGroupID *int,
 ) (*domain.Conversation, error) {
-	return c.repository.CreateConversation(ctx, triggerMessageID, responseMessageID, conversationGroupID)
+	return c.repository.CreateConversation(ctx, messageID, conversationGroupID)
 }
 
 func (c *conversationInteractorImpl) GetConversationByID(ctx context.Context, id int) (*domain.Conversation, error) {

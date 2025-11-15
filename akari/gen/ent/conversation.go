@@ -30,37 +30,24 @@ type Conversation struct {
 
 // ConversationEdges holds the relations/edges for other nodes in the graph.
 type ConversationEdges struct {
-	// The message that triggered the bot
-	TriggerMessage *DiscordMessage `json:"trigger_message,omitempty"`
-	// The bot's response message
-	ResponseMessage *DiscordMessage `json:"response_message,omitempty"`
+	// The Discord message that related to this conversation
+	DiscordMessage *DiscordMessage `json:"discord_message,omitempty"`
 	// The conversation group this conversation belongs to
 	ConversationGroup *ConversationGroup `json:"conversation_group,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [2]bool
 }
 
-// TriggerMessageOrErr returns the TriggerMessage value or an error if the edge
+// DiscordMessageOrErr returns the DiscordMessage value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e ConversationEdges) TriggerMessageOrErr() (*DiscordMessage, error) {
-	if e.TriggerMessage != nil {
-		return e.TriggerMessage, nil
+func (e ConversationEdges) DiscordMessageOrErr() (*DiscordMessage, error) {
+	if e.DiscordMessage != nil {
+		return e.DiscordMessage, nil
 	} else if e.loadedTypes[0] {
 		return nil, &NotFoundError{label: discordmessage.Label}
 	}
-	return nil, &NotLoadedError{edge: "trigger_message"}
-}
-
-// ResponseMessageOrErr returns the ResponseMessage value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e ConversationEdges) ResponseMessageOrErr() (*DiscordMessage, error) {
-	if e.ResponseMessage != nil {
-		return e.ResponseMessage, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: discordmessage.Label}
-	}
-	return nil, &NotLoadedError{edge: "response_message"}
+	return nil, &NotLoadedError{edge: "discord_message"}
 }
 
 // ConversationGroupOrErr returns the ConversationGroup value or an error if the edge
@@ -68,7 +55,7 @@ func (e ConversationEdges) ResponseMessageOrErr() (*DiscordMessage, error) {
 func (e ConversationEdges) ConversationGroupOrErr() (*ConversationGroup, error) {
 	if e.ConversationGroup != nil {
 		return e.ConversationGroup, nil
-	} else if e.loadedTypes[2] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: conversationgroup.Label}
 	}
 	return nil, &NotLoadedError{edge: "conversation_group"}
@@ -132,14 +119,9 @@ func (_m *Conversation) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
 }
 
-// QueryTriggerMessage queries the "trigger_message" edge of the Conversation entity.
-func (_m *Conversation) QueryTriggerMessage() *DiscordMessageQuery {
-	return NewConversationClient(_m.config).QueryTriggerMessage(_m)
-}
-
-// QueryResponseMessage queries the "response_message" edge of the Conversation entity.
-func (_m *Conversation) QueryResponseMessage() *DiscordMessageQuery {
-	return NewConversationClient(_m.config).QueryResponseMessage(_m)
+// QueryDiscordMessage queries the "discord_message" edge of the Conversation entity.
+func (_m *Conversation) QueryDiscordMessage() *DiscordMessageQuery {
+	return NewConversationClient(_m.config).QueryDiscordMessage(_m)
 }
 
 // QueryConversationGroup queries the "conversation_group" edge of the Conversation entity.

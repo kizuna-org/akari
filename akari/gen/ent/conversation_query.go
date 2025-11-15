@@ -25,8 +25,7 @@ type ConversationQuery struct {
 	order                 []conversation.OrderOption
 	inters                []Interceptor
 	predicates            []predicate.Conversation
-	withTriggerMessage    *DiscordMessageQuery
-	withResponseMessage   *DiscordMessageQuery
+	withDiscordMessage    *DiscordMessageQuery
 	withConversationGroup *ConversationGroupQuery
 	withFKs               bool
 	// intermediate query (i.e. traversal path).
@@ -65,8 +64,8 @@ func (_q *ConversationQuery) Order(o ...conversation.OrderOption) *ConversationQ
 	return _q
 }
 
-// QueryTriggerMessage chains the current query on the "trigger_message" edge.
-func (_q *ConversationQuery) QueryTriggerMessage() *DiscordMessageQuery {
+// QueryDiscordMessage chains the current query on the "discord_message" edge.
+func (_q *ConversationQuery) QueryDiscordMessage() *DiscordMessageQuery {
 	query := (&DiscordMessageClient{config: _q.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := _q.prepareQuery(ctx); err != nil {
@@ -79,29 +78,7 @@ func (_q *ConversationQuery) QueryTriggerMessage() *DiscordMessageQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(conversation.Table, conversation.FieldID, selector),
 			sqlgraph.To(discordmessage.Table, discordmessage.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, conversation.TriggerMessageTable, conversation.TriggerMessageColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
-// QueryResponseMessage chains the current query on the "response_message" edge.
-func (_q *ConversationQuery) QueryResponseMessage() *DiscordMessageQuery {
-	query := (&DiscordMessageClient{config: _q.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := _q.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := _q.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(conversation.Table, conversation.FieldID, selector),
-			sqlgraph.To(discordmessage.Table, discordmessage.FieldID),
-			sqlgraph.Edge(sqlgraph.O2O, false, conversation.ResponseMessageTable, conversation.ResponseMessageColumn),
+			sqlgraph.Edge(sqlgraph.O2O, false, conversation.DiscordMessageTable, conversation.DiscordMessageColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -323,8 +300,7 @@ func (_q *ConversationQuery) Clone() *ConversationQuery {
 		order:                 append([]conversation.OrderOption{}, _q.order...),
 		inters:                append([]Interceptor{}, _q.inters...),
 		predicates:            append([]predicate.Conversation{}, _q.predicates...),
-		withTriggerMessage:    _q.withTriggerMessage.Clone(),
-		withResponseMessage:   _q.withResponseMessage.Clone(),
+		withDiscordMessage:    _q.withDiscordMessage.Clone(),
 		withConversationGroup: _q.withConversationGroup.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -332,25 +308,14 @@ func (_q *ConversationQuery) Clone() *ConversationQuery {
 	}
 }
 
-// WithTriggerMessage tells the query-builder to eager-load the nodes that are connected to
-// the "trigger_message" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ConversationQuery) WithTriggerMessage(opts ...func(*DiscordMessageQuery)) *ConversationQuery {
+// WithDiscordMessage tells the query-builder to eager-load the nodes that are connected to
+// the "discord_message" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ConversationQuery) WithDiscordMessage(opts ...func(*DiscordMessageQuery)) *ConversationQuery {
 	query := (&DiscordMessageClient{config: _q.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
-	_q.withTriggerMessage = query
-	return _q
-}
-
-// WithResponseMessage tells the query-builder to eager-load the nodes that are connected to
-// the "response_message" edge. The optional arguments are used to configure the query builder of the edge.
-func (_q *ConversationQuery) WithResponseMessage(opts ...func(*DiscordMessageQuery)) *ConversationQuery {
-	query := (&DiscordMessageClient{config: _q.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	_q.withResponseMessage = query
+	_q.withDiscordMessage = query
 	return _q
 }
 
@@ -444,9 +409,8 @@ func (_q *ConversationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes       = []*Conversation{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
-			_q.withTriggerMessage != nil,
-			_q.withResponseMessage != nil,
+		loadedTypes = [2]bool{
+			_q.withDiscordMessage != nil,
 			_q.withConversationGroup != nil,
 		}
 	)
@@ -474,15 +438,9 @@ func (_q *ConversationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := _q.withTriggerMessage; query != nil {
-		if err := _q.loadTriggerMessage(ctx, query, nodes, nil,
-			func(n *Conversation, e *DiscordMessage) { n.Edges.TriggerMessage = e }); err != nil {
-			return nil, err
-		}
-	}
-	if query := _q.withResponseMessage; query != nil {
-		if err := _q.loadResponseMessage(ctx, query, nodes, nil,
-			func(n *Conversation, e *DiscordMessage) { n.Edges.ResponseMessage = e }); err != nil {
+	if query := _q.withDiscordMessage; query != nil {
+		if err := _q.loadDiscordMessage(ctx, query, nodes, nil,
+			func(n *Conversation, e *DiscordMessage) { n.Edges.DiscordMessage = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -495,7 +453,7 @@ func (_q *ConversationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	return nodes, nil
 }
 
-func (_q *ConversationQuery) loadTriggerMessage(ctx context.Context, query *DiscordMessageQuery, nodes []*Conversation, init func(*Conversation), assign func(*Conversation, *DiscordMessage)) error {
+func (_q *ConversationQuery) loadDiscordMessage(ctx context.Context, query *DiscordMessageQuery, nodes []*Conversation, init func(*Conversation), assign func(*Conversation, *DiscordMessage)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Conversation)
 	for i := range nodes {
@@ -504,48 +462,20 @@ func (_q *ConversationQuery) loadTriggerMessage(ctx context.Context, query *Disc
 	}
 	query.withFKs = true
 	query.Where(predicate.DiscordMessage(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(conversation.TriggerMessageColumn), fks...))
+		s.Where(sql.InValues(s.C(conversation.DiscordMessageColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.conversation_trigger_message
+		fk := n.conversation_discord_message
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "conversation_trigger_message" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "conversation_discord_message" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "conversation_trigger_message" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
-func (_q *ConversationQuery) loadResponseMessage(ctx context.Context, query *DiscordMessageQuery, nodes []*Conversation, init func(*Conversation), assign func(*Conversation, *DiscordMessage)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[int]*Conversation)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-	}
-	query.withFKs = true
-	query.Where(predicate.DiscordMessage(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(conversation.ResponseMessageColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.conversation_response_message
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "conversation_response_message" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "conversation_response_message" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "conversation_discord_message" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
