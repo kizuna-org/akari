@@ -136,6 +136,61 @@ func TestConversationGroupInteractor_GetConversationGroupByID(t *testing.T) {
 	}
 }
 
+func TestConversationGroupInteractor_GetConversationGroupByCharacterID(t *testing.T) {
+	t.Parallel()
+
+	characterID := 1
+
+	tests := []struct {
+		name      string
+		mockSetup func(*mock.MockConversationGroupRepository, context.Context)
+		wantErr   bool
+	}{
+		{
+			name: "success",
+			mockSetup: func(m *mock.MockConversationGroupRepository, ctx context.Context) {
+				m.EXPECT().GetConversationGroupByCharacterID(ctx, characterID).Return(
+					&ent.ConversationGroup{ID: 1, CreatedAt: time.Now()},
+					nil,
+				)
+			},
+			wantErr: false,
+		},
+		{
+			name: "not found",
+			mockSetup: func(m *mock.MockConversationGroupRepository, ctx context.Context) {
+				m.EXPECT().GetConversationGroupByCharacterID(ctx, characterID).Return(nil, errors.New("not found"))
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			m := mock.NewMockConversationGroupRepository(ctrl)
+			i := interactor.NewConversationGroupInteractor(m)
+
+			ctx := t.Context()
+			testCase.mockSetup(m, ctx)
+
+			res, err := i.GetConversationGroupByCharacterID(ctx, characterID)
+
+			if testCase.wantErr {
+				require.Error(t, err)
+				assert.Nil(t, res)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, res)
+			}
+		})
+	}
+}
+
 func TestConversationGroupInteractor_ListConversationGroups(t *testing.T) {
 	t.Parallel()
 

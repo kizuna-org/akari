@@ -13,6 +13,7 @@ import (
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
+	"github.com/kizuna-org/akari/gen/ent/discorduser"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 )
 
@@ -27,6 +28,17 @@ type DiscordMessageUpdate struct {
 func (_u *DiscordMessageUpdate) Where(ps ...predicate.DiscordMessage) *DiscordMessageUpdate {
 	_u.mutation.Where(ps...)
 	return _u
+}
+
+// SetAuthorID sets the "author" edge to the DiscordUser entity by ID.
+func (_u *DiscordMessageUpdate) SetAuthorID(id string) *DiscordMessageUpdate {
+	_u.mutation.SetAuthorID(id)
+	return _u
+}
+
+// SetAuthor sets the "author" edge to the DiscordUser entity.
+func (_u *DiscordMessageUpdate) SetAuthor(v *DiscordUser) *DiscordMessageUpdate {
+	return _u.SetAuthorID(v.ID)
 }
 
 // SetChannelID sets the "channel" edge to the DiscordChannel entity by ID.
@@ -62,6 +74,12 @@ func (_u *DiscordMessageUpdate) SetConversationMessage(v *Conversation) *Discord
 // Mutation returns the DiscordMessageMutation object of the builder.
 func (_u *DiscordMessageUpdate) Mutation() *DiscordMessageMutation {
 	return _u.mutation
+}
+
+// ClearAuthor clears the "author" edge to the DiscordUser entity.
+func (_u *DiscordMessageUpdate) ClearAuthor() *DiscordMessageUpdate {
+	_u.mutation.ClearAuthor()
+	return _u
 }
 
 // ClearChannel clears the "channel" edge to the DiscordChannel entity.
@@ -105,6 +123,9 @@ func (_u *DiscordMessageUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *DiscordMessageUpdate) check() error {
+	if _u.mutation.AuthorCleared() && len(_u.mutation.AuthorIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "DiscordMessage.author"`)
+	}
 	if _u.mutation.ChannelCleared() && len(_u.mutation.ChannelIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "DiscordMessage.channel"`)
 	}
@@ -125,6 +146,35 @@ func (_u *DiscordMessageUpdate) sqlSave(ctx context.Context) (_node int, err err
 	}
 	if _u.mutation.MentionsCleared() {
 		_spec.ClearField(discordmessage.FieldMentions, field.TypeJSON)
+	}
+	if _u.mutation.AuthorCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   discordmessage.AuthorTable,
+			Columns: []string{discordmessage.AuthorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AuthorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   discordmessage.AuthorTable,
+			Columns: []string{discordmessage.AuthorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.ChannelCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -204,6 +254,17 @@ type DiscordMessageUpdateOne struct {
 	mutation *DiscordMessageMutation
 }
 
+// SetAuthorID sets the "author" edge to the DiscordUser entity by ID.
+func (_u *DiscordMessageUpdateOne) SetAuthorID(id string) *DiscordMessageUpdateOne {
+	_u.mutation.SetAuthorID(id)
+	return _u
+}
+
+// SetAuthor sets the "author" edge to the DiscordUser entity.
+func (_u *DiscordMessageUpdateOne) SetAuthor(v *DiscordUser) *DiscordMessageUpdateOne {
+	return _u.SetAuthorID(v.ID)
+}
+
 // SetChannelID sets the "channel" edge to the DiscordChannel entity by ID.
 func (_u *DiscordMessageUpdateOne) SetChannelID(id string) *DiscordMessageUpdateOne {
 	_u.mutation.SetChannelID(id)
@@ -237,6 +298,12 @@ func (_u *DiscordMessageUpdateOne) SetConversationMessage(v *Conversation) *Disc
 // Mutation returns the DiscordMessageMutation object of the builder.
 func (_u *DiscordMessageUpdateOne) Mutation() *DiscordMessageMutation {
 	return _u.mutation
+}
+
+// ClearAuthor clears the "author" edge to the DiscordUser entity.
+func (_u *DiscordMessageUpdateOne) ClearAuthor() *DiscordMessageUpdateOne {
+	_u.mutation.ClearAuthor()
+	return _u
 }
 
 // ClearChannel clears the "channel" edge to the DiscordChannel entity.
@@ -293,6 +360,9 @@ func (_u *DiscordMessageUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *DiscordMessageUpdateOne) check() error {
+	if _u.mutation.AuthorCleared() && len(_u.mutation.AuthorIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "DiscordMessage.author"`)
+	}
 	if _u.mutation.ChannelCleared() && len(_u.mutation.ChannelIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "DiscordMessage.channel"`)
 	}
@@ -330,6 +400,35 @@ func (_u *DiscordMessageUpdateOne) sqlSave(ctx context.Context) (_node *DiscordM
 	}
 	if _u.mutation.MentionsCleared() {
 		_spec.ClearField(discordmessage.FieldMentions, field.TypeJSON)
+	}
+	if _u.mutation.AuthorCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   discordmessage.AuthorTable,
+			Columns: []string{discordmessage.AuthorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AuthorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   discordmessage.AuthorTable,
+			Columns: []string{discordmessage.AuthorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.ChannelCleared() {
 		edge := &sqlgraph.EdgeSpec{

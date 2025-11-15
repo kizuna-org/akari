@@ -154,6 +154,20 @@ func (mr *MockClientMockRecorder) DiscordMessageClient() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscordMessageClient", reflect.TypeOf((*MockClient)(nil).DiscordMessageClient))
 }
 
+// DiscordUserClient mocks base method.
+func (m *MockClient) DiscordUserClient() *ent.DiscordUserClient {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DiscordUserClient")
+	ret0, _ := ret[0].(*ent.DiscordUserClient)
+	return ret0
+}
+
+// DiscordUserClient indicates an expected call of DiscordUserClient.
+func (mr *MockClientMockRecorder) DiscordUserClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscordUserClient", reflect.TypeOf((*MockClient)(nil).DiscordUserClient))
+}
+
 // Ping mocks base method.
 func (m *MockClient) Ping(ctx context.Context) error {
 	m.ctrl.T.Helper()

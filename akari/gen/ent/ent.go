@@ -20,6 +20,7 @@ import (
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordguild"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
+	"github.com/kizuna-org/akari/gen/ent/discorduser"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -89,6 +90,7 @@ func checkColumn(t, c string) error {
 			discordchannel.Table:    discordchannel.ValidColumn,
 			discordguild.Table:      discordguild.ValidColumn,
 			discordmessage.Table:    discordmessage.ValidColumn,
+			discorduser.Table:       discorduser.ValidColumn,
 			systemprompt.Table:      systemprompt.ValidColumn,
 		})
 	})

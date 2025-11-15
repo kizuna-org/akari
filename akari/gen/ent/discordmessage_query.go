@@ -14,6 +14,7 @@ import (
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
+	"github.com/kizuna-org/akari/gen/ent/discorduser"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 )
 
@@ -24,6 +25,7 @@ type DiscordMessageQuery struct {
 	order                   []discordmessage.OrderOption
 	inters                  []Interceptor
 	predicates              []predicate.DiscordMessage
+	withAuthor              *DiscordUserQuery
 	withChannel             *DiscordChannelQuery
 	withConversationMessage *ConversationQuery
 	withFKs                 bool
@@ -61,6 +63,28 @@ func (_q *DiscordMessageQuery) Unique(unique bool) *DiscordMessageQuery {
 func (_q *DiscordMessageQuery) Order(o ...discordmessage.OrderOption) *DiscordMessageQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryAuthor chains the current query on the "author" edge.
+func (_q *DiscordMessageQuery) QueryAuthor() *DiscordUserQuery {
+	query := (&DiscordUserClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, selector),
+			sqlgraph.To(discorduser.Table, discorduser.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, discordmessage.AuthorTable, discordmessage.AuthorColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryChannel chains the current query on the "channel" edge.
@@ -299,12 +323,24 @@ func (_q *DiscordMessageQuery) Clone() *DiscordMessageQuery {
 		order:                   append([]discordmessage.OrderOption{}, _q.order...),
 		inters:                  append([]Interceptor{}, _q.inters...),
 		predicates:              append([]predicate.DiscordMessage{}, _q.predicates...),
+		withAuthor:              _q.withAuthor.Clone(),
 		withChannel:             _q.withChannel.Clone(),
 		withConversationMessage: _q.withConversationMessage.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithAuthor tells the query-builder to eager-load the nodes that are connected to
+// the "author" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *DiscordMessageQuery) WithAuthor(opts ...func(*DiscordUserQuery)) *DiscordMessageQuery {
+	query := (&DiscordUserClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAuthor = query
+	return _q
 }
 
 // WithChannel tells the query-builder to eager-load the nodes that are connected to
@@ -335,12 +371,12 @@ func (_q *DiscordMessageQuery) WithConversationMessage(opts ...func(*Conversatio
 // Example:
 //
 //	var v []struct {
-//		AuthorID string `json:"author_id,omitempty"`
+//		Content string `json:"content,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.DiscordMessage.Query().
-//		GroupBy(discordmessage.FieldAuthorID).
+//		GroupBy(discordmessage.FieldContent).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *DiscordMessageQuery) GroupBy(field string, fields ...string) *DiscordMessageGroupBy {
@@ -358,11 +394,11 @@ func (_q *DiscordMessageQuery) GroupBy(field string, fields ...string) *DiscordM
 // Example:
 //
 //	var v []struct {
-//		AuthorID string `json:"author_id,omitempty"`
+//		Content string `json:"content,omitempty"`
 //	}
 //
 //	client.DiscordMessage.Query().
-//		Select(discordmessage.FieldAuthorID).
+//		Select(discordmessage.FieldContent).
 //		Scan(ctx, &v)
 func (_q *DiscordMessageQuery) Select(fields ...string) *DiscordMessageSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
@@ -408,12 +444,13 @@ func (_q *DiscordMessageQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 		nodes       = []*DiscordMessage{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
+			_q.withAuthor != nil,
 			_q.withChannel != nil,
 			_q.withConversationMessage != nil,
 		}
 	)
-	if _q.withChannel != nil || _q.withConversationMessage != nil {
+	if _q.withAuthor != nil || _q.withChannel != nil || _q.withConversationMessage != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -437,6 +474,12 @@ func (_q *DiscordMessageQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withAuthor; query != nil {
+		if err := _q.loadAuthor(ctx, query, nodes, nil,
+			func(n *DiscordMessage, e *DiscordUser) { n.Edges.Author = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withChannel; query != nil {
 		if err := _q.loadChannel(ctx, query, nodes, nil,
 			func(n *DiscordMessage, e *DiscordChannel) { n.Edges.Channel = e }); err != nil {
@@ -452,6 +495,38 @@ func (_q *DiscordMessageQuery) sqlAll(ctx context.Context, hooks ...queryHook) (
 	return nodes, nil
 }
 
+func (_q *DiscordMessageQuery) loadAuthor(ctx context.Context, query *DiscordUserQuery, nodes []*DiscordMessage, init func(*DiscordMessage), assign func(*DiscordMessage, *DiscordUser)) error {
+	ids := make([]string, 0, len(nodes))
+	nodeids := make(map[string][]*DiscordMessage)
+	for i := range nodes {
+		if nodes[i].discord_message_author == nil {
+			continue
+		}
+		fk := *nodes[i].discord_message_author
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(discorduser.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "discord_message_author" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (_q *DiscordMessageQuery) loadChannel(ctx context.Context, query *DiscordChannelQuery, nodes []*DiscordMessage, init func(*DiscordMessage), assign func(*DiscordMessage, *DiscordChannel)) error {
 	ids := make([]string, 0, len(nodes))
 	nodeids := make(map[string][]*DiscordMessage)
