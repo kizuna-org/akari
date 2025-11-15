@@ -14,6 +14,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
+	"github.com/kizuna-org/akari/gen/ent/discordchannel"
+	"github.com/kizuna-org/akari/gen/ent/discordguild"
+	"github.com/kizuna-org/akari/gen/ent/discordmessage"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -77,6 +80,9 @@ func checkColumn(t, c string) error {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
 			character.Table:       character.ValidColumn,
 			characterconfig.Table: characterconfig.ValidColumn,
+			discordchannel.Table:  discordchannel.ValidColumn,
+			discordguild.Table:    discordguild.ValidColumn,
+			discordmessage.Table:  discordmessage.ValidColumn,
 			systemprompt.Table:    systemprompt.ValidColumn,
 		})
 	})

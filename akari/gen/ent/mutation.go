@@ -13,6 +13,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
+	"github.com/kizuna-org/akari/gen/ent/discordchannel"
+	"github.com/kizuna-org/akari/gen/ent/discordguild"
+	"github.com/kizuna-org/akari/gen/ent/discordmessage"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
@@ -28,6 +31,9 @@ const (
 	// Node types.
 	TypeCharacter       = "Character"
 	TypeCharacterConfig = "CharacterConfig"
+	TypeDiscordChannel  = "DiscordChannel"
+	TypeDiscordGuild    = "DiscordGuild"
+	TypeDiscordMessage  = "DiscordMessage"
 	TypeSystemPrompt    = "SystemPrompt"
 )
 
@@ -1084,6 +1090,1839 @@ func (m *CharacterConfigMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown CharacterConfig edge %s", name)
+}
+
+// DiscordChannelMutation represents an operation that mutates the DiscordChannel nodes in the graph.
+type DiscordChannelMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *string
+	_type           *discordchannel.Type
+	name            *string
+	created_at      *time.Time
+	updated_at      *time.Time
+	clearedFields   map[string]struct{}
+	messages        map[string]struct{}
+	removedmessages map[string]struct{}
+	clearedmessages bool
+	guild           *string
+	clearedguild    bool
+	done            bool
+	oldValue        func(context.Context) (*DiscordChannel, error)
+	predicates      []predicate.DiscordChannel
+}
+
+var _ ent.Mutation = (*DiscordChannelMutation)(nil)
+
+// discordchannelOption allows management of the mutation configuration using functional options.
+type discordchannelOption func(*DiscordChannelMutation)
+
+// newDiscordChannelMutation creates new mutation for the DiscordChannel entity.
+func newDiscordChannelMutation(c config, op Op, opts ...discordchannelOption) *DiscordChannelMutation {
+	m := &DiscordChannelMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDiscordChannel,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDiscordChannelID sets the ID field of the mutation.
+func withDiscordChannelID(id string) discordchannelOption {
+	return func(m *DiscordChannelMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DiscordChannel
+		)
+		m.oldValue = func(ctx context.Context) (*DiscordChannel, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DiscordChannel.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDiscordChannel sets the old DiscordChannel of the mutation.
+func withDiscordChannel(node *DiscordChannel) discordchannelOption {
+	return func(m *DiscordChannelMutation) {
+		m.oldValue = func(context.Context) (*DiscordChannel, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DiscordChannelMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DiscordChannelMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of DiscordChannel entities.
+func (m *DiscordChannelMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DiscordChannelMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DiscordChannelMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DiscordChannel.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetType sets the "type" field.
+func (m *DiscordChannelMutation) SetType(d discordchannel.Type) {
+	m._type = &d
+}
+
+// GetType returns the value of the "type" field in the mutation.
+func (m *DiscordChannelMutation) GetType() (r discordchannel.Type, exists bool) {
+	v := m._type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldType returns the old "type" field's value of the DiscordChannel entity.
+// If the DiscordChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordChannelMutation) OldType(ctx context.Context) (v discordchannel.Type, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldType: %w", err)
+	}
+	return oldValue.Type, nil
+}
+
+// ResetType resets all changes to the "type" field.
+func (m *DiscordChannelMutation) ResetType() {
+	m._type = nil
+}
+
+// SetName sets the "name" field.
+func (m *DiscordChannelMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *DiscordChannelMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the DiscordChannel entity.
+// If the DiscordChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordChannelMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *DiscordChannelMutation) ResetName() {
+	m.name = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *DiscordChannelMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *DiscordChannelMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the DiscordChannel entity.
+// If the DiscordChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordChannelMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *DiscordChannelMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *DiscordChannelMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *DiscordChannelMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the DiscordChannel entity.
+// If the DiscordChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordChannelMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *DiscordChannelMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddMessageIDs adds the "messages" edge to the DiscordMessage entity by ids.
+func (m *DiscordChannelMutation) AddMessageIDs(ids ...string) {
+	if m.messages == nil {
+		m.messages = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.messages[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMessages clears the "messages" edge to the DiscordMessage entity.
+func (m *DiscordChannelMutation) ClearMessages() {
+	m.clearedmessages = true
+}
+
+// MessagesCleared reports if the "messages" edge to the DiscordMessage entity was cleared.
+func (m *DiscordChannelMutation) MessagesCleared() bool {
+	return m.clearedmessages
+}
+
+// RemoveMessageIDs removes the "messages" edge to the DiscordMessage entity by IDs.
+func (m *DiscordChannelMutation) RemoveMessageIDs(ids ...string) {
+	if m.removedmessages == nil {
+		m.removedmessages = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.messages, ids[i])
+		m.removedmessages[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMessages returns the removed IDs of the "messages" edge to the DiscordMessage entity.
+func (m *DiscordChannelMutation) RemovedMessagesIDs() (ids []string) {
+	for id := range m.removedmessages {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MessagesIDs returns the "messages" edge IDs in the mutation.
+func (m *DiscordChannelMutation) MessagesIDs() (ids []string) {
+	for id := range m.messages {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMessages resets all changes to the "messages" edge.
+func (m *DiscordChannelMutation) ResetMessages() {
+	m.messages = nil
+	m.clearedmessages = false
+	m.removedmessages = nil
+}
+
+// SetGuildID sets the "guild" edge to the DiscordGuild entity by id.
+func (m *DiscordChannelMutation) SetGuildID(id string) {
+	m.guild = &id
+}
+
+// ClearGuild clears the "guild" edge to the DiscordGuild entity.
+func (m *DiscordChannelMutation) ClearGuild() {
+	m.clearedguild = true
+}
+
+// GuildCleared reports if the "guild" edge to the DiscordGuild entity was cleared.
+func (m *DiscordChannelMutation) GuildCleared() bool {
+	return m.clearedguild
+}
+
+// GuildID returns the "guild" edge ID in the mutation.
+func (m *DiscordChannelMutation) GuildID() (id string, exists bool) {
+	if m.guild != nil {
+		return *m.guild, true
+	}
+	return
+}
+
+// GuildIDs returns the "guild" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GuildID instead. It exists only for internal usage by the builders.
+func (m *DiscordChannelMutation) GuildIDs() (ids []string) {
+	if id := m.guild; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGuild resets all changes to the "guild" edge.
+func (m *DiscordChannelMutation) ResetGuild() {
+	m.guild = nil
+	m.clearedguild = false
+}
+
+// Where appends a list predicates to the DiscordChannelMutation builder.
+func (m *DiscordChannelMutation) Where(ps ...predicate.DiscordChannel) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DiscordChannelMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DiscordChannelMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DiscordChannel, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DiscordChannelMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DiscordChannelMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DiscordChannel).
+func (m *DiscordChannelMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DiscordChannelMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m._type != nil {
+		fields = append(fields, discordchannel.FieldType)
+	}
+	if m.name != nil {
+		fields = append(fields, discordchannel.FieldName)
+	}
+	if m.created_at != nil {
+		fields = append(fields, discordchannel.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, discordchannel.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DiscordChannelMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case discordchannel.FieldType:
+		return m.GetType()
+	case discordchannel.FieldName:
+		return m.Name()
+	case discordchannel.FieldCreatedAt:
+		return m.CreatedAt()
+	case discordchannel.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DiscordChannelMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case discordchannel.FieldType:
+		return m.OldType(ctx)
+	case discordchannel.FieldName:
+		return m.OldName(ctx)
+	case discordchannel.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case discordchannel.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown DiscordChannel field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DiscordChannelMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case discordchannel.FieldType:
+		v, ok := value.(discordchannel.Type)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetType(v)
+		return nil
+	case discordchannel.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case discordchannel.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case discordchannel.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordChannel field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DiscordChannelMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DiscordChannelMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DiscordChannelMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown DiscordChannel numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DiscordChannelMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DiscordChannelMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DiscordChannelMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown DiscordChannel nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DiscordChannelMutation) ResetField(name string) error {
+	switch name {
+	case discordchannel.FieldType:
+		m.ResetType()
+		return nil
+	case discordchannel.FieldName:
+		m.ResetName()
+		return nil
+	case discordchannel.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case discordchannel.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordChannel field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DiscordChannelMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.messages != nil {
+		edges = append(edges, discordchannel.EdgeMessages)
+	}
+	if m.guild != nil {
+		edges = append(edges, discordchannel.EdgeGuild)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DiscordChannelMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case discordchannel.EdgeMessages:
+		ids := make([]ent.Value, 0, len(m.messages))
+		for id := range m.messages {
+			ids = append(ids, id)
+		}
+		return ids
+	case discordchannel.EdgeGuild:
+		if id := m.guild; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DiscordChannelMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedmessages != nil {
+		edges = append(edges, discordchannel.EdgeMessages)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DiscordChannelMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case discordchannel.EdgeMessages:
+		ids := make([]ent.Value, 0, len(m.removedmessages))
+		for id := range m.removedmessages {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DiscordChannelMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedmessages {
+		edges = append(edges, discordchannel.EdgeMessages)
+	}
+	if m.clearedguild {
+		edges = append(edges, discordchannel.EdgeGuild)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DiscordChannelMutation) EdgeCleared(name string) bool {
+	switch name {
+	case discordchannel.EdgeMessages:
+		return m.clearedmessages
+	case discordchannel.EdgeGuild:
+		return m.clearedguild
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DiscordChannelMutation) ClearEdge(name string) error {
+	switch name {
+	case discordchannel.EdgeGuild:
+		m.ClearGuild()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordChannel unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DiscordChannelMutation) ResetEdge(name string) error {
+	switch name {
+	case discordchannel.EdgeMessages:
+		m.ResetMessages()
+		return nil
+	case discordchannel.EdgeGuild:
+		m.ResetGuild()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordChannel edge %s", name)
+}
+
+// DiscordGuildMutation represents an operation that mutates the DiscordGuild nodes in the graph.
+type DiscordGuildMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *string
+	name            *string
+	created_at      *time.Time
+	updated_at      *time.Time
+	clearedFields   map[string]struct{}
+	channels        map[string]struct{}
+	removedchannels map[string]struct{}
+	clearedchannels bool
+	done            bool
+	oldValue        func(context.Context) (*DiscordGuild, error)
+	predicates      []predicate.DiscordGuild
+}
+
+var _ ent.Mutation = (*DiscordGuildMutation)(nil)
+
+// discordguildOption allows management of the mutation configuration using functional options.
+type discordguildOption func(*DiscordGuildMutation)
+
+// newDiscordGuildMutation creates new mutation for the DiscordGuild entity.
+func newDiscordGuildMutation(c config, op Op, opts ...discordguildOption) *DiscordGuildMutation {
+	m := &DiscordGuildMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDiscordGuild,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDiscordGuildID sets the ID field of the mutation.
+func withDiscordGuildID(id string) discordguildOption {
+	return func(m *DiscordGuildMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DiscordGuild
+		)
+		m.oldValue = func(ctx context.Context) (*DiscordGuild, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DiscordGuild.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDiscordGuild sets the old DiscordGuild of the mutation.
+func withDiscordGuild(node *DiscordGuild) discordguildOption {
+	return func(m *DiscordGuildMutation) {
+		m.oldValue = func(context.Context) (*DiscordGuild, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DiscordGuildMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DiscordGuildMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of DiscordGuild entities.
+func (m *DiscordGuildMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DiscordGuildMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DiscordGuildMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DiscordGuild.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *DiscordGuildMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *DiscordGuildMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the DiscordGuild entity.
+// If the DiscordGuild object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordGuildMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *DiscordGuildMutation) ResetName() {
+	m.name = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *DiscordGuildMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *DiscordGuildMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the DiscordGuild entity.
+// If the DiscordGuild object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordGuildMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *DiscordGuildMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *DiscordGuildMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *DiscordGuildMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the DiscordGuild entity.
+// If the DiscordGuild object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordGuildMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *DiscordGuildMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddChannelIDs adds the "channels" edge to the DiscordChannel entity by ids.
+func (m *DiscordGuildMutation) AddChannelIDs(ids ...string) {
+	if m.channels == nil {
+		m.channels = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.channels[ids[i]] = struct{}{}
+	}
+}
+
+// ClearChannels clears the "channels" edge to the DiscordChannel entity.
+func (m *DiscordGuildMutation) ClearChannels() {
+	m.clearedchannels = true
+}
+
+// ChannelsCleared reports if the "channels" edge to the DiscordChannel entity was cleared.
+func (m *DiscordGuildMutation) ChannelsCleared() bool {
+	return m.clearedchannels
+}
+
+// RemoveChannelIDs removes the "channels" edge to the DiscordChannel entity by IDs.
+func (m *DiscordGuildMutation) RemoveChannelIDs(ids ...string) {
+	if m.removedchannels == nil {
+		m.removedchannels = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.channels, ids[i])
+		m.removedchannels[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedChannels returns the removed IDs of the "channels" edge to the DiscordChannel entity.
+func (m *DiscordGuildMutation) RemovedChannelsIDs() (ids []string) {
+	for id := range m.removedchannels {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ChannelsIDs returns the "channels" edge IDs in the mutation.
+func (m *DiscordGuildMutation) ChannelsIDs() (ids []string) {
+	for id := range m.channels {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetChannels resets all changes to the "channels" edge.
+func (m *DiscordGuildMutation) ResetChannels() {
+	m.channels = nil
+	m.clearedchannels = false
+	m.removedchannels = nil
+}
+
+// Where appends a list predicates to the DiscordGuildMutation builder.
+func (m *DiscordGuildMutation) Where(ps ...predicate.DiscordGuild) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DiscordGuildMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DiscordGuildMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DiscordGuild, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DiscordGuildMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DiscordGuildMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DiscordGuild).
+func (m *DiscordGuildMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DiscordGuildMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.name != nil {
+		fields = append(fields, discordguild.FieldName)
+	}
+	if m.created_at != nil {
+		fields = append(fields, discordguild.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, discordguild.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DiscordGuildMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case discordguild.FieldName:
+		return m.Name()
+	case discordguild.FieldCreatedAt:
+		return m.CreatedAt()
+	case discordguild.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DiscordGuildMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case discordguild.FieldName:
+		return m.OldName(ctx)
+	case discordguild.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case discordguild.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown DiscordGuild field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DiscordGuildMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case discordguild.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case discordguild.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case discordguild.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordGuild field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DiscordGuildMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DiscordGuildMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DiscordGuildMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown DiscordGuild numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DiscordGuildMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DiscordGuildMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DiscordGuildMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown DiscordGuild nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DiscordGuildMutation) ResetField(name string) error {
+	switch name {
+	case discordguild.FieldName:
+		m.ResetName()
+		return nil
+	case discordguild.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case discordguild.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordGuild field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DiscordGuildMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.channels != nil {
+		edges = append(edges, discordguild.EdgeChannels)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DiscordGuildMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case discordguild.EdgeChannels:
+		ids := make([]ent.Value, 0, len(m.channels))
+		for id := range m.channels {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DiscordGuildMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedchannels != nil {
+		edges = append(edges, discordguild.EdgeChannels)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DiscordGuildMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case discordguild.EdgeChannels:
+		ids := make([]ent.Value, 0, len(m.removedchannels))
+		for id := range m.removedchannels {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DiscordGuildMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedchannels {
+		edges = append(edges, discordguild.EdgeChannels)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DiscordGuildMutation) EdgeCleared(name string) bool {
+	switch name {
+	case discordguild.EdgeChannels:
+		return m.clearedchannels
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DiscordGuildMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown DiscordGuild unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DiscordGuildMutation) ResetEdge(name string) error {
+	switch name {
+	case discordguild.EdgeChannels:
+		m.ResetChannels()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordGuild edge %s", name)
+}
+
+// DiscordMessageMutation represents an operation that mutates the DiscordMessage nodes in the graph.
+type DiscordMessageMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *string
+	author_id      *string
+	content        *string
+	timestamp      *time.Time
+	mentions       *[]string
+	appendmentions []string
+	created_at     *time.Time
+	clearedFields  map[string]struct{}
+	channel        *string
+	clearedchannel bool
+	done           bool
+	oldValue       func(context.Context) (*DiscordMessage, error)
+	predicates     []predicate.DiscordMessage
+}
+
+var _ ent.Mutation = (*DiscordMessageMutation)(nil)
+
+// discordmessageOption allows management of the mutation configuration using functional options.
+type discordmessageOption func(*DiscordMessageMutation)
+
+// newDiscordMessageMutation creates new mutation for the DiscordMessage entity.
+func newDiscordMessageMutation(c config, op Op, opts ...discordmessageOption) *DiscordMessageMutation {
+	m := &DiscordMessageMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDiscordMessage,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDiscordMessageID sets the ID field of the mutation.
+func withDiscordMessageID(id string) discordmessageOption {
+	return func(m *DiscordMessageMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DiscordMessage
+		)
+		m.oldValue = func(ctx context.Context) (*DiscordMessage, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DiscordMessage.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDiscordMessage sets the old DiscordMessage of the mutation.
+func withDiscordMessage(node *DiscordMessage) discordmessageOption {
+	return func(m *DiscordMessageMutation) {
+		m.oldValue = func(context.Context) (*DiscordMessage, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DiscordMessageMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DiscordMessageMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of DiscordMessage entities.
+func (m *DiscordMessageMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DiscordMessageMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DiscordMessageMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DiscordMessage.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetAuthorID sets the "author_id" field.
+func (m *DiscordMessageMutation) SetAuthorID(s string) {
+	m.author_id = &s
+}
+
+// AuthorID returns the value of the "author_id" field in the mutation.
+func (m *DiscordMessageMutation) AuthorID() (r string, exists bool) {
+	v := m.author_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAuthorID returns the old "author_id" field's value of the DiscordMessage entity.
+// If the DiscordMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageMutation) OldAuthorID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAuthorID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAuthorID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAuthorID: %w", err)
+	}
+	return oldValue.AuthorID, nil
+}
+
+// ResetAuthorID resets all changes to the "author_id" field.
+func (m *DiscordMessageMutation) ResetAuthorID() {
+	m.author_id = nil
+}
+
+// SetContent sets the "content" field.
+func (m *DiscordMessageMutation) SetContent(s string) {
+	m.content = &s
+}
+
+// Content returns the value of the "content" field in the mutation.
+func (m *DiscordMessageMutation) Content() (r string, exists bool) {
+	v := m.content
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContent returns the old "content" field's value of the DiscordMessage entity.
+// If the DiscordMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageMutation) OldContent(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContent is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContent requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContent: %w", err)
+	}
+	return oldValue.Content, nil
+}
+
+// ResetContent resets all changes to the "content" field.
+func (m *DiscordMessageMutation) ResetContent() {
+	m.content = nil
+}
+
+// SetTimestamp sets the "timestamp" field.
+func (m *DiscordMessageMutation) SetTimestamp(t time.Time) {
+	m.timestamp = &t
+}
+
+// Timestamp returns the value of the "timestamp" field in the mutation.
+func (m *DiscordMessageMutation) Timestamp() (r time.Time, exists bool) {
+	v := m.timestamp
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTimestamp returns the old "timestamp" field's value of the DiscordMessage entity.
+// If the DiscordMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageMutation) OldTimestamp(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTimestamp is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTimestamp requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTimestamp: %w", err)
+	}
+	return oldValue.Timestamp, nil
+}
+
+// ResetTimestamp resets all changes to the "timestamp" field.
+func (m *DiscordMessageMutation) ResetTimestamp() {
+	m.timestamp = nil
+}
+
+// SetMentions sets the "mentions" field.
+func (m *DiscordMessageMutation) SetMentions(s []string) {
+	m.mentions = &s
+	m.appendmentions = nil
+}
+
+// Mentions returns the value of the "mentions" field in the mutation.
+func (m *DiscordMessageMutation) Mentions() (r []string, exists bool) {
+	v := m.mentions
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMentions returns the old "mentions" field's value of the DiscordMessage entity.
+// If the DiscordMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageMutation) OldMentions(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMentions is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMentions requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMentions: %w", err)
+	}
+	return oldValue.Mentions, nil
+}
+
+// AppendMentions adds s to the "mentions" field.
+func (m *DiscordMessageMutation) AppendMentions(s []string) {
+	m.appendmentions = append(m.appendmentions, s...)
+}
+
+// AppendedMentions returns the list of values that were appended to the "mentions" field in this mutation.
+func (m *DiscordMessageMutation) AppendedMentions() ([]string, bool) {
+	if len(m.appendmentions) == 0 {
+		return nil, false
+	}
+	return m.appendmentions, true
+}
+
+// ClearMentions clears the value of the "mentions" field.
+func (m *DiscordMessageMutation) ClearMentions() {
+	m.mentions = nil
+	m.appendmentions = nil
+	m.clearedFields[discordmessage.FieldMentions] = struct{}{}
+}
+
+// MentionsCleared returns if the "mentions" field was cleared in this mutation.
+func (m *DiscordMessageMutation) MentionsCleared() bool {
+	_, ok := m.clearedFields[discordmessage.FieldMentions]
+	return ok
+}
+
+// ResetMentions resets all changes to the "mentions" field.
+func (m *DiscordMessageMutation) ResetMentions() {
+	m.mentions = nil
+	m.appendmentions = nil
+	delete(m.clearedFields, discordmessage.FieldMentions)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *DiscordMessageMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *DiscordMessageMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the DiscordMessage entity.
+// If the DiscordMessage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DiscordMessageMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *DiscordMessageMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetChannelID sets the "channel" edge to the DiscordChannel entity by id.
+func (m *DiscordMessageMutation) SetChannelID(id string) {
+	m.channel = &id
+}
+
+// ClearChannel clears the "channel" edge to the DiscordChannel entity.
+func (m *DiscordMessageMutation) ClearChannel() {
+	m.clearedchannel = true
+}
+
+// ChannelCleared reports if the "channel" edge to the DiscordChannel entity was cleared.
+func (m *DiscordMessageMutation) ChannelCleared() bool {
+	return m.clearedchannel
+}
+
+// ChannelID returns the "channel" edge ID in the mutation.
+func (m *DiscordMessageMutation) ChannelID() (id string, exists bool) {
+	if m.channel != nil {
+		return *m.channel, true
+	}
+	return
+}
+
+// ChannelIDs returns the "channel" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ChannelID instead. It exists only for internal usage by the builders.
+func (m *DiscordMessageMutation) ChannelIDs() (ids []string) {
+	if id := m.channel; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetChannel resets all changes to the "channel" edge.
+func (m *DiscordMessageMutation) ResetChannel() {
+	m.channel = nil
+	m.clearedchannel = false
+}
+
+// Where appends a list predicates to the DiscordMessageMutation builder.
+func (m *DiscordMessageMutation) Where(ps ...predicate.DiscordMessage) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DiscordMessageMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DiscordMessageMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DiscordMessage, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DiscordMessageMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DiscordMessageMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DiscordMessage).
+func (m *DiscordMessageMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DiscordMessageMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.author_id != nil {
+		fields = append(fields, discordmessage.FieldAuthorID)
+	}
+	if m.content != nil {
+		fields = append(fields, discordmessage.FieldContent)
+	}
+	if m.timestamp != nil {
+		fields = append(fields, discordmessage.FieldTimestamp)
+	}
+	if m.mentions != nil {
+		fields = append(fields, discordmessage.FieldMentions)
+	}
+	if m.created_at != nil {
+		fields = append(fields, discordmessage.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DiscordMessageMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case discordmessage.FieldAuthorID:
+		return m.AuthorID()
+	case discordmessage.FieldContent:
+		return m.Content()
+	case discordmessage.FieldTimestamp:
+		return m.Timestamp()
+	case discordmessage.FieldMentions:
+		return m.Mentions()
+	case discordmessage.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DiscordMessageMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case discordmessage.FieldAuthorID:
+		return m.OldAuthorID(ctx)
+	case discordmessage.FieldContent:
+		return m.OldContent(ctx)
+	case discordmessage.FieldTimestamp:
+		return m.OldTimestamp(ctx)
+	case discordmessage.FieldMentions:
+		return m.OldMentions(ctx)
+	case discordmessage.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown DiscordMessage field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DiscordMessageMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case discordmessage.FieldAuthorID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAuthorID(v)
+		return nil
+	case discordmessage.FieldContent:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContent(v)
+		return nil
+	case discordmessage.FieldTimestamp:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTimestamp(v)
+		return nil
+	case discordmessage.FieldMentions:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMentions(v)
+		return nil
+	case discordmessage.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordMessage field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DiscordMessageMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DiscordMessageMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DiscordMessageMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown DiscordMessage numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DiscordMessageMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(discordmessage.FieldMentions) {
+		fields = append(fields, discordmessage.FieldMentions)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DiscordMessageMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DiscordMessageMutation) ClearField(name string) error {
+	switch name {
+	case discordmessage.FieldMentions:
+		m.ClearMentions()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordMessage nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DiscordMessageMutation) ResetField(name string) error {
+	switch name {
+	case discordmessage.FieldAuthorID:
+		m.ResetAuthorID()
+		return nil
+	case discordmessage.FieldContent:
+		m.ResetContent()
+		return nil
+	case discordmessage.FieldTimestamp:
+		m.ResetTimestamp()
+		return nil
+	case discordmessage.FieldMentions:
+		m.ResetMentions()
+		return nil
+	case discordmessage.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordMessage field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DiscordMessageMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.channel != nil {
+		edges = append(edges, discordmessage.EdgeChannel)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DiscordMessageMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case discordmessage.EdgeChannel:
+		if id := m.channel; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DiscordMessageMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DiscordMessageMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DiscordMessageMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedchannel {
+		edges = append(edges, discordmessage.EdgeChannel)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DiscordMessageMutation) EdgeCleared(name string) bool {
+	switch name {
+	case discordmessage.EdgeChannel:
+		return m.clearedchannel
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DiscordMessageMutation) ClearEdge(name string) error {
+	switch name {
+	case discordmessage.EdgeChannel:
+		m.ClearChannel()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordMessage unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DiscordMessageMutation) ResetEdge(name string) error {
+	switch name {
+	case discordmessage.EdgeChannel:
+		m.ResetChannel()
+		return nil
+	}
+	return fmt.Errorf("unknown DiscordMessage edge %s", name)
 }
 
 // SystemPromptMutation represents an operation that mutates the SystemPrompt nodes in the graph.

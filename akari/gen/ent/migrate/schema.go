@@ -42,6 +42,73 @@ var (
 			},
 		},
 	}
+	// DiscordChannelsColumns holds the columns for the "discord_channels" table.
+	DiscordChannelsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "type", Type: field.TypeEnum, Enums: []string{"GUILD_TEXT", "DM", "GUILD_VOICE", "GROUP_DM", "GUILD_CATEGORY", "GUILD_ANNOUNCEMENT", "ANNOUNCEMENT_THREAD", "PUBLIC_THREAD", "PRIVATE_THREAD", "GUILD_STAGE_VOICE", "GUILD_DIRECTORY", "GUILD_FORUM", "GUILD_MEDIA"}},
+		{Name: "name", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "discord_channel_guild", Type: field.TypeString},
+	}
+	// DiscordChannelsTable holds the schema information for the "discord_channels" table.
+	DiscordChannelsTable = &schema.Table{
+		Name:       "discord_channels",
+		Columns:    DiscordChannelsColumns,
+		PrimaryKey: []*schema.Column{DiscordChannelsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "discord_channels_discord_guilds_guild",
+				Columns:    []*schema.Column{DiscordChannelsColumns[5]},
+				RefColumns: []*schema.Column{DiscordGuildsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// DiscordGuildsColumns holds the columns for the "discord_guilds" table.
+	DiscordGuildsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// DiscordGuildsTable holds the schema information for the "discord_guilds" table.
+	DiscordGuildsTable = &schema.Table{
+		Name:       "discord_guilds",
+		Columns:    DiscordGuildsColumns,
+		PrimaryKey: []*schema.Column{DiscordGuildsColumns[0]},
+	}
+	// DiscordMessagesColumns holds the columns for the "discord_messages" table.
+	DiscordMessagesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "author_id", Type: field.TypeString},
+		{Name: "content", Type: field.TypeString},
+		{Name: "timestamp", Type: field.TypeTime},
+		{Name: "mentions", Type: field.TypeJSON, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "discord_message_channel", Type: field.TypeString},
+	}
+	// DiscordMessagesTable holds the schema information for the "discord_messages" table.
+	DiscordMessagesTable = &schema.Table{
+		Name:       "discord_messages",
+		Columns:    DiscordMessagesColumns,
+		PrimaryKey: []*schema.Column{DiscordMessagesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "discord_messages_discord_channels_channel",
+				Columns:    []*schema.Column{DiscordMessagesColumns[6]},
+				RefColumns: []*schema.Column{DiscordChannelsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "discordmessage_author_id_timestamp",
+				Unique:  false,
+				Columns: []*schema.Column{DiscordMessagesColumns[1], DiscordMessagesColumns[3]},
+			},
+		},
+	}
 	// SystemPromptsColumns holds the columns for the "system_prompts" table.
 	SystemPromptsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -70,11 +137,16 @@ var (
 	Tables = []*schema.Table{
 		CharactersTable,
 		CharacterConfigsTable,
+		DiscordChannelsTable,
+		DiscordGuildsTable,
+		DiscordMessagesTable,
 		SystemPromptsTable,
 	}
 )
 
 func init() {
 	CharacterConfigsTable.ForeignKeys[0].RefTable = CharactersTable
+	DiscordChannelsTable.ForeignKeys[0].RefTable = DiscordGuildsTable
+	DiscordMessagesTable.ForeignKeys[0].RefTable = DiscordChannelsTable
 	SystemPromptsTable.ForeignKeys[0].RefTable = CharactersTable
 }

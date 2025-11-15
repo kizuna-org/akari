@@ -16,6 +16,12 @@ type Tx struct {
 	Character *CharacterClient
 	// CharacterConfig is the client for interacting with the CharacterConfig builders.
 	CharacterConfig *CharacterConfigClient
+	// DiscordChannel is the client for interacting with the DiscordChannel builders.
+	DiscordChannel *DiscordChannelClient
+	// DiscordGuild is the client for interacting with the DiscordGuild builders.
+	DiscordGuild *DiscordGuildClient
+	// DiscordMessage is the client for interacting with the DiscordMessage builders.
+	DiscordMessage *DiscordMessageClient
 	// SystemPrompt is the client for interacting with the SystemPrompt builders.
 	SystemPrompt *SystemPromptClient
 
@@ -151,6 +157,9 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Character = NewCharacterClient(tx.config)
 	tx.CharacterConfig = NewCharacterConfigClient(tx.config)
+	tx.DiscordChannel = NewDiscordChannelClient(tx.config)
+	tx.DiscordGuild = NewDiscordGuildClient(tx.config)
+	tx.DiscordMessage = NewDiscordMessageClient(tx.config)
 	tx.SystemPrompt = NewSystemPromptClient(tx.config)
 }
 

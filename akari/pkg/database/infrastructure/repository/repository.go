@@ -12,6 +12,9 @@ import (
 type Repository interface {
 	domain.DatabaseRepository
 	domain.CharacterRepository
+	domain.DiscordMessageRepository
+	domain.DiscordChannelRepository
+	domain.DiscordGuildRepository
 	domain.SystemPromptRepository
 	HealthCheck(ctx context.Context) error
 }

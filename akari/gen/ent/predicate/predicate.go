@@ -12,5 +12,14 @@ type Character func(*sql.Selector)
 // CharacterConfig is the predicate function for characterconfig builders.
 type CharacterConfig func(*sql.Selector)
 
+// DiscordChannel is the predicate function for discordchannel builders.
+type DiscordChannel func(*sql.Selector)
+
+// DiscordGuild is the predicate function for discordguild builders.
+type DiscordGuild func(*sql.Selector)
+
+// DiscordMessage is the predicate function for discordmessage builders.
+type DiscordMessage func(*sql.Selector)
+
 // SystemPrompt is the predicate function for systemprompt builders.
 type SystemPrompt func(*sql.Selector)
