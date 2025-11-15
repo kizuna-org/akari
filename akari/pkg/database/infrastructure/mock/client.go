@@ -42,6 +42,20 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 	return m.recorder
 }
 
+// AkariUserClient mocks base method.
+func (m *MockClient) AkariUserClient() *ent.AkariUserClient {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AkariUserClient")
+	ret0, _ := ret[0].(*ent.AkariUserClient)
+	return ret0
+}
+
+// AkariUserClient indicates an expected call of AkariUserClient.
+func (mr *MockClientMockRecorder) AkariUserClient() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AkariUserClient", reflect.TypeOf((*MockClient)(nil).AkariUserClient))
+}
+
 // CharacterClient mocks base method.
 func (m *MockClient) CharacterClient() *ent.CharacterClient {
 	m.ctrl.T.Helper()

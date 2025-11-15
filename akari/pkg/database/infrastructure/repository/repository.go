@@ -11,6 +11,7 @@ import (
 
 type Repository interface {
 	domain.DatabaseRepository
+	domain.AkariUserRepository
 	domain.CharacterRepository
 	domain.ConversationRepository
 	domain.ConversationGroupRepository
