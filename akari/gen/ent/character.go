@@ -36,9 +36,11 @@ type CharacterEdges struct {
 	Config *CharacterConfig `json:"config,omitempty"`
 	// The system prompts associated with this character
 	SystemPrompts []*SystemPrompt `json:"system_prompts,omitempty"`
+	// The conversation groups associated with this character
+	ConversationGroups []*ConversationGroup `json:"conversation_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // ConfigOrErr returns the Config value or an error if the edge
@@ -59,6 +61,15 @@ func (e CharacterEdges) SystemPromptsOrErr() ([]*SystemPrompt, error) {
 		return e.SystemPrompts, nil
 	}
 	return nil, &NotLoadedError{edge: "system_prompts"}
+}
+
+// ConversationGroupsOrErr returns the ConversationGroups value or an error if the edge
+// was not loaded in eager-loading.
+func (e CharacterEdges) ConversationGroupsOrErr() ([]*ConversationGroup, error) {
+	if e.loadedTypes[2] {
+		return e.ConversationGroups, nil
+	}
+	return nil, &NotLoadedError{edge: "conversation_groups"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -132,6 +143,11 @@ func (_m *Character) QueryConfig() *CharacterConfigQuery {
 // QuerySystemPrompts queries the "system_prompts" edge of the Character entity.
 func (_m *Character) QuerySystemPrompts() *SystemPromptQuery {
 	return NewCharacterClient(_m.config).QuerySystemPrompts(_m)
+}
+
+// QueryConversationGroups queries the "conversation_groups" edge of the Character entity.
+func (_m *Character) QueryConversationGroups() *ConversationGroupQuery {
+	return NewCharacterClient(_m.config).QueryConversationGroups(_m)
 }
 
 // Update returns a builder for updating this Character.

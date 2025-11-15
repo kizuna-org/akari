@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 )
@@ -48,6 +49,17 @@ func (_c *ConversationGroupCreate) AddConversations(v ...*Conversation) *Convers
 		ids[i] = v[i].ID
 	}
 	return _c.AddConversationIDs(ids...)
+}
+
+// SetCharacterID sets the "character" edge to the Character entity by ID.
+func (_c *ConversationGroupCreate) SetCharacterID(id int) *ConversationGroupCreate {
+	_c.mutation.SetCharacterID(id)
+	return _c
+}
+
+// SetCharacter sets the "character" edge to the Character entity.
+func (_c *ConversationGroupCreate) SetCharacter(v *Character) *ConversationGroupCreate {
+	return _c.SetCharacterID(v.ID)
 }
 
 // Mutation returns the ConversationGroupMutation object of the builder.
@@ -96,6 +108,9 @@ func (_c *ConversationGroupCreate) check() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "ConversationGroup.created_at"`)}
 	}
+	if len(_c.mutation.CharacterIDs()) == 0 {
+		return &ValidationError{Name: "character", err: errors.New(`ent: missing required edge "ConversationGroup.character"`)}
+	}
 	return nil
 }
 
@@ -140,6 +155,23 @@ func (_c *ConversationGroupCreate) createSpec() (*ConversationGroup, *sqlgraph.C
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.CharacterIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   conversationgroup.CharacterTable,
+			Columns: []string{conversationgroup.CharacterColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(character.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.conversation_group_character = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

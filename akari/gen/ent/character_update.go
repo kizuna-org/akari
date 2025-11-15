@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
+	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
@@ -76,6 +77,21 @@ func (_u *CharacterUpdate) AddSystemPrompts(v ...*SystemPrompt) *CharacterUpdate
 	return _u.AddSystemPromptIDs(ids...)
 }
 
+// AddConversationGroupIDs adds the "conversation_groups" edge to the ConversationGroup entity by IDs.
+func (_u *CharacterUpdate) AddConversationGroupIDs(ids ...int) *CharacterUpdate {
+	_u.mutation.AddConversationGroupIDs(ids...)
+	return _u
+}
+
+// AddConversationGroups adds the "conversation_groups" edges to the ConversationGroup entity.
+func (_u *CharacterUpdate) AddConversationGroups(v ...*ConversationGroup) *CharacterUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConversationGroupIDs(ids...)
+}
+
 // Mutation returns the CharacterMutation object of the builder.
 func (_u *CharacterUpdate) Mutation() *CharacterMutation {
 	return _u.mutation
@@ -106,6 +122,27 @@ func (_u *CharacterUpdate) RemoveSystemPrompts(v ...*SystemPrompt) *CharacterUpd
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSystemPromptIDs(ids...)
+}
+
+// ClearConversationGroups clears all "conversation_groups" edges to the ConversationGroup entity.
+func (_u *CharacterUpdate) ClearConversationGroups() *CharacterUpdate {
+	_u.mutation.ClearConversationGroups()
+	return _u
+}
+
+// RemoveConversationGroupIDs removes the "conversation_groups" edge to ConversationGroup entities by IDs.
+func (_u *CharacterUpdate) RemoveConversationGroupIDs(ids ...int) *CharacterUpdate {
+	_u.mutation.RemoveConversationGroupIDs(ids...)
+	return _u
+}
+
+// RemoveConversationGroups removes "conversation_groups" edges to ConversationGroup entities.
+func (_u *CharacterUpdate) RemoveConversationGroups(v ...*ConversationGroup) *CharacterUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConversationGroupIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -249,6 +286,51 @@ func (_u *CharacterUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ConversationGroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   character.ConversationGroupsTable,
+			Columns: []string{character.ConversationGroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConversationGroupsIDs(); len(nodes) > 0 && !_u.mutation.ConversationGroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   character.ConversationGroupsTable,
+			Columns: []string{character.ConversationGroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConversationGroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   character.ConversationGroupsTable,
+			Columns: []string{character.ConversationGroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{character.Label}
@@ -315,6 +397,21 @@ func (_u *CharacterUpdateOne) AddSystemPrompts(v ...*SystemPrompt) *CharacterUpd
 	return _u.AddSystemPromptIDs(ids...)
 }
 
+// AddConversationGroupIDs adds the "conversation_groups" edge to the ConversationGroup entity by IDs.
+func (_u *CharacterUpdateOne) AddConversationGroupIDs(ids ...int) *CharacterUpdateOne {
+	_u.mutation.AddConversationGroupIDs(ids...)
+	return _u
+}
+
+// AddConversationGroups adds the "conversation_groups" edges to the ConversationGroup entity.
+func (_u *CharacterUpdateOne) AddConversationGroups(v ...*ConversationGroup) *CharacterUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddConversationGroupIDs(ids...)
+}
+
 // Mutation returns the CharacterMutation object of the builder.
 func (_u *CharacterUpdateOne) Mutation() *CharacterMutation {
 	return _u.mutation
@@ -345,6 +442,27 @@ func (_u *CharacterUpdateOne) RemoveSystemPrompts(v ...*SystemPrompt) *Character
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSystemPromptIDs(ids...)
+}
+
+// ClearConversationGroups clears all "conversation_groups" edges to the ConversationGroup entity.
+func (_u *CharacterUpdateOne) ClearConversationGroups() *CharacterUpdateOne {
+	_u.mutation.ClearConversationGroups()
+	return _u
+}
+
+// RemoveConversationGroupIDs removes the "conversation_groups" edge to ConversationGroup entities by IDs.
+func (_u *CharacterUpdateOne) RemoveConversationGroupIDs(ids ...int) *CharacterUpdateOne {
+	_u.mutation.RemoveConversationGroupIDs(ids...)
+	return _u
+}
+
+// RemoveConversationGroups removes "conversation_groups" edges to ConversationGroup entities.
+func (_u *CharacterUpdateOne) RemoveConversationGroups(v ...*ConversationGroup) *CharacterUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveConversationGroupIDs(ids...)
 }
 
 // Where appends a list predicates to the CharacterUpdate builder.
@@ -511,6 +629,51 @@ func (_u *CharacterUpdateOne) sqlSave(ctx context.Context) (_node *Character, er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConversationGroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   character.ConversationGroupsTable,
+			Columns: []string{character.ConversationGroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedConversationGroupsIDs(); len(nodes) > 0 && !_u.mutation.ConversationGroupsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   character.ConversationGroupsTable,
+			Columns: []string{character.ConversationGroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConversationGroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   character.ConversationGroupsTable,
+			Columns: []string{character.ConversationGroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

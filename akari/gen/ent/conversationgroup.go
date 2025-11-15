@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 )
 
@@ -21,17 +22,20 @@ type ConversationGroup struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ConversationGroupQuery when eager-loading is set.
-	Edges        ConversationGroupEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges                        ConversationGroupEdges `json:"edges"`
+	conversation_group_character *int
+	selectValues                 sql.SelectValues
 }
 
 // ConversationGroupEdges holds the relations/edges for other nodes in the graph.
 type ConversationGroupEdges struct {
 	// Conversations in this conversation group
 	Conversations []*Conversation `json:"conversations,omitempty"`
+	// The character associated with this conversation group
+	Character *Character `json:"character,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // ConversationsOrErr returns the Conversations value or an error if the edge
@@ -43,6 +47,17 @@ func (e ConversationGroupEdges) ConversationsOrErr() ([]*Conversation, error) {
 	return nil, &NotLoadedError{edge: "conversations"}
 }
 
+// CharacterOrErr returns the Character value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ConversationGroupEdges) CharacterOrErr() (*Character, error) {
+	if e.Character != nil {
+		return e.Character, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: character.Label}
+	}
+	return nil, &NotLoadedError{edge: "character"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*ConversationGroup) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -52,6 +67,8 @@ func (*ConversationGroup) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case conversationgroup.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
+		case conversationgroup.ForeignKeys[0]: // conversation_group_character
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -79,6 +96,13 @@ func (_m *ConversationGroup) assignValues(columns []string, values []any) error 
 			} else if value.Valid {
 				_m.CreatedAt = value.Time
 			}
+		case conversationgroup.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field conversation_group_character", value)
+			} else if value.Valid {
+				_m.conversation_group_character = new(int)
+				*_m.conversation_group_character = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -95,6 +119,11 @@ func (_m *ConversationGroup) Value(name string) (ent.Value, error) {
 // QueryConversations queries the "conversations" edge of the ConversationGroup entity.
 func (_m *ConversationGroup) QueryConversations() *ConversationQuery {
 	return NewConversationGroupClient(_m.config).QueryConversations(_m)
+}
+
+// QueryCharacter queries the "character" edge of the ConversationGroup entity.
+func (_m *ConversationGroup) QueryCharacter() *CharacterQuery {
+	return NewConversationGroupClient(_m.config).QueryCharacter(_m)
 }
 
 // Update returns a builder for updating this ConversationGroup.

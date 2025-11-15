@@ -9,8 +9,9 @@ import (
 )
 
 type ConversationGroupRepository interface {
-	CreateConversationGroup(ctx context.Context) (*ConversationGroup, error)
+	CreateConversationGroup(ctx context.Context, characterID int) (*ConversationGroup, error)
 	GetConversationGroupByID(ctx context.Context, id int) (*ConversationGroup, error)
+	GetConversationGroupByCharacterID(ctx context.Context, characterID int) (*ConversationGroup, error)
 	ListConversationGroups(ctx context.Context) ([]*ConversationGroup, error)
 	DeleteConversationGroup(ctx context.Context, id int) error
 }

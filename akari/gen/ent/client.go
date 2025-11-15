@@ -403,6 +403,22 @@ func (c *CharacterClient) QuerySystemPrompts(_m *Character) *SystemPromptQuery {
 	return query
 }
 
+// QueryConversationGroups queries the conversation_groups edge of a Character.
+func (c *CharacterClient) QueryConversationGroups(_m *Character) *ConversationGroupQuery {
+	query := (&ConversationGroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(character.Table, character.FieldID, id),
+			sqlgraph.To(conversationgroup.Table, conversationgroup.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, character.ConversationGroupsTable, character.ConversationGroupsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CharacterClient) Hooks() []Hook {
 	return c.hooks.Character
@@ -859,6 +875,22 @@ func (c *ConversationGroupClient) QueryConversations(_m *ConversationGroup) *Con
 			sqlgraph.From(conversationgroup.Table, conversationgroup.FieldID, id),
 			sqlgraph.To(conversation.Table, conversation.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, conversationgroup.ConversationsTable, conversationgroup.ConversationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCharacter queries the character edge of a ConversationGroup.
+func (c *ConversationGroupClient) QueryCharacter(_m *ConversationGroup) *CharacterQuery {
+	query := (&CharacterClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(conversationgroup.Table, conversationgroup.FieldID, id),
+			sqlgraph.To(character.Table, character.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, conversationgroup.CharacterTable, conversationgroup.CharacterColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil

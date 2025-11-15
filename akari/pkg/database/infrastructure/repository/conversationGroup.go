@@ -5,11 +5,19 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/kizuna-org/akari/gen/ent/character"
+	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
 
-func (r *repositoryImpl) CreateConversationGroup(ctx context.Context) (*domain.ConversationGroup, error) {
-	conversationGroup, err := r.client.ConversationGroupClient().Create().Save(ctx)
+func (r *repositoryImpl) CreateConversationGroup(
+	ctx context.Context,
+	characterID int,
+) (*domain.ConversationGroup, error) {
+	conversationGroup, err := r.client.ConversationGroupClient().
+		Create().
+		SetCharacterID(characterID).
+		Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create conversation group: %w", err)
 	}
@@ -21,17 +29,43 @@ func (r *repositoryImpl) CreateConversationGroup(ctx context.Context) (*domain.C
 	return conversationGroup, nil
 }
 
-func (r *repositoryImpl) GetConversationGroupByID(ctx context.Context, id int) (*domain.ConversationGroup, error) {
-	cg, err := r.client.ConversationGroupClient().Get(ctx, id)
+func (r *repositoryImpl) GetConversationGroupByID(
+	ctx context.Context,
+	id int,
+) (*domain.ConversationGroup, error) {
+	conversationGroup, err := r.client.ConversationGroupClient().
+		Query().
+		Where(conversationgroup.IDEQ(id)).
+		WithCharacter().
+		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get conversation group by id: %w", err)
 	}
 
-	return cg, nil
+	return conversationGroup, nil
+}
+
+func (r *repositoryImpl) GetConversationGroupByCharacterID(
+	ctx context.Context,
+	characterID int,
+) (*domain.ConversationGroup, error) {
+	conversationGroup, err := r.client.ConversationGroupClient().
+		Query().
+		Where(conversationgroup.HasCharacterWith(character.IDEQ(characterID))).
+		WithCharacter().
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get conversation group by character id: %w", err)
+	}
+
+	return conversationGroup, nil
 }
 
 func (r *repositoryImpl) ListConversationGroups(ctx context.Context) ([]*domain.ConversationGroup, error) {
-	cgs, err := r.client.ConversationGroupClient().Query().All(ctx)
+	cgs, err := r.client.ConversationGroupClient().
+		Query().
+		WithCharacter().
+		All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list conversation groups: %w", err)
 	}

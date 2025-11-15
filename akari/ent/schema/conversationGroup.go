@@ -26,6 +26,11 @@ func (ConversationGroup) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("conversations", Conversation.Type).
 			Comment("Conversations in this conversation group"),
+		edge.To("character", Character.Type).
+			Unique().
+			Immutable().
+			Required().
+			Comment("The character associated with this conversation group"),
 	}
 }
 

@@ -18,7 +18,7 @@ func (r *repositoryImpl) CreateConversation(
 		SetDiscordMessageID(messageID)
 
 	if conversationGroupID != nil {
-		builder = builder.SetNillableConversationGroupID(conversationGroupID)
+		builder = builder.SetConversationGroupID(*conversationGroupID)
 	}
 
 	conv, err := builder.Save(ctx)

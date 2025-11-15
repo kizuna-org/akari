@@ -42,18 +42,18 @@ func (m *MockConversationGroupRepository) EXPECT() *MockConversationGroupReposit
 }
 
 // CreateConversationGroup mocks base method.
-func (m *MockConversationGroupRepository) CreateConversationGroup(ctx context.Context) (*domain.ConversationGroup, error) {
+func (m *MockConversationGroupRepository) CreateConversationGroup(ctx context.Context, characterID int) (*domain.ConversationGroup, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateConversationGroup", ctx)
+	ret := m.ctrl.Call(m, "CreateConversationGroup", ctx, characterID)
 	ret0, _ := ret[0].(*domain.ConversationGroup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateConversationGroup indicates an expected call of CreateConversationGroup.
-func (mr *MockConversationGroupRepositoryMockRecorder) CreateConversationGroup(ctx any) *gomock.Call {
+func (mr *MockConversationGroupRepositoryMockRecorder) CreateConversationGroup(ctx, characterID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConversationGroup", reflect.TypeOf((*MockConversationGroupRepository)(nil).CreateConversationGroup), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConversationGroup", reflect.TypeOf((*MockConversationGroupRepository)(nil).CreateConversationGroup), ctx, characterID)
 }
 
 // DeleteConversationGroup mocks base method.
@@ -68,6 +68,21 @@ func (m *MockConversationGroupRepository) DeleteConversationGroup(ctx context.Co
 func (mr *MockConversationGroupRepositoryMockRecorder) DeleteConversationGroup(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteConversationGroup", reflect.TypeOf((*MockConversationGroupRepository)(nil).DeleteConversationGroup), ctx, id)
+}
+
+// GetConversationGroupByCharacterID mocks base method.
+func (m *MockConversationGroupRepository) GetConversationGroupByCharacterID(ctx context.Context, characterID int) (*domain.ConversationGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConversationGroupByCharacterID", ctx, characterID)
+	ret0, _ := ret[0].(*domain.ConversationGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConversationGroupByCharacterID indicates an expected call of GetConversationGroupByCharacterID.
+func (mr *MockConversationGroupRepositoryMockRecorder) GetConversationGroupByCharacterID(ctx, characterID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConversationGroupByCharacterID", reflect.TypeOf((*MockConversationGroupRepository)(nil).GetConversationGroupByCharacterID), ctx, characterID)
 }
 
 // GetConversationGroupByID mocks base method.

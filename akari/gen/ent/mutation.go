@@ -44,21 +44,24 @@ const (
 // CharacterMutation represents an operation that mutates the Character nodes in the graph.
 type CharacterMutation struct {
 	config
-	op                    Op
-	typ                   string
-	id                    *int
-	name                  *string
-	created_at            *time.Time
-	updated_at            *time.Time
-	clearedFields         map[string]struct{}
-	_config               *int
-	cleared_config        bool
-	system_prompts        map[int]struct{}
-	removedsystem_prompts map[int]struct{}
-	clearedsystem_prompts bool
-	done                  bool
-	oldValue              func(context.Context) (*Character, error)
-	predicates            []predicate.Character
+	op                         Op
+	typ                        string
+	id                         *int
+	name                       *string
+	created_at                 *time.Time
+	updated_at                 *time.Time
+	clearedFields              map[string]struct{}
+	_config                    *int
+	cleared_config             bool
+	system_prompts             map[int]struct{}
+	removedsystem_prompts      map[int]struct{}
+	clearedsystem_prompts      bool
+	conversation_groups        map[int]struct{}
+	removedconversation_groups map[int]struct{}
+	clearedconversation_groups bool
+	done                       bool
+	oldValue                   func(context.Context) (*Character, error)
+	predicates                 []predicate.Character
 }
 
 var _ ent.Mutation = (*CharacterMutation)(nil)
@@ -360,6 +363,60 @@ func (m *CharacterMutation) ResetSystemPrompts() {
 	m.removedsystem_prompts = nil
 }
 
+// AddConversationGroupIDs adds the "conversation_groups" edge to the ConversationGroup entity by ids.
+func (m *CharacterMutation) AddConversationGroupIDs(ids ...int) {
+	if m.conversation_groups == nil {
+		m.conversation_groups = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.conversation_groups[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConversationGroups clears the "conversation_groups" edge to the ConversationGroup entity.
+func (m *CharacterMutation) ClearConversationGroups() {
+	m.clearedconversation_groups = true
+}
+
+// ConversationGroupsCleared reports if the "conversation_groups" edge to the ConversationGroup entity was cleared.
+func (m *CharacterMutation) ConversationGroupsCleared() bool {
+	return m.clearedconversation_groups
+}
+
+// RemoveConversationGroupIDs removes the "conversation_groups" edge to the ConversationGroup entity by IDs.
+func (m *CharacterMutation) RemoveConversationGroupIDs(ids ...int) {
+	if m.removedconversation_groups == nil {
+		m.removedconversation_groups = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.conversation_groups, ids[i])
+		m.removedconversation_groups[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConversationGroups returns the removed IDs of the "conversation_groups" edge to the ConversationGroup entity.
+func (m *CharacterMutation) RemovedConversationGroupsIDs() (ids []int) {
+	for id := range m.removedconversation_groups {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConversationGroupsIDs returns the "conversation_groups" edge IDs in the mutation.
+func (m *CharacterMutation) ConversationGroupsIDs() (ids []int) {
+	for id := range m.conversation_groups {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConversationGroups resets all changes to the "conversation_groups" edge.
+func (m *CharacterMutation) ResetConversationGroups() {
+	m.conversation_groups = nil
+	m.clearedconversation_groups = false
+	m.removedconversation_groups = nil
+}
+
 // Where appends a list predicates to the CharacterMutation builder.
 func (m *CharacterMutation) Where(ps ...predicate.Character) {
 	m.predicates = append(m.predicates, ps...)
@@ -527,12 +584,15 @@ func (m *CharacterMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CharacterMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m._config != nil {
 		edges = append(edges, character.EdgeConfig)
 	}
 	if m.system_prompts != nil {
 		edges = append(edges, character.EdgeSystemPrompts)
+	}
+	if m.conversation_groups != nil {
+		edges = append(edges, character.EdgeConversationGroups)
 	}
 	return edges
 }
@@ -551,15 +611,24 @@ func (m *CharacterMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case character.EdgeConversationGroups:
+		ids := make([]ent.Value, 0, len(m.conversation_groups))
+		for id := range m.conversation_groups {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CharacterMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedsystem_prompts != nil {
 		edges = append(edges, character.EdgeSystemPrompts)
+	}
+	if m.removedconversation_groups != nil {
+		edges = append(edges, character.EdgeConversationGroups)
 	}
 	return edges
 }
@@ -574,18 +643,27 @@ func (m *CharacterMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case character.EdgeConversationGroups:
+		ids := make([]ent.Value, 0, len(m.removedconversation_groups))
+		for id := range m.removedconversation_groups {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CharacterMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.cleared_config {
 		edges = append(edges, character.EdgeConfig)
 	}
 	if m.clearedsystem_prompts {
 		edges = append(edges, character.EdgeSystemPrompts)
+	}
+	if m.clearedconversation_groups {
+		edges = append(edges, character.EdgeConversationGroups)
 	}
 	return edges
 }
@@ -598,6 +676,8 @@ func (m *CharacterMutation) EdgeCleared(name string) bool {
 		return m.cleared_config
 	case character.EdgeSystemPrompts:
 		return m.clearedsystem_prompts
+	case character.EdgeConversationGroups:
+		return m.clearedconversation_groups
 	}
 	return false
 }
@@ -622,6 +702,9 @@ func (m *CharacterMutation) ResetEdge(name string) error {
 		return nil
 	case character.EdgeSystemPrompts:
 		m.ResetSystemPrompts()
+		return nil
+	case character.EdgeConversationGroups:
+		m.ResetConversationGroups()
 		return nil
 	}
 	return fmt.Errorf("unknown Character edge %s", name)
@@ -1559,6 +1642,8 @@ type ConversationGroupMutation struct {
 	conversations        map[int]struct{}
 	removedconversations map[int]struct{}
 	clearedconversations bool
+	character            *int
+	clearedcharacter     bool
 	done                 bool
 	oldValue             func(context.Context) (*ConversationGroup, error)
 	predicates           []predicate.ConversationGroup
@@ -1752,6 +1837,45 @@ func (m *ConversationGroupMutation) ResetConversations() {
 	m.removedconversations = nil
 }
 
+// SetCharacterID sets the "character" edge to the Character entity by id.
+func (m *ConversationGroupMutation) SetCharacterID(id int) {
+	m.character = &id
+}
+
+// ClearCharacter clears the "character" edge to the Character entity.
+func (m *ConversationGroupMutation) ClearCharacter() {
+	m.clearedcharacter = true
+}
+
+// CharacterCleared reports if the "character" edge to the Character entity was cleared.
+func (m *ConversationGroupMutation) CharacterCleared() bool {
+	return m.clearedcharacter
+}
+
+// CharacterID returns the "character" edge ID in the mutation.
+func (m *ConversationGroupMutation) CharacterID() (id int, exists bool) {
+	if m.character != nil {
+		return *m.character, true
+	}
+	return
+}
+
+// CharacterIDs returns the "character" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CharacterID instead. It exists only for internal usage by the builders.
+func (m *ConversationGroupMutation) CharacterIDs() (ids []int) {
+	if id := m.character; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCharacter resets all changes to the "character" edge.
+func (m *ConversationGroupMutation) ResetCharacter() {
+	m.character = nil
+	m.clearedcharacter = false
+}
+
 // Where appends a list predicates to the ConversationGroupMutation builder.
 func (m *ConversationGroupMutation) Where(ps ...predicate.ConversationGroup) {
 	m.predicates = append(m.predicates, ps...)
@@ -1885,9 +2009,12 @@ func (m *ConversationGroupMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ConversationGroupMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.conversations != nil {
 		edges = append(edges, conversationgroup.EdgeConversations)
+	}
+	if m.character != nil {
+		edges = append(edges, conversationgroup.EdgeCharacter)
 	}
 	return edges
 }
@@ -1902,13 +2029,17 @@ func (m *ConversationGroupMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case conversationgroup.EdgeCharacter:
+		if id := m.character; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ConversationGroupMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedconversations != nil {
 		edges = append(edges, conversationgroup.EdgeConversations)
 	}
@@ -1931,9 +2062,12 @@ func (m *ConversationGroupMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ConversationGroupMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedconversations {
 		edges = append(edges, conversationgroup.EdgeConversations)
+	}
+	if m.clearedcharacter {
+		edges = append(edges, conversationgroup.EdgeCharacter)
 	}
 	return edges
 }
@@ -1944,6 +2078,8 @@ func (m *ConversationGroupMutation) EdgeCleared(name string) bool {
 	switch name {
 	case conversationgroup.EdgeConversations:
 		return m.clearedconversations
+	case conversationgroup.EdgeCharacter:
+		return m.clearedcharacter
 	}
 	return false
 }
@@ -1952,6 +2088,9 @@ func (m *ConversationGroupMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ConversationGroupMutation) ClearEdge(name string) error {
 	switch name {
+	case conversationgroup.EdgeCharacter:
+		m.ClearCharacter()
+		return nil
 	}
 	return fmt.Errorf("unknown ConversationGroup unique edge %s", name)
 }
@@ -1962,6 +2101,9 @@ func (m *ConversationGroupMutation) ResetEdge(name string) error {
 	switch name {
 	case conversationgroup.EdgeConversations:
 		m.ResetConversations()
+		return nil
+	case conversationgroup.EdgeCharacter:
+		m.ResetCharacter()
 		return nil
 	}
 	return fmt.Errorf("unknown ConversationGroup edge %s", name)

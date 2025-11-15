@@ -46,7 +46,7 @@ var (
 	ConversationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "conversation_group_conversations", Type: field.TypeInt, Nullable: true},
+		{Name: "conversation_group_conversations", Type: field.TypeInt},
 	}
 	// ConversationsTable holds the schema information for the "conversations" table.
 	ConversationsTable = &schema.Table{
@@ -58,7 +58,7 @@ var (
 				Symbol:     "conversations_conversation_groups_conversations",
 				Columns:    []*schema.Column{ConversationsColumns[2]},
 				RefColumns: []*schema.Column{ConversationGroupsColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -73,12 +73,21 @@ var (
 	ConversationGroupsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "conversation_group_character", Type: field.TypeInt},
 	}
 	// ConversationGroupsTable holds the schema information for the "conversation_groups" table.
 	ConversationGroupsTable = &schema.Table{
 		Name:       "conversation_groups",
 		Columns:    ConversationGroupsColumns,
 		PrimaryKey: []*schema.Column{ConversationGroupsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "conversation_groups_characters_character",
+				Columns:    []*schema.Column{ConversationGroupsColumns[2]},
+				RefColumns: []*schema.Column{CharactersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "conversationgroup_created_at",
@@ -201,6 +210,7 @@ var (
 func init() {
 	CharacterConfigsTable.ForeignKeys[0].RefTable = CharactersTable
 	ConversationsTable.ForeignKeys[0].RefTable = ConversationGroupsTable
+	ConversationGroupsTable.ForeignKeys[0].RefTable = CharactersTable
 	DiscordChannelsTable.ForeignKeys[0].RefTable = DiscordGuildsTable
 	DiscordMessagesTable.ForeignKeys[0].RefTable = ConversationsTable
 	DiscordMessagesTable.ForeignKeys[1].RefTable = DiscordChannelsTable

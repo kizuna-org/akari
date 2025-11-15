@@ -24,6 +24,8 @@ const (
 	EdgeConfig = "config"
 	// EdgeSystemPrompts holds the string denoting the system_prompts edge name in mutations.
 	EdgeSystemPrompts = "system_prompts"
+	// EdgeConversationGroups holds the string denoting the conversation_groups edge name in mutations.
+	EdgeConversationGroups = "conversation_groups"
 	// Table holds the table name of the character in the database.
 	Table = "characters"
 	// ConfigTable is the table that holds the config relation/edge.
@@ -40,6 +42,13 @@ const (
 	SystemPromptsInverseTable = "system_prompts"
 	// SystemPromptsColumn is the table column denoting the system_prompts relation/edge.
 	SystemPromptsColumn = "character_system_prompts"
+	// ConversationGroupsTable is the table that holds the conversation_groups relation/edge.
+	ConversationGroupsTable = "conversation_groups"
+	// ConversationGroupsInverseTable is the table name for the ConversationGroup entity.
+	// It exists in this package in order to avoid circular dependency with the "conversationgroup" package.
+	ConversationGroupsInverseTable = "conversation_groups"
+	// ConversationGroupsColumn is the table column denoting the conversation_groups relation/edge.
+	ConversationGroupsColumn = "conversation_group_character"
 )
 
 // Columns holds all SQL columns for character fields.
@@ -114,6 +123,20 @@ func BySystemPrompts(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newSystemPromptsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByConversationGroupsCount orders the results by conversation_groups count.
+func ByConversationGroupsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newConversationGroupsStep(), opts...)
+	}
+}
+
+// ByConversationGroups orders the results by conversation_groups terms.
+func ByConversationGroups(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConversationGroupsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newConfigStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -126,5 +149,12 @@ func newSystemPromptsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SystemPromptsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SystemPromptsTable, SystemPromptsColumn),
+	)
+}
+func newConversationGroupsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConversationGroupsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, true, ConversationGroupsTable, ConversationGroupsColumn),
 	)
 }

@@ -32,6 +32,7 @@ func (Conversation) Edges() []ent.Edge {
 		edge.From("conversation_group", ConversationGroup.Type).
 			Ref("conversations").
 			Unique().
+			Required().
 			Comment("The conversation group this conversation belongs to"),
 	}
 }

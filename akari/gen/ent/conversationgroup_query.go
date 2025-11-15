@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
@@ -25,6 +26,8 @@ type ConversationGroupQuery struct {
 	inters            []Interceptor
 	predicates        []predicate.ConversationGroup
 	withConversations *ConversationQuery
+	withCharacter     *CharacterQuery
+	withFKs           bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -76,6 +79,28 @@ func (_q *ConversationGroupQuery) QueryConversations() *ConversationQuery {
 			sqlgraph.From(conversationgroup.Table, conversationgroup.FieldID, selector),
 			sqlgraph.To(conversation.Table, conversation.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, conversationgroup.ConversationsTable, conversationgroup.ConversationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCharacter chains the current query on the "character" edge.
+func (_q *ConversationGroupQuery) QueryCharacter() *CharacterQuery {
+	query := (&CharacterClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(conversationgroup.Table, conversationgroup.FieldID, selector),
+			sqlgraph.To(character.Table, character.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, conversationgroup.CharacterTable, conversationgroup.CharacterColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -276,6 +301,7 @@ func (_q *ConversationGroupQuery) Clone() *ConversationGroupQuery {
 		inters:            append([]Interceptor{}, _q.inters...),
 		predicates:        append([]predicate.ConversationGroup{}, _q.predicates...),
 		withConversations: _q.withConversations.Clone(),
+		withCharacter:     _q.withCharacter.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -290,6 +316,17 @@ func (_q *ConversationGroupQuery) WithConversations(opts ...func(*ConversationQu
 		opt(query)
 	}
 	_q.withConversations = query
+	return _q
+}
+
+// WithCharacter tells the query-builder to eager-load the nodes that are connected to
+// the "character" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ConversationGroupQuery) WithCharacter(opts ...func(*CharacterQuery)) *ConversationGroupQuery {
+	query := (&CharacterClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withCharacter = query
 	return _q
 }
 
@@ -370,11 +407,19 @@ func (_q *ConversationGroupQuery) prepareQuery(ctx context.Context) error {
 func (_q *ConversationGroupQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ConversationGroup, error) {
 	var (
 		nodes       = []*ConversationGroup{}
+		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			_q.withConversations != nil,
+			_q.withCharacter != nil,
 		}
 	)
+	if _q.withCharacter != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, conversationgroup.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*ConversationGroup).scanValues(nil, columns)
 	}
@@ -397,6 +442,12 @@ func (_q *ConversationGroupQuery) sqlAll(ctx context.Context, hooks ...queryHook
 		if err := _q.loadConversations(ctx, query, nodes,
 			func(n *ConversationGroup) { n.Edges.Conversations = []*Conversation{} },
 			func(n *ConversationGroup, e *Conversation) { n.Edges.Conversations = append(n.Edges.Conversations, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withCharacter; query != nil {
+		if err := _q.loadCharacter(ctx, query, nodes, nil,
+			func(n *ConversationGroup, e *Character) { n.Edges.Character = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -431,6 +482,38 @@ func (_q *ConversationGroupQuery) loadConversations(ctx context.Context, query *
 			return fmt.Errorf(`unexpected referenced foreign-key "conversation_group_conversations" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
+	}
+	return nil
+}
+func (_q *ConversationGroupQuery) loadCharacter(ctx context.Context, query *CharacterQuery, nodes []*ConversationGroup, init func(*ConversationGroup), assign func(*ConversationGroup, *Character)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*ConversationGroup)
+	for i := range nodes {
+		if nodes[i].conversation_group_character == nil {
+			continue
+		}
+		fk := *nodes[i].conversation_group_character
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(character.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "conversation_group_character" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
 	}
 	return nil
 }

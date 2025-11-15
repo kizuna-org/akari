@@ -7,8 +7,9 @@ import (
 )
 
 type ConversationGroupInteractor interface {
-	CreateConversationGroup(ctx context.Context) (*domain.ConversationGroup, error)
+	CreateConversationGroup(ctx context.Context, characterID int) (*domain.ConversationGroup, error)
 	GetConversationGroupByID(ctx context.Context, id int) (*domain.ConversationGroup, error)
+	GetConversationGroupByCharacterID(ctx context.Context, characterID int) (*domain.ConversationGroup, error)
 	ListConversationGroups(ctx context.Context) ([]*domain.ConversationGroup, error)
 	DeleteConversationGroup(ctx context.Context, id int) error
 }
@@ -25,8 +26,9 @@ func NewConversationGroupInteractor(repository domain.ConversationGroupRepositor
 
 func (c *conversationGroupInteractorImpl) CreateConversationGroup(
 	ctx context.Context,
+	characterID int,
 ) (*domain.ConversationGroup, error) {
-	return c.repository.CreateConversationGroup(ctx)
+	return c.repository.CreateConversationGroup(ctx, characterID)
 }
 
 func (c *conversationGroupInteractorImpl) GetConversationGroupByID(
@@ -34,6 +36,13 @@ func (c *conversationGroupInteractorImpl) GetConversationGroupByID(
 	id int,
 ) (*domain.ConversationGroup, error) {
 	return c.repository.GetConversationGroupByID(ctx, id)
+}
+
+func (c *conversationGroupInteractorImpl) GetConversationGroupByCharacterID(
+	ctx context.Context,
+	characterID int,
+) (*domain.ConversationGroup, error) {
+	return c.repository.GetConversationGroupByCharacterID(ctx, characterID)
 }
 
 func (c *conversationGroupInteractorImpl) ListConversationGroups(

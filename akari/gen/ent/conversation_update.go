@@ -34,14 +34,6 @@ func (_u *ConversationUpdate) SetConversationGroupID(id int) *ConversationUpdate
 	return _u
 }
 
-// SetNillableConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by ID if the given value is not nil.
-func (_u *ConversationUpdate) SetNillableConversationGroupID(id *int) *ConversationUpdate {
-	if id != nil {
-		_u = _u.SetConversationGroupID(*id)
-	}
-	return _u
-}
-
 // SetConversationGroup sets the "conversation_group" edge to the ConversationGroup entity.
 func (_u *ConversationUpdate) SetConversationGroup(v *ConversationGroup) *ConversationUpdate {
 	return _u.SetConversationGroupID(v.ID)
@@ -89,6 +81,9 @@ func (_u *ConversationUpdate) ExecX(ctx context.Context) {
 func (_u *ConversationUpdate) check() error {
 	if _u.mutation.DiscordMessageCleared() && len(_u.mutation.DiscordMessageIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Conversation.discord_message"`)
+	}
+	if _u.mutation.ConversationGroupCleared() && len(_u.mutation.ConversationGroupIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Conversation.conversation_group"`)
 	}
 	return nil
 }
@@ -160,14 +155,6 @@ func (_u *ConversationUpdateOne) SetConversationGroupID(id int) *ConversationUpd
 	return _u
 }
 
-// SetNillableConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by ID if the given value is not nil.
-func (_u *ConversationUpdateOne) SetNillableConversationGroupID(id *int) *ConversationUpdateOne {
-	if id != nil {
-		_u = _u.SetConversationGroupID(*id)
-	}
-	return _u
-}
-
 // SetConversationGroup sets the "conversation_group" edge to the ConversationGroup entity.
 func (_u *ConversationUpdateOne) SetConversationGroup(v *ConversationGroup) *ConversationUpdateOne {
 	return _u.SetConversationGroupID(v.ID)
@@ -228,6 +215,9 @@ func (_u *ConversationUpdateOne) ExecX(ctx context.Context) {
 func (_u *ConversationUpdateOne) check() error {
 	if _u.mutation.DiscordMessageCleared() && len(_u.mutation.DiscordMessageIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Conversation.discord_message"`)
+	}
+	if _u.mutation.ConversationGroupCleared() && len(_u.mutation.ConversationGroupIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Conversation.conversation_group"`)
 	}
 	return nil
 }

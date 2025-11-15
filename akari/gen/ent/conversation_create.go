@@ -53,14 +53,6 @@ func (_c *ConversationCreate) SetConversationGroupID(id int) *ConversationCreate
 	return _c
 }
 
-// SetNillableConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by ID if the given value is not nil.
-func (_c *ConversationCreate) SetNillableConversationGroupID(id *int) *ConversationCreate {
-	if id != nil {
-		_c = _c.SetConversationGroupID(*id)
-	}
-	return _c
-}
-
 // SetConversationGroup sets the "conversation_group" edge to the ConversationGroup entity.
 func (_c *ConversationCreate) SetConversationGroup(v *ConversationGroup) *ConversationCreate {
 	return _c.SetConversationGroupID(v.ID)
@@ -114,6 +106,9 @@ func (_c *ConversationCreate) check() error {
 	}
 	if len(_c.mutation.DiscordMessageIDs()) == 0 {
 		return &ValidationError{Name: "discord_message", err: errors.New(`ent: missing required edge "Conversation.discord_message"`)}
+	}
+	if len(_c.mutation.ConversationGroupIDs()) == 0 {
+		return &ValidationError{Name: "conversation_group", err: errors.New(`ent: missing required edge "Conversation.conversation_group"`)}
 	}
 	return nil
 }

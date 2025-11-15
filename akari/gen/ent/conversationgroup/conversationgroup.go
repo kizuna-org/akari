@@ -18,6 +18,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// EdgeConversations holds the string denoting the conversations edge name in mutations.
 	EdgeConversations = "conversations"
+	// EdgeCharacter holds the string denoting the character edge name in mutations.
+	EdgeCharacter = "character"
 	// Table holds the table name of the conversationgroup in the database.
 	Table = "conversation_groups"
 	// ConversationsTable is the table that holds the conversations relation/edge.
@@ -27,6 +29,13 @@ const (
 	ConversationsInverseTable = "conversations"
 	// ConversationsColumn is the table column denoting the conversations relation/edge.
 	ConversationsColumn = "conversation_group_conversations"
+	// CharacterTable is the table that holds the character relation/edge.
+	CharacterTable = "conversation_groups"
+	// CharacterInverseTable is the table name for the Character entity.
+	// It exists in this package in order to avoid circular dependency with the "character" package.
+	CharacterInverseTable = "characters"
+	// CharacterColumn is the table column denoting the character relation/edge.
+	CharacterColumn = "conversation_group_character"
 )
 
 // Columns holds all SQL columns for conversationgroup fields.
@@ -35,10 +44,21 @@ var Columns = []string{
 	FieldCreatedAt,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "conversation_groups"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"conversation_group_character",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -76,10 +96,24 @@ func ByConversations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newConversationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByCharacterField orders the results by character field.
+func ByCharacterField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCharacterStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newConversationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ConversationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ConversationsTable, ConversationsColumn),
+	)
+}
+func newCharacterStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CharacterInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, CharacterTable, CharacterColumn),
 	)
 }

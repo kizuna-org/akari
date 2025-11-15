@@ -29,6 +29,8 @@ func TestNewConversationGroupInteractor(t *testing.T) {
 func TestConversationGroupInteractor_CreateConversationGroup(t *testing.T) {
 	t.Parallel()
 
+	characterID := 1
+
 	tests := []struct {
 		name      string
 		mockSetup func(*mock.MockConversationGroupRepository, context.Context)
@@ -37,14 +39,17 @@ func TestConversationGroupInteractor_CreateConversationGroup(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockConversationGroupRepository, ctx context.Context) {
-				m.EXPECT().CreateConversationGroup(ctx).Return(&ent.ConversationGroup{ID: 1, CreatedAt: time.Now()}, nil)
+				m.EXPECT().CreateConversationGroup(ctx, characterID).Return(
+					&ent.ConversationGroup{ID: 1, CreatedAt: time.Now()},
+					nil,
+				)
 			},
 			wantErr: false,
 		},
 		{
 			name: "failure",
 			mockSetup: func(m *mock.MockConversationGroupRepository, ctx context.Context) {
-				m.EXPECT().CreateConversationGroup(ctx).Return(nil, errors.New("create failed"))
+				m.EXPECT().CreateConversationGroup(ctx, characterID).Return(nil, errors.New("create failed"))
 			},
 			wantErr: true,
 		},
@@ -63,7 +68,7 @@ func TestConversationGroupInteractor_CreateConversationGroup(t *testing.T) {
 			ctx := t.Context()
 			testCase.mockSetup(m, ctx)
 
-			res, err := i.CreateConversationGroup(ctx)
+			res, err := i.CreateConversationGroup(ctx, characterID)
 
 			if testCase.wantErr {
 				require.Error(t, err)

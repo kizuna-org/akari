@@ -96,7 +96,18 @@ func (_u *ConversationGroupUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *ConversationGroupUpdate) check() error {
+	if _u.mutation.CharacterCleared() && len(_u.mutation.CharacterIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "ConversationGroup.character"`)
+	}
+	return nil
+}
+
 func (_u *ConversationGroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(conversationgroup.Table, conversationgroup.Columns, sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -251,7 +262,18 @@ func (_u *ConversationGroupUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (_u *ConversationGroupUpdateOne) check() error {
+	if _u.mutation.CharacterCleared() && len(_u.mutation.CharacterIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "ConversationGroup.character"`)
+	}
+	return nil
+}
+
 func (_u *ConversationGroupUpdateOne) sqlSave(ctx context.Context) (_node *ConversationGroup, err error) {
+	if err := _u.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(conversationgroup.Table, conversationgroup.Columns, sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
