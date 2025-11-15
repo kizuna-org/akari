@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
+	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 )
 
@@ -27,9 +28,34 @@ func (_u *ConversationUpdate) Where(ps ...predicate.Conversation) *ConversationU
 	return _u
 }
 
+// SetConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by ID.
+func (_u *ConversationUpdate) SetConversationGroupID(id int) *ConversationUpdate {
+	_u.mutation.SetConversationGroupID(id)
+	return _u
+}
+
+// SetNillableConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by ID if the given value is not nil.
+func (_u *ConversationUpdate) SetNillableConversationGroupID(id *int) *ConversationUpdate {
+	if id != nil {
+		_u = _u.SetConversationGroupID(*id)
+	}
+	return _u
+}
+
+// SetConversationGroup sets the "conversation_group" edge to the ConversationGroup entity.
+func (_u *ConversationUpdate) SetConversationGroup(v *ConversationGroup) *ConversationUpdate {
+	return _u.SetConversationGroupID(v.ID)
+}
+
 // Mutation returns the ConversationMutation object of the builder.
 func (_u *ConversationUpdate) Mutation() *ConversationMutation {
 	return _u.mutation
+}
+
+// ClearConversationGroup clears the "conversation_group" edge to the ConversationGroup entity.
+func (_u *ConversationUpdate) ClearConversationGroup() *ConversationUpdate {
+	_u.mutation.ClearConversationGroup()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -79,6 +105,35 @@ func (_u *ConversationUpdate) sqlSave(ctx context.Context) (_node int, err error
 			}
 		}
 	}
+	if _u.mutation.ConversationGroupCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   conversation.ConversationGroupTable,
+			Columns: []string{conversation.ConversationGroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConversationGroupIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   conversation.ConversationGroupTable,
+			Columns: []string{conversation.ConversationGroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{conversation.Label}
@@ -99,9 +154,34 @@ type ConversationUpdateOne struct {
 	mutation *ConversationMutation
 }
 
+// SetConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by ID.
+func (_u *ConversationUpdateOne) SetConversationGroupID(id int) *ConversationUpdateOne {
+	_u.mutation.SetConversationGroupID(id)
+	return _u
+}
+
+// SetNillableConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by ID if the given value is not nil.
+func (_u *ConversationUpdateOne) SetNillableConversationGroupID(id *int) *ConversationUpdateOne {
+	if id != nil {
+		_u = _u.SetConversationGroupID(*id)
+	}
+	return _u
+}
+
+// SetConversationGroup sets the "conversation_group" edge to the ConversationGroup entity.
+func (_u *ConversationUpdateOne) SetConversationGroup(v *ConversationGroup) *ConversationUpdateOne {
+	return _u.SetConversationGroupID(v.ID)
+}
+
 // Mutation returns the ConversationMutation object of the builder.
 func (_u *ConversationUpdateOne) Mutation() *ConversationMutation {
 	return _u.mutation
+}
+
+// ClearConversationGroup clears the "conversation_group" edge to the ConversationGroup entity.
+func (_u *ConversationUpdateOne) ClearConversationGroup() *ConversationUpdateOne {
+	_u.mutation.ClearConversationGroup()
+	return _u
 }
 
 // Where appends a list predicates to the ConversationUpdate builder.
@@ -180,6 +260,35 @@ func (_u *ConversationUpdateOne) sqlSave(ctx context.Context) (_node *Conversati
 				ps[i](selector)
 			}
 		}
+	}
+	if _u.mutation.ConversationGroupCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   conversation.ConversationGroupTable,
+			Columns: []string{conversation.ConversationGroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConversationGroupIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   conversation.ConversationGroupTable,
+			Columns: []string{conversation.ConversationGroupColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Conversation{config: _u.config}
 	_spec.Assign = _node.assignValues

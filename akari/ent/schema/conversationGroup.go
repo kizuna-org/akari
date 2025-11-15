@@ -25,7 +25,6 @@ func (ConversationGroup) Fields() []ent.Field {
 func (ConversationGroup) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("conversations", Conversation.Type).
-			Immutable().
 			Comment("Conversations in this conversation group"),
 	}
 }

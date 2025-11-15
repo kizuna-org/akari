@@ -31,7 +31,6 @@ func (Conversation) Edges() []ent.Edge {
 			Comment("The Discord message that related to this conversation"),
 		edge.From("conversation_group", ConversationGroup.Type).
 			Ref("conversations").
-			Immutable().
 			Unique().
 			Comment("The conversation group this conversation belongs to"),
 	}
