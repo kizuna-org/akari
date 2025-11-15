@@ -68,9 +68,7 @@ func NewClient(cfg config.DatabaseConfig) (Client, error) {
 		opts = append(opts, ent.Debug())
 	}
 
-	entClient := ent.NewClient(opts...)
-
-	return &client{Client: entClient, driver: drv}, nil
+	return &client{Client: ent.NewClient(opts...), driver: drv}, nil
 }
 
 func (c *client) Ping(ctx context.Context) error {
