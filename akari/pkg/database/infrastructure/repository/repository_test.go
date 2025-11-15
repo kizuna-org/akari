@@ -1,4 +1,4 @@
-package postgres_test
+package repository_test
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/kizuna-org/akari/pkg/database/domain"
-	"github.com/kizuna-org/akari/pkg/database/infrastructure/postgres"
-	"github.com/kizuna-org/akari/pkg/database/infrastructure/postgres/mock"
+	"github.com/kizuna-org/akari/pkg/database/infrastructure/mock"
+	"github.com/kizuna-org/akari/pkg/database/infrastructure/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -23,7 +23,7 @@ func TestNewRepository(t *testing.T) {
 	mockClient := mock.NewMockClient(ctrl)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	repo := postgres.NewRepository(mockClient, logger)
+	repo := repository.NewRepository(mockClient, logger)
 
 	assert.NotNil(t, repo)
 }
@@ -57,7 +57,7 @@ func TestRepository_HealthCheck(t *testing.T) {
 
 			mockClient := mock.NewMockClient(ctrl)
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			repo := postgres.NewRepository(mockClient, logger)
+			repo := repository.NewRepository(mockClient, logger)
 
 			ctx := t.Context()
 
@@ -104,7 +104,7 @@ func TestRepository_WithTransaction(t *testing.T) {
 
 			mockClient := mock.NewMockClient(ctrl)
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-			repo := postgres.NewRepository(mockClient, logger)
+			repo := repository.NewRepository(mockClient, logger)
 
 			ctx := t.Context()
 

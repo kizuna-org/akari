@@ -1,4 +1,4 @@
-package postgres_test
+package infrastructure_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/pkg/database/domain"
-	"github.com/kizuna-org/akari/pkg/database/infrastructure/postgres/mock"
+	"github.com/kizuna-org/akari/pkg/database/infrastructure/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"

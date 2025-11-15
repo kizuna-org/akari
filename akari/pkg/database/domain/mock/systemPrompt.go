@@ -41,35 +41,6 @@ func (m *MockSystemPromptRepository) EXPECT() *MockSystemPromptRepositoryMockRec
 	return m.recorder
 }
 
-// CreateSystemPrompt mocks base method.
-func (m *MockSystemPromptRepository) CreateSystemPrompt(ctx context.Context, title, prompt string, purpose domain.SystemPromptPurpose) (*domain.SystemPrompt, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSystemPrompt", ctx, title, prompt, purpose)
-	ret0, _ := ret[0].(*domain.SystemPrompt)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateSystemPrompt indicates an expected call of CreateSystemPrompt.
-func (mr *MockSystemPromptRepositoryMockRecorder) CreateSystemPrompt(ctx, title, prompt, purpose any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSystemPrompt", reflect.TypeOf((*MockSystemPromptRepository)(nil).CreateSystemPrompt), ctx, title, prompt, purpose)
-}
-
-// DeleteSystemPrompt mocks base method.
-func (m *MockSystemPromptRepository) DeleteSystemPrompt(ctx context.Context, id int) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteSystemPrompt", ctx, id)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteSystemPrompt indicates an expected call of DeleteSystemPrompt.
-func (mr *MockSystemPromptRepositoryMockRecorder) DeleteSystemPrompt(ctx, id any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSystemPrompt", reflect.TypeOf((*MockSystemPromptRepository)(nil).DeleteSystemPrompt), ctx, id)
-}
-
 // GetSystemPromptByID mocks base method.
 func (m *MockSystemPromptRepository) GetSystemPromptByID(ctx context.Context, id int) (*domain.SystemPrompt, error) {
 	m.ctrl.T.Helper()
@@ -83,19 +54,4 @@ func (m *MockSystemPromptRepository) GetSystemPromptByID(ctx context.Context, id
 func (mr *MockSystemPromptRepositoryMockRecorder) GetSystemPromptByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSystemPromptByID", reflect.TypeOf((*MockSystemPromptRepository)(nil).GetSystemPromptByID), ctx, id)
-}
-
-// UpdateSystemPrompt mocks base method.
-func (m *MockSystemPromptRepository) UpdateSystemPrompt(ctx context.Context, id int, title, prompt *string, purpose *domain.SystemPromptPurpose) (*domain.SystemPrompt, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSystemPrompt", ctx, id, title, prompt, purpose)
-	ret0, _ := ret[0].(*domain.SystemPrompt)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateSystemPrompt indicates an expected call of UpdateSystemPrompt.
-func (mr *MockSystemPromptRepositoryMockRecorder) UpdateSystemPrompt(ctx, id, title, prompt, purpose any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSystemPrompt", reflect.TypeOf((*MockSystemPromptRepository)(nil).UpdateSystemPrompt), ctx, id, title, prompt, purpose)
 }

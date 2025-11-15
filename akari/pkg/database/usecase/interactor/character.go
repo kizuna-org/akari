@@ -7,12 +7,8 @@ import (
 )
 
 type CharacterInteractor interface {
-	CreateCharacter(ctx context.Context, name string) (*domain.Character, error)
 	GetCharacterByID(ctx context.Context, characterID int) (*domain.Character, error)
-	GetCharacterWithEdgesByID(ctx context.Context, characterID int) (*domain.Character, error)
 	ListCharacters(ctx context.Context) ([]*domain.Character, error)
-	UpdateCharacter(ctx context.Context, characterID int, name *string) (*domain.Character, error)
-	DeleteCharacter(ctx context.Context, characterID int) error
 }
 
 type characterInteractorImpl struct {
@@ -25,13 +21,6 @@ func NewCharacterInteractor(repository domain.CharacterRepository) CharacterInte
 	}
 }
 
-func (c *characterInteractorImpl) CreateCharacter(
-	ctx context.Context,
-	name string,
-) (*domain.Character, error) {
-	return c.repository.CreateCharacter(ctx, name)
-}
-
 func (c *characterInteractorImpl) GetCharacterByID(
 	ctx context.Context,
 	characterID int,
@@ -39,27 +28,8 @@ func (c *characterInteractorImpl) GetCharacterByID(
 	return c.repository.GetCharacterByID(ctx, characterID)
 }
 
-func (c *characterInteractorImpl) GetCharacterWithEdgesByID(
-	ctx context.Context,
-	characterID int,
-) (*domain.Character, error) {
-	return c.repository.GetCharacterWithEdgesByID(ctx, characterID)
-}
-
 func (c *characterInteractorImpl) ListCharacters(
 	ctx context.Context,
 ) ([]*domain.Character, error) {
 	return c.repository.ListCharacters(ctx)
-}
-
-func (c *characterInteractorImpl) UpdateCharacter(
-	ctx context.Context,
-	characterID int,
-	name *string,
-) (*domain.Character, error) {
-	return c.repository.UpdateCharacter(ctx, characterID, name)
-}
-
-func (c *characterInteractorImpl) DeleteCharacter(ctx context.Context, characterID int) error {
-	return c.repository.DeleteCharacter(ctx, characterID)
 }

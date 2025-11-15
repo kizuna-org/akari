@@ -10,7 +10,8 @@ import (
 	internalDiscordUsecase "github.com/kizuna-org/akari/internal/app/usecase/discord"
 	"github.com/kizuna-org/akari/pkg/config"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
-	"github.com/kizuna-org/akari/pkg/database/infrastructure/postgres"
+	databaseInfra "github.com/kizuna-org/akari/pkg/database/infrastructure"
+	databaseRepo "github.com/kizuna-org/akari/pkg/database/infrastructure/repository"
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
 	discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
@@ -33,8 +34,8 @@ func NewModule() fx.Option {
 		fx.Provide(
 			newEntClient,
 			gemini.NewRepository,
-			newPostgresClient,
-			postgres.NewRepository,
+			newDatabaseClient,
+			databaseRepo.NewRepository,
 			newDatabaseRepository,
 			newSystemPromptRepository,
 			newCharacterRepository,
@@ -82,36 +83,36 @@ func newEntClient(configRepo config.ConfigRepository) (*ent.Client, error) {
 
 func registerDatabaseHooks(
 	lc fx.Lifecycle,
-	client postgres.Client,
-	repository postgres.Repository,
+	client databaseInfra.Client,
+	repository databaseRepo.Repository,
 	logger *slog.Logger,
 ) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			logger.Info("verifying database connection")
+			logger.Info("Verifying database connection")
 			if err := repository.HealthCheck(ctx); err != nil {
 				return fmt.Errorf("database health check failed: %w", err)
 			}
-			logger.Info("database connection verified successfully")
+			logger.Info("Database connection verified successfully")
 
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			logger.Info("disconnecting from database")
+			logger.Info("Disconnecting from database")
 			if err := client.Close(); err != nil {
 				return fmt.Errorf("failed to disconnect from database: %w", err)
 			}
-			logger.Info("database disconnected successfully")
+			logger.Info("Database disconnected successfully")
 
 			return nil
 		},
 	})
 }
 
-func newPostgresClient(configRepo config.ConfigRepository, logger *slog.Logger) (postgres.Client, error) {
+func newDatabaseClient(configRepo config.ConfigRepository, logger *slog.Logger) (databaseInfra.Client, error) {
 	cfg := configRepo.GetConfig().Database
 
-	client, err := postgres.NewClient(cfg)
+	client, err := databaseInfra.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create database client: %w", err)
 	}
@@ -125,15 +126,15 @@ func newPostgresClient(configRepo config.ConfigRepository, logger *slog.Logger) 
 	return client, nil
 }
 
-func newDatabaseRepository(repo postgres.Repository) databaseDomain.DatabaseRepository {
+func newDatabaseRepository(repo databaseRepo.Repository) databaseDomain.DatabaseRepository {
 	return repo
 }
 
-func newSystemPromptRepository(repo postgres.Repository) databaseDomain.SystemPromptRepository {
+func newSystemPromptRepository(repo databaseRepo.Repository) databaseDomain.SystemPromptRepository {
 	return repo
 }
 
-func newCharacterRepository(repo postgres.Repository) databaseDomain.CharacterRepository {
+func newCharacterRepository(repo databaseRepo.Repository) databaseDomain.CharacterRepository {
 	return repo
 }
 

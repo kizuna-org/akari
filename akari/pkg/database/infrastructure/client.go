@@ -1,4 +1,4 @@
-package postgres
+package infrastructure
 
 //go:generate go tool mockgen -package=mock -source=client.go -destination=mock/client.go
 
@@ -20,7 +20,6 @@ type Client interface {
 	WithTx(ctx context.Context, txFunc domain.TxFunc) error
 	SystemPromptClient() *ent.SystemPromptClient
 	CharacterClient() *ent.CharacterClient
-	CharacterConfigClient() *ent.CharacterConfigClient
 }
 
 type client struct {
@@ -77,14 +76,10 @@ func (c *client) Close() error {
 	return c.Client.Close()
 }
 
-func (c *client) SystemPromptClient() *ent.SystemPromptClient {
-	return c.SystemPrompt
-}
-
 func (c *client) CharacterClient() *ent.CharacterClient {
 	return c.Character
 }
 
-func (c *client) CharacterConfigClient() *ent.CharacterConfigClient {
-	return c.CharacterConfig
+func (c *client) SystemPromptClient() *ent.SystemPromptClient {
+	return c.SystemPrompt
 }

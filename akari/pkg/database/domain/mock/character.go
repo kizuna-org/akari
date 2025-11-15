@@ -41,35 +41,6 @@ func (m *MockCharacterRepository) EXPECT() *MockCharacterRepositoryMockRecorder 
 	return m.recorder
 }
 
-// CreateCharacter mocks base method.
-func (m *MockCharacterRepository) CreateCharacter(ctx context.Context, name string) (*domain.Character, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateCharacter", ctx, name)
-	ret0, _ := ret[0].(*domain.Character)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateCharacter indicates an expected call of CreateCharacter.
-func (mr *MockCharacterRepositoryMockRecorder) CreateCharacter(ctx, name any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCharacter", reflect.TypeOf((*MockCharacterRepository)(nil).CreateCharacter), ctx, name)
-}
-
-// DeleteCharacter mocks base method.
-func (m *MockCharacterRepository) DeleteCharacter(ctx context.Context, characterID int) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteCharacter", ctx, characterID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DeleteCharacter indicates an expected call of DeleteCharacter.
-func (mr *MockCharacterRepositoryMockRecorder) DeleteCharacter(ctx, characterID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCharacter", reflect.TypeOf((*MockCharacterRepository)(nil).DeleteCharacter), ctx, characterID)
-}
-
 // GetCharacterByID mocks base method.
 func (m *MockCharacterRepository) GetCharacterByID(ctx context.Context, characterID int) (*domain.Character, error) {
 	m.ctrl.T.Helper()
@@ -85,21 +56,6 @@ func (mr *MockCharacterRepositoryMockRecorder) GetCharacterByID(ctx, characterID
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCharacterByID", reflect.TypeOf((*MockCharacterRepository)(nil).GetCharacterByID), ctx, characterID)
 }
 
-// GetCharacterWithEdgesByID mocks base method.
-func (m *MockCharacterRepository) GetCharacterWithEdgesByID(ctx context.Context, characterID int) (*domain.Character, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCharacterWithEdgesByID", ctx, characterID)
-	ret0, _ := ret[0].(*domain.Character)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetCharacterWithEdgesByID indicates an expected call of GetCharacterWithEdgesByID.
-func (mr *MockCharacterRepositoryMockRecorder) GetCharacterWithEdgesByID(ctx, characterID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCharacterWithEdgesByID", reflect.TypeOf((*MockCharacterRepository)(nil).GetCharacterWithEdgesByID), ctx, characterID)
-}
-
 // ListCharacters mocks base method.
 func (m *MockCharacterRepository) ListCharacters(ctx context.Context) ([]*domain.Character, error) {
 	m.ctrl.T.Helper()
@@ -113,19 +69,4 @@ func (m *MockCharacterRepository) ListCharacters(ctx context.Context) ([]*domain
 func (mr *MockCharacterRepositoryMockRecorder) ListCharacters(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCharacters", reflect.TypeOf((*MockCharacterRepository)(nil).ListCharacters), ctx)
-}
-
-// UpdateCharacter mocks base method.
-func (m *MockCharacterRepository) UpdateCharacter(ctx context.Context, characterID int, name *string) (*domain.Character, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateCharacter", ctx, characterID, name)
-	ret0, _ := ret[0].(*domain.Character)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateCharacter indicates an expected call of UpdateCharacter.
-func (mr *MockCharacterRepositoryMockRecorder) UpdateCharacter(ctx, characterID, name any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCharacter", reflect.TypeOf((*MockCharacterRepository)(nil).UpdateCharacter), ctx, characterID, name)
 }
