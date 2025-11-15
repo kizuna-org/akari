@@ -299,12 +299,12 @@ func (_q *AkariUserQuery) WithConversations(opts ...func(*ConversationQuery)) *A
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.AkariUser.Query().
-//		GroupBy(akariuser.FieldName).
+//		GroupBy(akariuser.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *AkariUserQuery) GroupBy(field string, fields ...string) *AkariUserGroupBy {
@@ -322,11 +322,11 @@ func (_q *AkariUserQuery) GroupBy(field string, fields ...string) *AkariUserGrou
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.AkariUser.Query().
-//		Select(akariuser.FieldName).
+//		Select(akariuser.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (_q *AkariUserQuery) Select(fields ...string) *AkariUserSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

@@ -23,16 +23,12 @@ import (
 func init() {
 	akariuserFields := schema.AkariUser{}.Fields()
 	_ = akariuserFields
-	// akariuserDescName is the schema descriptor for name field.
-	akariuserDescName := akariuserFields[0].Descriptor()
-	// akariuser.NameValidator is a validator for the "name" field. It is called by the builders before save.
-	akariuser.NameValidator = akariuserDescName.Validators[0].(func(string) error)
 	// akariuserDescCreatedAt is the schema descriptor for created_at field.
-	akariuserDescCreatedAt := akariuserFields[1].Descriptor()
+	akariuserDescCreatedAt := akariuserFields[0].Descriptor()
 	// akariuser.DefaultCreatedAt holds the default value on creation for the created_at field.
 	akariuser.DefaultCreatedAt = akariuserDescCreatedAt.Default.(func() time.Time)
 	// akariuserDescUpdatedAt is the schema descriptor for updated_at field.
-	akariuserDescUpdatedAt := akariuserFields[2].Descriptor()
+	akariuserDescUpdatedAt := akariuserFields[1].Descriptor()
 	// akariuser.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	akariuser.DefaultUpdatedAt = akariuserDescUpdatedAt.Default.(func() time.Time)
 	// akariuser.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

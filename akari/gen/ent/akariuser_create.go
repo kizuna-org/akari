@@ -21,12 +21,6 @@ type AkariUserCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the "name" field.
-func (_c *AkariUserCreate) SetName(v string) *AkariUserCreate {
-	_c.mutation.SetName(v)
-	return _c
-}
-
 // SetCreatedAt sets the "created_at" field.
 func (_c *AkariUserCreate) SetCreatedAt(v time.Time) *AkariUserCreate {
 	_c.mutation.SetCreatedAt(v)
@@ -117,14 +111,6 @@ func (_c *AkariUserCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *AkariUserCreate) check() error {
-	if _, ok := _c.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "AkariUser.name"`)}
-	}
-	if v, ok := _c.mutation.Name(); ok {
-		if err := akariuser.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "AkariUser.name": %w`, err)}
-		}
-	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "AkariUser.created_at"`)}
 	}
@@ -157,10 +143,6 @@ func (_c *AkariUserCreate) createSpec() (*AkariUser, *sqlgraph.CreateSpec) {
 		_node = &AkariUser{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(akariuser.Table, sqlgraph.NewFieldSpec(akariuser.FieldID, field.TypeInt))
 	)
-	if value, ok := _c.mutation.Name(); ok {
-		_spec.SetField(akariuser.FieldName, field.TypeString, value)
-		_node.Name = value
-	}
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(akariuser.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value

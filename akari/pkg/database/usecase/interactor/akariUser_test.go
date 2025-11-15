@@ -29,8 +29,6 @@ func TestNewAkariUserInteractor(t *testing.T) {
 func TestAkariUserInteractor_CreateAkariUser(t *testing.T) {
 	t.Parallel()
 
-	name := "akari-name"
-
 	tests := []struct {
 		name      string
 		mockSetup func(*mock.MockAkariUserRepository, context.Context)
@@ -39,14 +37,14 @@ func TestAkariUserInteractor_CreateAkariUser(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockAkariUserRepository, ctx context.Context) {
-				m.EXPECT().CreateAkariUser(ctx, name).Return(&ent.AkariUser{ID: 1, Name: name, CreatedAt: time.Now()}, nil)
+				m.EXPECT().CreateAkariUser(ctx).Return(&ent.AkariUser{ID: 1, CreatedAt: time.Now()}, nil)
 			},
 			wantErr: false,
 		},
 		{
 			name: "failure",
 			mockSetup: func(m *mock.MockAkariUserRepository, ctx context.Context) {
-				m.EXPECT().CreateAkariUser(ctx, name).Return(nil, errors.New("db error"))
+				m.EXPECT().CreateAkariUser(ctx).Return(nil, errors.New("db error"))
 			},
 			wantErr: true,
 		},
@@ -65,7 +63,7 @@ func TestAkariUserInteractor_CreateAkariUser(t *testing.T) {
 			ctx := t.Context()
 			testCase.mockSetup(m, ctx)
 
-			res, err := i.CreateAkariUser(ctx, name)
+			res, err := i.CreateAkariUser(ctx)
 
 			if testCase.wantErr {
 				require.Error(t, err)
@@ -73,7 +71,6 @@ func TestAkariUserInteractor_CreateAkariUser(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				assert.NotNil(t, res)
-				assert.Equal(t, name, res.Name)
 			}
 		})
 	}
@@ -177,61 +174,6 @@ func TestAkariUserInteractor_ListAkariUsers(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				assert.NotEmpty(t, res)
-			}
-		})
-	}
-}
-
-func TestAkariUserInteractor_UpdateAkariUser(t *testing.T) {
-	t.Parallel()
-
-	userId := 1
-	name := "updated"
-
-	tests := []struct {
-		name      string
-		mockSetup func(*mock.MockAkariUserRepository, context.Context)
-		wantErr   bool
-	}{
-		{
-			name: "success",
-			mockSetup: func(m *mock.MockAkariUserRepository, ctx context.Context) {
-				m.EXPECT().UpdateAkariUser(ctx, userId, name).
-					Return(&ent.AkariUser{ID: userId, Name: name, UpdatedAt: time.Now()}, nil)
-			},
-			wantErr: false,
-		},
-		{
-			name: "failure",
-			mockSetup: func(m *mock.MockAkariUserRepository, ctx context.Context) {
-				m.EXPECT().UpdateAkariUser(ctx, userId, name).Return(nil, errors.New("update failed"))
-			},
-			wantErr: true,
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			ctrl := gomock.NewController(t)
-			defer ctrl.Finish()
-
-			m := mock.NewMockAkariUserRepository(ctrl)
-			i := interactor.NewAkariUserInteractor(m)
-
-			ctx := t.Context()
-			testCase.mockSetup(m, ctx)
-
-			res, err := i.UpdateAkariUser(ctx, userId, name)
-
-			if testCase.wantErr {
-				require.Error(t, err)
-				assert.Nil(t, res)
-			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, res)
-				assert.Equal(t, name, res.Name)
 			}
 		})
 	}

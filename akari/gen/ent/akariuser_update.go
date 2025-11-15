@@ -29,20 +29,6 @@ func (_u *AkariUserUpdate) Where(ps ...predicate.AkariUser) *AkariUserUpdate {
 	return _u
 }
 
-// SetName sets the "name" field.
-func (_u *AkariUserUpdate) SetName(v string) *AkariUserUpdate {
-	_u.mutation.SetName(v)
-	return _u
-}
-
-// SetNillableName sets the "name" field if the given value is not nil.
-func (_u *AkariUserUpdate) SetNillableName(v *string) *AkariUserUpdate {
-	if v != nil {
-		_u.SetName(*v)
-	}
-	return _u
-}
-
 // SetUpdatedAt sets the "updated_at" field.
 func (_u *AkariUserUpdate) SetUpdatedAt(v time.Time) *AkariUserUpdate {
 	_u.mutation.SetUpdatedAt(v)
@@ -126,20 +112,7 @@ func (_u *AkariUserUpdate) defaults() {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (_u *AkariUserUpdate) check() error {
-	if v, ok := _u.mutation.Name(); ok {
-		if err := akariuser.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "AkariUser.name": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (_u *AkariUserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
-	if err := _u.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(akariuser.Table, akariuser.Columns, sqlgraph.NewFieldSpec(akariuser.FieldID, field.TypeInt))
 	if ps := _u.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -147,9 +120,6 @@ func (_u *AkariUserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := _u.mutation.Name(); ok {
-		_spec.SetField(akariuser.FieldName, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(akariuser.FieldUpdatedAt, field.TypeTime, value)
@@ -217,20 +187,6 @@ type AkariUserUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *AkariUserMutation
-}
-
-// SetName sets the "name" field.
-func (_u *AkariUserUpdateOne) SetName(v string) *AkariUserUpdateOne {
-	_u.mutation.SetName(v)
-	return _u
-}
-
-// SetNillableName sets the "name" field if the given value is not nil.
-func (_u *AkariUserUpdateOne) SetNillableName(v *string) *AkariUserUpdateOne {
-	if v != nil {
-		_u.SetName(*v)
-	}
-	return _u
 }
 
 // SetUpdatedAt sets the "updated_at" field.
@@ -329,20 +285,7 @@ func (_u *AkariUserUpdateOne) defaults() {
 	}
 }
 
-// check runs all checks and user-defined validators on the builder.
-func (_u *AkariUserUpdateOne) check() error {
-	if v, ok := _u.mutation.Name(); ok {
-		if err := akariuser.NameValidator(v); err != nil {
-			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "AkariUser.name": %w`, err)}
-		}
-	}
-	return nil
-}
-
 func (_u *AkariUserUpdateOne) sqlSave(ctx context.Context) (_node *AkariUser, err error) {
-	if err := _u.check(); err != nil {
-		return _node, err
-	}
 	_spec := sqlgraph.NewUpdateSpec(akariuser.Table, akariuser.Columns, sqlgraph.NewFieldSpec(akariuser.FieldID, field.TypeInt))
 	id, ok := _u.mutation.ID()
 	if !ok {
@@ -367,9 +310,6 @@ func (_u *AkariUserUpdateOne) sqlSave(ctx context.Context) (_node *AkariUser, er
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := _u.mutation.Name(); ok {
-		_spec.SetField(akariuser.FieldName, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(akariuser.FieldUpdatedAt, field.TypeTime, value)

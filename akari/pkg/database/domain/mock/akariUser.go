@@ -42,18 +42,18 @@ func (m *MockAkariUserRepository) EXPECT() *MockAkariUserRepositoryMockRecorder 
 }
 
 // CreateAkariUser mocks base method.
-func (m *MockAkariUserRepository) CreateAkariUser(ctx context.Context, name string) (*domain.AkariUser, error) {
+func (m *MockAkariUserRepository) CreateAkariUser(ctx context.Context) (*domain.AkariUser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateAkariUser", ctx, name)
+	ret := m.ctrl.Call(m, "CreateAkariUser", ctx)
 	ret0, _ := ret[0].(*domain.AkariUser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateAkariUser indicates an expected call of CreateAkariUser.
-func (mr *MockAkariUserRepositoryMockRecorder) CreateAkariUser(ctx, name any) *gomock.Call {
+func (mr *MockAkariUserRepositoryMockRecorder) CreateAkariUser(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAkariUser", reflect.TypeOf((*MockAkariUserRepository)(nil).CreateAkariUser), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAkariUser", reflect.TypeOf((*MockAkariUserRepository)(nil).CreateAkariUser), ctx)
 }
 
 // DeleteAkariUser mocks base method.
@@ -98,19 +98,4 @@ func (m *MockAkariUserRepository) ListAkariUsers(ctx context.Context) ([]*domain
 func (mr *MockAkariUserRepositoryMockRecorder) ListAkariUsers(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListAkariUsers", reflect.TypeOf((*MockAkariUserRepository)(nil).ListAkariUsers), ctx)
-}
-
-// UpdateAkariUser mocks base method.
-func (m *MockAkariUserRepository) UpdateAkariUser(ctx context.Context, id int, name string) (*domain.AkariUser, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateAkariUser", ctx, id, name)
-	ret0, _ := ret[0].(*domain.AkariUser)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateAkariUser indicates an expected call of UpdateAkariUser.
-func (mr *MockAkariUserRepositoryMockRecorder) UpdateAkariUser(ctx, id, name any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAkariUser", reflect.TypeOf((*MockAkariUserRepository)(nil).UpdateAkariUser), ctx, id, name)
 }

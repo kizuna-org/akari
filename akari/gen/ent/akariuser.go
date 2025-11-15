@@ -17,8 +17,6 @@ type AkariUser struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// The name of the Akari user
-	Name string `json:"name,omitempty"`
 	// The time when the record was created in the database
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// The time when the user was last updated
@@ -54,8 +52,6 @@ func (*AkariUser) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case akariuser.FieldID:
 			values[i] = new(sql.NullInt64)
-		case akariuser.FieldName:
-			values[i] = new(sql.NullString)
 		case akariuser.FieldCreatedAt, akariuser.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
 		default:
@@ -79,12 +75,6 @@ func (_m *AkariUser) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int(value.Int64)
-		case akariuser.FieldName:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field name", values[i])
-			} else if value.Valid {
-				_m.Name = value.String
-			}
 		case akariuser.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
@@ -138,9 +128,6 @@ func (_m *AkariUser) String() string {
 	var builder strings.Builder
 	builder.WriteString("AkariUser(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
-	builder.WriteString("name=")
-	builder.WriteString(_m.Name)
-	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")

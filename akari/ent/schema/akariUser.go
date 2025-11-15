@@ -14,7 +14,6 @@ type AkariUser struct {
 
 func (AkariUser) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("name").NotEmpty().Comment("The name of the Akari user"),
 		field.Time("created_at").
 			Immutable().
 			Default(time.Now).

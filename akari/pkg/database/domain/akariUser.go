@@ -9,10 +9,9 @@ import (
 )
 
 type AkariUserRepository interface {
-	CreateAkariUser(ctx context.Context, name string) (*AkariUser, error)
+	CreateAkariUser(ctx context.Context) (*AkariUser, error)
 	GetAkariUserByID(ctx context.Context, id int) (*AkariUser, error)
 	ListAkariUsers(ctx context.Context) ([]*AkariUser, error)
-	UpdateAkariUser(ctx context.Context, id int, name string) (*AkariUser, error)
 	DeleteAkariUser(ctx context.Context, id int) error
 }
 

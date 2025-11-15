@@ -7,10 +7,9 @@ import (
 )
 
 type AkariUserInteractor interface {
-	CreateAkariUser(ctx context.Context, name string) (*domain.AkariUser, error)
+	CreateAkariUser(ctx context.Context) (*domain.AkariUser, error)
 	GetAkariUserByID(ctx context.Context, id int) (*domain.AkariUser, error)
 	ListAkariUsers(ctx context.Context) ([]*domain.AkariUser, error)
-	UpdateAkariUser(ctx context.Context, id int, name string) (*domain.AkariUser, error)
 	DeleteAkariUser(ctx context.Context, id int) error
 }
 
@@ -22,8 +21,8 @@ func NewAkariUserInteractor(repository domain.AkariUserRepository) AkariUserInte
 	return &akariUserInteractorImpl{repository: repository}
 }
 
-func (i *akariUserInteractorImpl) CreateAkariUser(ctx context.Context, name string) (*domain.AkariUser, error) {
-	return i.repository.CreateAkariUser(ctx, name)
+func (i *akariUserInteractorImpl) CreateAkariUser(ctx context.Context) (*domain.AkariUser, error) {
+	return i.repository.CreateAkariUser(ctx)
 }
 
 func (i *akariUserInteractorImpl) GetAkariUserByID(ctx context.Context, id int) (*domain.AkariUser, error) {
@@ -32,10 +31,6 @@ func (i *akariUserInteractorImpl) GetAkariUserByID(ctx context.Context, id int) 
 
 func (i *akariUserInteractorImpl) ListAkariUsers(ctx context.Context) ([]*domain.AkariUser, error) {
 	return i.repository.ListAkariUsers(ctx)
-}
-
-func (i *akariUserInteractorImpl) UpdateAkariUser(ctx context.Context, id int, name string) (*domain.AkariUser, error) {
-	return i.repository.UpdateAkariUser(ctx, id, name)
 }
 
 func (i *akariUserInteractorImpl) DeleteAkariUser(ctx context.Context, id int) error {

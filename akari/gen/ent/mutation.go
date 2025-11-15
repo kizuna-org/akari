@@ -49,7 +49,6 @@ type AkariUserMutation struct {
 	op                   Op
 	typ                  string
 	id                   *int
-	name                 *string
 	created_at           *time.Time
 	updated_at           *time.Time
 	clearedFields        map[string]struct{}
@@ -157,42 +156,6 @@ func (m *AkariUserMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
-}
-
-// SetName sets the "name" field.
-func (m *AkariUserMutation) SetName(s string) {
-	m.name = &s
-}
-
-// Name returns the value of the "name" field in the mutation.
-func (m *AkariUserMutation) Name() (r string, exists bool) {
-	v := m.name
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldName returns the old "name" field's value of the AkariUser entity.
-// If the AkariUser object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *AkariUserMutation) OldName(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldName is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldName requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldName: %w", err)
-	}
-	return oldValue.Name, nil
-}
-
-// ResetName resets all changes to the "name" field.
-func (m *AkariUserMutation) ResetName() {
-	m.name = nil
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -355,10 +318,7 @@ func (m *AkariUserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AkariUserMutation) Fields() []string {
-	fields := make([]string, 0, 3)
-	if m.name != nil {
-		fields = append(fields, akariuser.FieldName)
-	}
+	fields := make([]string, 0, 2)
 	if m.created_at != nil {
 		fields = append(fields, akariuser.FieldCreatedAt)
 	}
@@ -373,8 +333,6 @@ func (m *AkariUserMutation) Fields() []string {
 // schema.
 func (m *AkariUserMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case akariuser.FieldName:
-		return m.Name()
 	case akariuser.FieldCreatedAt:
 		return m.CreatedAt()
 	case akariuser.FieldUpdatedAt:
@@ -388,8 +346,6 @@ func (m *AkariUserMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *AkariUserMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case akariuser.FieldName:
-		return m.OldName(ctx)
 	case akariuser.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case akariuser.FieldUpdatedAt:
@@ -403,13 +359,6 @@ func (m *AkariUserMutation) OldField(ctx context.Context, name string) (ent.Valu
 // type.
 func (m *AkariUserMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case akariuser.FieldName:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetName(v)
-		return nil
 	case akariuser.FieldCreatedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -473,9 +422,6 @@ func (m *AkariUserMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *AkariUserMutation) ResetField(name string) error {
 	switch name {
-	case akariuser.FieldName:
-		m.ResetName()
-		return nil
 	case akariuser.FieldCreatedAt:
 		m.ResetCreatedAt()
 		return nil
