@@ -129,6 +129,58 @@ func TestAkariUserInteractor_GetAkariUserByID(t *testing.T) {
 	}
 }
 
+func TestAkariUserInteractor_GetAkariUserByDiscordUserID(t *testing.T) {
+	t.Parallel()
+
+	discordUserId := "discord-user-123"
+
+	tests := []struct {
+		name      string
+		mockSetup func(*mock.MockAkariUserRepository, context.Context)
+		wantErr   bool
+	}{
+		{
+			name: "success",
+			mockSetup: func(m *mock.MockAkariUserRepository, ctx context.Context) {
+				m.EXPECT().GetAkariUserByDiscordUserID(ctx, discordUserId).Return(&ent.AkariUser{ID: 1, CreatedAt: time.Now()}, nil)
+			},
+			wantErr: false,
+		},
+		{
+			name: "not found",
+			mockSetup: func(m *mock.MockAkariUserRepository, ctx context.Context) {
+				m.EXPECT().GetAkariUserByDiscordUserID(ctx, discordUserId).Return(nil, errors.New("not found"))
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			m := mock.NewMockAkariUserRepository(ctrl)
+			i := interactor.NewAkariUserInteractor(m)
+
+			ctx := t.Context()
+			testCase.mockSetup(m, ctx)
+
+			res, err := i.GetAkariUserByDiscordUserID(ctx, discordUserId)
+
+			if testCase.wantErr {
+				require.Error(t, err)
+				assert.Nil(t, res)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, res)
+			}
+		})
+	}
+}
+
 func TestAkariUserInteractor_ListAkariUsers(t *testing.T) {
 	t.Parallel()
 
