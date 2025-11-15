@@ -14,6 +14,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+//nolint:interfacebloat
 type Client interface {
 	Ping(ctx context.Context) error
 	Close() error
@@ -23,6 +24,7 @@ type Client interface {
 	ConversationGroupClient() *ent.ConversationGroupClient
 	DiscordMessageClient() *ent.DiscordMessageClient
 	DiscordChannelClient() *ent.DiscordChannelClient
+	DiscordUserClient() *ent.DiscordUserClient
 	DiscordGuildClient() *ent.DiscordGuildClient
 	SystemPromptClient() *ent.SystemPromptClient
 }
@@ -91,6 +93,10 @@ func (c *client) ConversationClient() *ent.ConversationClient {
 
 func (c *client) ConversationGroupClient() *ent.ConversationGroupClient {
 	return c.ConversationGroup
+}
+
+func (c *client) DiscordUserClient() *ent.DiscordUserClient {
+	return c.DiscordUser
 }
 
 func (c *client) DiscordMessageClient() *ent.DiscordMessageClient {

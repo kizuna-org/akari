@@ -135,12 +135,12 @@ var (
 	// DiscordMessagesColumns holds the columns for the "discord_messages" table.
 	DiscordMessagesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
-		{Name: "author_id", Type: field.TypeString},
 		{Name: "content", Type: field.TypeString},
 		{Name: "timestamp", Type: field.TypeTime},
 		{Name: "mentions", Type: field.TypeJSON, Nullable: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "conversation_discord_message", Type: field.TypeInt, Unique: true, Nullable: true},
+		{Name: "discord_message_author", Type: field.TypeString},
 		{Name: "discord_message_channel", Type: field.TypeString},
 	}
 	// DiscordMessagesTable holds the schema information for the "discord_messages" table.
@@ -151,9 +151,15 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "discord_messages_conversations_discord_message",
-				Columns:    []*schema.Column{DiscordMessagesColumns[6]},
+				Columns:    []*schema.Column{DiscordMessagesColumns[5]},
 				RefColumns: []*schema.Column{ConversationsColumns[0]},
 				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "discord_messages_discord_users_author",
+				Columns:    []*schema.Column{DiscordMessagesColumns[6]},
+				RefColumns: []*schema.Column{DiscordUsersColumns[0]},
+				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "discord_messages_discord_channels_channel",
@@ -162,13 +168,20 @@ var (
 				OnDelete:   schema.NoAction,
 			},
 		},
-		Indexes: []*schema.Index{
-			{
-				Name:    "discordmessage_author_id_timestamp",
-				Unique:  false,
-				Columns: []*schema.Column{DiscordMessagesColumns[1], DiscordMessagesColumns[3]},
-			},
-		},
+	}
+	// DiscordUsersColumns holds the columns for the "discord_users" table.
+	DiscordUsersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "username", Type: field.TypeString},
+		{Name: "bot", Type: field.TypeBool, Default: false},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// DiscordUsersTable holds the schema information for the "discord_users" table.
+	DiscordUsersTable = &schema.Table{
+		Name:       "discord_users",
+		Columns:    DiscordUsersColumns,
+		PrimaryKey: []*schema.Column{DiscordUsersColumns[0]},
 	}
 	// SystemPromptsColumns holds the columns for the "system_prompts" table.
 	SystemPromptsColumns = []*schema.Column{
@@ -203,6 +216,7 @@ var (
 		DiscordChannelsTable,
 		DiscordGuildsTable,
 		DiscordMessagesTable,
+		DiscordUsersTable,
 		SystemPromptsTable,
 	}
 )
@@ -213,6 +227,7 @@ func init() {
 	ConversationGroupsTable.ForeignKeys[0].RefTable = CharactersTable
 	DiscordChannelsTable.ForeignKeys[0].RefTable = DiscordGuildsTable
 	DiscordMessagesTable.ForeignKeys[0].RefTable = ConversationsTable
-	DiscordMessagesTable.ForeignKeys[1].RefTable = DiscordChannelsTable
+	DiscordMessagesTable.ForeignKeys[1].RefTable = DiscordUsersTable
+	DiscordMessagesTable.ForeignKeys[2].RefTable = DiscordChannelsTable
 	SystemPromptsTable.ForeignKeys[0].RefTable = CharactersTable
 }

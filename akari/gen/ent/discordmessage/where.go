@@ -65,11 +65,6 @@ func IDContainsFold(id string) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.FieldContainsFold(FieldID, id))
 }
 
-// AuthorID applies equality check predicate on the "author_id" field. It's identical to AuthorIDEQ.
-func AuthorID(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldEQ(FieldAuthorID, v))
-}
-
 // Content applies equality check predicate on the "content" field. It's identical to ContentEQ.
 func Content(v string) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.FieldEQ(FieldContent, v))
@@ -83,71 +78,6 @@ func Timestamp(v time.Time) predicate.DiscordMessage {
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.FieldEQ(FieldCreatedAt, v))
-}
-
-// AuthorIDEQ applies the EQ predicate on the "author_id" field.
-func AuthorIDEQ(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldEQ(FieldAuthorID, v))
-}
-
-// AuthorIDNEQ applies the NEQ predicate on the "author_id" field.
-func AuthorIDNEQ(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldNEQ(FieldAuthorID, v))
-}
-
-// AuthorIDIn applies the In predicate on the "author_id" field.
-func AuthorIDIn(vs ...string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldIn(FieldAuthorID, vs...))
-}
-
-// AuthorIDNotIn applies the NotIn predicate on the "author_id" field.
-func AuthorIDNotIn(vs ...string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldNotIn(FieldAuthorID, vs...))
-}
-
-// AuthorIDGT applies the GT predicate on the "author_id" field.
-func AuthorIDGT(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldGT(FieldAuthorID, v))
-}
-
-// AuthorIDGTE applies the GTE predicate on the "author_id" field.
-func AuthorIDGTE(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldGTE(FieldAuthorID, v))
-}
-
-// AuthorIDLT applies the LT predicate on the "author_id" field.
-func AuthorIDLT(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldLT(FieldAuthorID, v))
-}
-
-// AuthorIDLTE applies the LTE predicate on the "author_id" field.
-func AuthorIDLTE(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldLTE(FieldAuthorID, v))
-}
-
-// AuthorIDContains applies the Contains predicate on the "author_id" field.
-func AuthorIDContains(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldContains(FieldAuthorID, v))
-}
-
-// AuthorIDHasPrefix applies the HasPrefix predicate on the "author_id" field.
-func AuthorIDHasPrefix(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldHasPrefix(FieldAuthorID, v))
-}
-
-// AuthorIDHasSuffix applies the HasSuffix predicate on the "author_id" field.
-func AuthorIDHasSuffix(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldHasSuffix(FieldAuthorID, v))
-}
-
-// AuthorIDEqualFold applies the EqualFold predicate on the "author_id" field.
-func AuthorIDEqualFold(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldEqualFold(FieldAuthorID, v))
-}
-
-// AuthorIDContainsFold applies the ContainsFold predicate on the "author_id" field.
-func AuthorIDContainsFold(v string) predicate.DiscordMessage {
-	return predicate.DiscordMessage(sql.FieldContainsFold(FieldAuthorID, v))
 }
 
 // ContentEQ applies the EQ predicate on the "content" field.
@@ -303,6 +233,29 @@ func CreatedAtLT(v time.Time) predicate.DiscordMessage {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// HasAuthor applies the HasEdge predicate on the "author" edge.
+func HasAuthor() predicate.DiscordMessage {
+	return predicate.DiscordMessage(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, AuthorTable, AuthorColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAuthorWith applies the HasEdge predicate on the "author" edge with a given conditions (other predicates).
+func HasAuthorWith(preds ...predicate.DiscordUser) predicate.DiscordMessage {
+	return predicate.DiscordMessage(func(s *sql.Selector) {
+		step := newAuthorStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // HasChannel applies the HasEdge predicate on the "channel" edge.

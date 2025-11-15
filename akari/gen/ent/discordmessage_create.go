@@ -13,6 +13,7 @@ import (
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
+	"github.com/kizuna-org/akari/gen/ent/discorduser"
 )
 
 // DiscordMessageCreate is the builder for creating a DiscordMessage entity.
@@ -20,12 +21,6 @@ type DiscordMessageCreate struct {
 	config
 	mutation *DiscordMessageMutation
 	hooks    []Hook
-}
-
-// SetAuthorID sets the "author_id" field.
-func (_c *DiscordMessageCreate) SetAuthorID(v string) *DiscordMessageCreate {
-	_c.mutation.SetAuthorID(v)
-	return _c
 }
 
 // SetContent sets the "content" field.
@@ -72,6 +67,17 @@ func (_c *DiscordMessageCreate) SetNillableCreatedAt(v *time.Time) *DiscordMessa
 func (_c *DiscordMessageCreate) SetID(v string) *DiscordMessageCreate {
 	_c.mutation.SetID(v)
 	return _c
+}
+
+// SetAuthorID sets the "author" edge to the DiscordUser entity by ID.
+func (_c *DiscordMessageCreate) SetAuthorID(id string) *DiscordMessageCreate {
+	_c.mutation.SetAuthorID(id)
+	return _c
+}
+
+// SetAuthor sets the "author" edge to the DiscordUser entity.
+func (_c *DiscordMessageCreate) SetAuthor(v *DiscordUser) *DiscordMessageCreate {
+	return _c.SetAuthorID(v.ID)
 }
 
 // SetChannelID sets the "channel" edge to the DiscordChannel entity by ID.
@@ -151,14 +157,6 @@ func (_c *DiscordMessageCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *DiscordMessageCreate) check() error {
-	if _, ok := _c.mutation.AuthorID(); !ok {
-		return &ValidationError{Name: "author_id", err: errors.New(`ent: missing required field "DiscordMessage.author_id"`)}
-	}
-	if v, ok := _c.mutation.AuthorID(); ok {
-		if err := discordmessage.AuthorIDValidator(v); err != nil {
-			return &ValidationError{Name: "author_id", err: fmt.Errorf(`ent: validator failed for field "DiscordMessage.author_id": %w`, err)}
-		}
-	}
 	if _, ok := _c.mutation.Content(); !ok {
 		return &ValidationError{Name: "content", err: errors.New(`ent: missing required field "DiscordMessage.content"`)}
 	}
@@ -172,6 +170,9 @@ func (_c *DiscordMessageCreate) check() error {
 		if err := discordmessage.IDValidator(v); err != nil {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "DiscordMessage.id": %w`, err)}
 		}
+	}
+	if len(_c.mutation.AuthorIDs()) == 0 {
+		return &ValidationError{Name: "author", err: errors.New(`ent: missing required edge "DiscordMessage.author"`)}
 	}
 	if len(_c.mutation.ChannelIDs()) == 0 {
 		return &ValidationError{Name: "channel", err: errors.New(`ent: missing required edge "DiscordMessage.channel"`)}
@@ -211,10 +212,6 @@ func (_c *DiscordMessageCreate) createSpec() (*DiscordMessage, *sqlgraph.CreateS
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := _c.mutation.AuthorID(); ok {
-		_spec.SetField(discordmessage.FieldAuthorID, field.TypeString, value)
-		_node.AuthorID = value
-	}
 	if value, ok := _c.mutation.Content(); ok {
 		_spec.SetField(discordmessage.FieldContent, field.TypeString, value)
 		_node.Content = value
@@ -230,6 +227,23 @@ func (_c *DiscordMessageCreate) createSpec() (*DiscordMessage, *sqlgraph.CreateS
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(discordmessage.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if nodes := _c.mutation.AuthorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   discordmessage.AuthorTable,
+			Columns: []string{discordmessage.AuthorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.discord_message_author = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.ChannelIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

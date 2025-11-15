@@ -93,6 +93,18 @@ func (f DiscordMessageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Val
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DiscordMessageMutation", m)
 }
 
+// The DiscordUserFunc type is an adapter to allow the use of ordinary
+// function as DiscordUser mutator.
+type DiscordUserFunc func(context.Context, *ent.DiscordUserMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DiscordUserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DiscordUserMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DiscordUserMutation", m)
+}
+
 // The SystemPromptFunc type is an adapter to allow the use of ordinary
 // function as SystemPrompt mutator.
 type SystemPromptFunc func(context.Context, *ent.SystemPromptMutation) (ent.Value, error)

@@ -26,6 +26,8 @@ type Tx struct {
 	DiscordGuild *DiscordGuildClient
 	// DiscordMessage is the client for interacting with the DiscordMessage builders.
 	DiscordMessage *DiscordMessageClient
+	// DiscordUser is the client for interacting with the DiscordUser builders.
+	DiscordUser *DiscordUserClient
 	// SystemPrompt is the client for interacting with the SystemPrompt builders.
 	SystemPrompt *SystemPromptClient
 
@@ -166,6 +168,7 @@ func (tx *Tx) init() {
 	tx.DiscordChannel = NewDiscordChannelClient(tx.config)
 	tx.DiscordGuild = NewDiscordGuildClient(tx.config)
 	tx.DiscordMessage = NewDiscordMessageClient(tx.config)
+	tx.DiscordUser = NewDiscordUserClient(tx.config)
 	tx.SystemPrompt = NewSystemPromptClient(tx.config)
 }
 

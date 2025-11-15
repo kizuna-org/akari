@@ -14,8 +14,6 @@ const (
 	Label = "discord_message"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldAuthorID holds the string denoting the author_id field in the database.
-	FieldAuthorID = "author_id"
 	// FieldContent holds the string denoting the content field in the database.
 	FieldContent = "content"
 	// FieldTimestamp holds the string denoting the timestamp field in the database.
@@ -24,12 +22,21 @@ const (
 	FieldMentions = "mentions"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// EdgeAuthor holds the string denoting the author edge name in mutations.
+	EdgeAuthor = "author"
 	// EdgeChannel holds the string denoting the channel edge name in mutations.
 	EdgeChannel = "channel"
 	// EdgeConversationMessage holds the string denoting the conversation_message edge name in mutations.
 	EdgeConversationMessage = "conversation_message"
 	// Table holds the table name of the discordmessage in the database.
 	Table = "discord_messages"
+	// AuthorTable is the table that holds the author relation/edge.
+	AuthorTable = "discord_messages"
+	// AuthorInverseTable is the table name for the DiscordUser entity.
+	// It exists in this package in order to avoid circular dependency with the "discorduser" package.
+	AuthorInverseTable = "discord_users"
+	// AuthorColumn is the table column denoting the author relation/edge.
+	AuthorColumn = "discord_message_author"
 	// ChannelTable is the table that holds the channel relation/edge.
 	ChannelTable = "discord_messages"
 	// ChannelInverseTable is the table name for the DiscordChannel entity.
@@ -49,7 +56,6 @@ const (
 // Columns holds all SQL columns for discordmessage fields.
 var Columns = []string{
 	FieldID,
-	FieldAuthorID,
 	FieldContent,
 	FieldTimestamp,
 	FieldMentions,
@@ -60,6 +66,7 @@ var Columns = []string{
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"conversation_discord_message",
+	"discord_message_author",
 	"discord_message_channel",
 }
 
@@ -79,8 +86,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// AuthorIDValidator is a validator for the "author_id" field. It is called by the builders before save.
-	AuthorIDValidator func(string) error
 	// DefaultTimestamp holds the default value on creation for the "timestamp" field.
 	DefaultTimestamp func() time.Time
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -95,11 +100,6 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
-}
-
-// ByAuthorID orders the results by the author_id field.
-func ByAuthorID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldAuthorID, opts...).ToFunc()
 }
 
 // ByContent orders the results by the content field.
@@ -117,6 +117,13 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
+// ByAuthorField orders the results by author field.
+func ByAuthorField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAuthorStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByChannelField orders the results by channel field.
 func ByChannelField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -129,6 +136,13 @@ func ByConversationMessageField(field string, opts ...sql.OrderTermOption) Order
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newConversationMessageStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newAuthorStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AuthorInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, AuthorTable, AuthorColumn),
+	)
 }
 func newChannelStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

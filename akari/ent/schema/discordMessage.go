@@ -6,7 +6,6 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
-	"entgo.io/ent/schema/index"
 )
 
 type DiscordMessage struct {
@@ -17,7 +16,6 @@ type DiscordMessage struct {
 func (DiscordMessage) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").NotEmpty().Immutable().Unique().Comment("id of the message"),
-		field.String("author_id").NotEmpty().Immutable().Comment("the author of this message"),
 		field.String("content").Immutable().Comment("contents of the message"),
 		field.Time("timestamp").Immutable().Default(time.Now).Comment("when this message was sent"),
 		field.Strings("mentions").Optional().Immutable().Comment("users specifically mentioned in the message"),
@@ -30,6 +28,10 @@ func (DiscordMessage) Fields() []ent.Field {
 
 func (DiscordMessage) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("author", DiscordUser.Type).
+			Required().
+			Unique().
+			Comment("the author of this message"),
 		edge.To("channel", DiscordChannel.Type).
 			Required().
 			Unique().
@@ -38,11 +40,5 @@ func (DiscordMessage) Edges() []ent.Edge {
 			Ref("discord_message").
 			Unique().
 			Comment("the conversation this message relates to"),
-	}
-}
-
-func (DiscordMessage) Indexes() []ent.Index {
-	return []ent.Index{
-		index.Fields("author_id", "timestamp"),
 	}
 }
