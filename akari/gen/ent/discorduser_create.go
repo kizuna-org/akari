@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
 	"github.com/kizuna-org/akari/gen/ent/discorduser"
 )
@@ -73,6 +74,17 @@ func (_c *DiscordUserCreate) SetNillableUpdatedAt(v *time.Time) *DiscordUserCrea
 func (_c *DiscordUserCreate) SetID(v string) *DiscordUserCreate {
 	_c.mutation.SetID(v)
 	return _c
+}
+
+// SetAkariUserID sets the "akari_user" edge to the AkariUser entity by ID.
+func (_c *DiscordUserCreate) SetAkariUserID(id int) *DiscordUserCreate {
+	_c.mutation.SetAkariUserID(id)
+	return _c
+}
+
+// SetAkariUser sets the "akari_user" edge to the AkariUser entity.
+func (_c *DiscordUserCreate) SetAkariUser(v *AkariUser) *DiscordUserCreate {
+	return _c.SetAkariUserID(v.ID)
 }
 
 // AddMessageIDs adds the "messages" edge to the DiscordMessage entity by IDs.
@@ -163,6 +175,9 @@ func (_c *DiscordUserCreate) check() error {
 			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "DiscordUser.id": %w`, err)}
 		}
 	}
+	if len(_c.mutation.AkariUserIDs()) == 0 {
+		return &ValidationError{Name: "akari_user", err: errors.New(`ent: missing required edge "DiscordUser.akari_user"`)}
+	}
 	return nil
 }
 
@@ -213,6 +228,23 @@ func (_c *DiscordUserCreate) createSpec() (*DiscordUser, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(discorduser.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if nodes := _c.mutation.AkariUserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   discorduser.AkariUserTable,
+			Columns: []string{discorduser.AkariUserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(akariuser.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.akari_user_discord_user = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.MessagesIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

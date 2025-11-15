@@ -27,6 +27,9 @@ func (AkariUser) Fields() []ent.Field {
 
 func (AkariUser) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("discord_user", DiscordUser.Type).
+			Unique().
+			Comment("The Discord user linked to this Akari user"),
 		edge.From("conversations", Conversation.Type).
 			Ref("user").
 			Comment("conversations associated with this Akari user"),

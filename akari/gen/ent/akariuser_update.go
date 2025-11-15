@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
+	"github.com/kizuna-org/akari/gen/ent/discorduser"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 )
 
@@ -35,6 +36,25 @@ func (_u *AkariUserUpdate) SetUpdatedAt(v time.Time) *AkariUserUpdate {
 	return _u
 }
 
+// SetDiscordUserID sets the "discord_user" edge to the DiscordUser entity by ID.
+func (_u *AkariUserUpdate) SetDiscordUserID(id string) *AkariUserUpdate {
+	_u.mutation.SetDiscordUserID(id)
+	return _u
+}
+
+// SetNillableDiscordUserID sets the "discord_user" edge to the DiscordUser entity by ID if the given value is not nil.
+func (_u *AkariUserUpdate) SetNillableDiscordUserID(id *string) *AkariUserUpdate {
+	if id != nil {
+		_u = _u.SetDiscordUserID(*id)
+	}
+	return _u
+}
+
+// SetDiscordUser sets the "discord_user" edge to the DiscordUser entity.
+func (_u *AkariUserUpdate) SetDiscordUser(v *DiscordUser) *AkariUserUpdate {
+	return _u.SetDiscordUserID(v.ID)
+}
+
 // AddConversationIDs adds the "conversations" edge to the Conversation entity by IDs.
 func (_u *AkariUserUpdate) AddConversationIDs(ids ...int) *AkariUserUpdate {
 	_u.mutation.AddConversationIDs(ids...)
@@ -53,6 +73,12 @@ func (_u *AkariUserUpdate) AddConversations(v ...*Conversation) *AkariUserUpdate
 // Mutation returns the AkariUserMutation object of the builder.
 func (_u *AkariUserUpdate) Mutation() *AkariUserMutation {
 	return _u.mutation
+}
+
+// ClearDiscordUser clears the "discord_user" edge to the DiscordUser entity.
+func (_u *AkariUserUpdate) ClearDiscordUser() *AkariUserUpdate {
+	_u.mutation.ClearDiscordUser()
+	return _u
 }
 
 // ClearConversations clears all "conversations" edges to the Conversation entity.
@@ -123,6 +149,35 @@ func (_u *AkariUserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(akariuser.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.DiscordUserCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   akariuser.DiscordUserTable,
+			Columns: []string{akariuser.DiscordUserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.DiscordUserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   akariuser.DiscordUserTable,
+			Columns: []string{akariuser.DiscordUserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.ConversationsCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -195,6 +250,25 @@ func (_u *AkariUserUpdateOne) SetUpdatedAt(v time.Time) *AkariUserUpdateOne {
 	return _u
 }
 
+// SetDiscordUserID sets the "discord_user" edge to the DiscordUser entity by ID.
+func (_u *AkariUserUpdateOne) SetDiscordUserID(id string) *AkariUserUpdateOne {
+	_u.mutation.SetDiscordUserID(id)
+	return _u
+}
+
+// SetNillableDiscordUserID sets the "discord_user" edge to the DiscordUser entity by ID if the given value is not nil.
+func (_u *AkariUserUpdateOne) SetNillableDiscordUserID(id *string) *AkariUserUpdateOne {
+	if id != nil {
+		_u = _u.SetDiscordUserID(*id)
+	}
+	return _u
+}
+
+// SetDiscordUser sets the "discord_user" edge to the DiscordUser entity.
+func (_u *AkariUserUpdateOne) SetDiscordUser(v *DiscordUser) *AkariUserUpdateOne {
+	return _u.SetDiscordUserID(v.ID)
+}
+
 // AddConversationIDs adds the "conversations" edge to the Conversation entity by IDs.
 func (_u *AkariUserUpdateOne) AddConversationIDs(ids ...int) *AkariUserUpdateOne {
 	_u.mutation.AddConversationIDs(ids...)
@@ -213,6 +287,12 @@ func (_u *AkariUserUpdateOne) AddConversations(v ...*Conversation) *AkariUserUpd
 // Mutation returns the AkariUserMutation object of the builder.
 func (_u *AkariUserUpdateOne) Mutation() *AkariUserMutation {
 	return _u.mutation
+}
+
+// ClearDiscordUser clears the "discord_user" edge to the DiscordUser entity.
+func (_u *AkariUserUpdateOne) ClearDiscordUser() *AkariUserUpdateOne {
+	_u.mutation.ClearDiscordUser()
+	return _u
 }
 
 // ClearConversations clears all "conversations" edges to the Conversation entity.
@@ -313,6 +393,35 @@ func (_u *AkariUserUpdateOne) sqlSave(ctx context.Context) (_node *AkariUser, er
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(akariuser.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.DiscordUserCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   akariuser.DiscordUserTable,
+			Columns: []string{akariuser.DiscordUserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.DiscordUserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   akariuser.DiscordUserTable,
+			Columns: []string{akariuser.DiscordUserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.ConversationsCleared() {
 		edge := &sqlgraph.EdgeSpec{

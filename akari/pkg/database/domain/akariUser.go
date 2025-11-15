@@ -11,6 +11,7 @@ import (
 type AkariUserRepository interface {
 	CreateAkariUser(ctx context.Context) (*AkariUser, error)
 	GetAkariUserByID(ctx context.Context, id int) (*AkariUser, error)
+	GetAkariUserByDiscordUserID(ctx context.Context, discordUserID string) (*AkariUser, error)
 	ListAkariUsers(ctx context.Context) ([]*AkariUser, error)
 	DeleteAkariUser(ctx context.Context, id int) error
 }

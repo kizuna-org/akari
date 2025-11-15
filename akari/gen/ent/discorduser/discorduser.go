@@ -22,10 +22,19 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// EdgeAkariUser holds the string denoting the akari_user edge name in mutations.
+	EdgeAkariUser = "akari_user"
 	// EdgeMessages holds the string denoting the messages edge name in mutations.
 	EdgeMessages = "messages"
 	// Table holds the table name of the discorduser in the database.
 	Table = "discord_users"
+	// AkariUserTable is the table that holds the akari_user relation/edge.
+	AkariUserTable = "discord_users"
+	// AkariUserInverseTable is the table name for the AkariUser entity.
+	// It exists in this package in order to avoid circular dependency with the "akariuser" package.
+	AkariUserInverseTable = "akari_users"
+	// AkariUserColumn is the table column denoting the akari_user relation/edge.
+	AkariUserColumn = "akari_user_discord_user"
 	// MessagesTable is the table that holds the messages relation/edge.
 	MessagesTable = "discord_messages"
 	// MessagesInverseTable is the table name for the DiscordMessage entity.
@@ -44,10 +53,21 @@ var Columns = []string{
 	FieldUpdatedAt,
 }
 
+// ForeignKeys holds the SQL foreign-keys that are owned by the "discord_users"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"akari_user_discord_user",
+}
+
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -97,6 +117,13 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
+// ByAkariUserField orders the results by akari_user field.
+func ByAkariUserField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAkariUserStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByMessagesCount orders the results by messages count.
 func ByMessagesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -109,6 +136,13 @@ func ByMessages(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newMessagesStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
+}
+func newAkariUserStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AkariUserInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, AkariUserTable, AkariUserColumn),
+	)
 }
 func newMessagesStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

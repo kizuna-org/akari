@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/discorduser"
 )
 
@@ -28,23 +29,37 @@ type DiscordUser struct {
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the DiscordUserQuery when eager-loading is set.
-	Edges        DiscordUserEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges                   DiscordUserEdges `json:"edges"`
+	akari_user_discord_user *int
+	selectValues            sql.SelectValues
 }
 
 // DiscordUserEdges holds the relations/edges for other nodes in the graph.
 type DiscordUserEdges struct {
+	// The Akari user linked to this Discord user
+	AkariUser *AkariUser `json:"akari_user,omitempty"`
 	// messages sent by this user
 	Messages []*DiscordMessage `json:"messages,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
+}
+
+// AkariUserOrErr returns the AkariUser value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e DiscordUserEdges) AkariUserOrErr() (*AkariUser, error) {
+	if e.AkariUser != nil {
+		return e.AkariUser, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: akariuser.Label}
+	}
+	return nil, &NotLoadedError{edge: "akari_user"}
 }
 
 // MessagesOrErr returns the Messages value or an error if the edge
 // was not loaded in eager-loading.
 func (e DiscordUserEdges) MessagesOrErr() ([]*DiscordMessage, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.Messages, nil
 	}
 	return nil, &NotLoadedError{edge: "messages"}
@@ -61,6 +76,8 @@ func (*DiscordUser) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case discorduser.FieldCreatedAt, discorduser.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
+		case discorduser.ForeignKeys[0]: // akari_user_discord_user
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -106,6 +123,13 @@ func (_m *DiscordUser) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.UpdatedAt = value.Time
 			}
+		case discorduser.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field akari_user_discord_user", value)
+			} else if value.Valid {
+				_m.akari_user_discord_user = new(int)
+				*_m.akari_user_discord_user = int(value.Int64)
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -117,6 +141,11 @@ func (_m *DiscordUser) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *DiscordUser) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryAkariUser queries the "akari_user" edge of the DiscordUser entity.
+func (_m *DiscordUser) QueryAkariUser() *AkariUserQuery {
+	return NewDiscordUserClient(_m.config).QueryAkariUser(_m)
 }
 
 // QueryMessages queries the "messages" edge of the DiscordUser entity.

@@ -54,6 +54,8 @@ type AkariUserMutation struct {
 	created_at           *time.Time
 	updated_at           *time.Time
 	clearedFields        map[string]struct{}
+	discord_user         *string
+	cleareddiscord_user  bool
 	conversations        map[int]struct{}
 	removedconversations map[int]struct{}
 	clearedconversations bool
@@ -230,6 +232,45 @@ func (m *AkariUserMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err 
 // ResetUpdatedAt resets all changes to the "updated_at" field.
 func (m *AkariUserMutation) ResetUpdatedAt() {
 	m.updated_at = nil
+}
+
+// SetDiscordUserID sets the "discord_user" edge to the DiscordUser entity by id.
+func (m *AkariUserMutation) SetDiscordUserID(id string) {
+	m.discord_user = &id
+}
+
+// ClearDiscordUser clears the "discord_user" edge to the DiscordUser entity.
+func (m *AkariUserMutation) ClearDiscordUser() {
+	m.cleareddiscord_user = true
+}
+
+// DiscordUserCleared reports if the "discord_user" edge to the DiscordUser entity was cleared.
+func (m *AkariUserMutation) DiscordUserCleared() bool {
+	return m.cleareddiscord_user
+}
+
+// DiscordUserID returns the "discord_user" edge ID in the mutation.
+func (m *AkariUserMutation) DiscordUserID() (id string, exists bool) {
+	if m.discord_user != nil {
+		return *m.discord_user, true
+	}
+	return
+}
+
+// DiscordUserIDs returns the "discord_user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DiscordUserID instead. It exists only for internal usage by the builders.
+func (m *AkariUserMutation) DiscordUserIDs() (ids []string) {
+	if id := m.discord_user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDiscordUser resets all changes to the "discord_user" edge.
+func (m *AkariUserMutation) ResetDiscordUser() {
+	m.discord_user = nil
+	m.cleareddiscord_user = false
 }
 
 // AddConversationIDs adds the "conversations" edge to the Conversation entity by ids.
@@ -436,7 +477,10 @@ func (m *AkariUserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AkariUserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.discord_user != nil {
+		edges = append(edges, akariuser.EdgeDiscordUser)
+	}
 	if m.conversations != nil {
 		edges = append(edges, akariuser.EdgeConversations)
 	}
@@ -447,6 +491,10 @@ func (m *AkariUserMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *AkariUserMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case akariuser.EdgeDiscordUser:
+		if id := m.discord_user; id != nil {
+			return []ent.Value{*id}
+		}
 	case akariuser.EdgeConversations:
 		ids := make([]ent.Value, 0, len(m.conversations))
 		for id := range m.conversations {
@@ -459,7 +507,7 @@ func (m *AkariUserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AkariUserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedconversations != nil {
 		edges = append(edges, akariuser.EdgeConversations)
 	}
@@ -482,7 +530,10 @@ func (m *AkariUserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AkariUserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.cleareddiscord_user {
+		edges = append(edges, akariuser.EdgeDiscordUser)
+	}
 	if m.clearedconversations {
 		edges = append(edges, akariuser.EdgeConversations)
 	}
@@ -493,6 +544,8 @@ func (m *AkariUserMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *AkariUserMutation) EdgeCleared(name string) bool {
 	switch name {
+	case akariuser.EdgeDiscordUser:
+		return m.cleareddiscord_user
 	case akariuser.EdgeConversations:
 		return m.clearedconversations
 	}
@@ -503,6 +556,9 @@ func (m *AkariUserMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *AkariUserMutation) ClearEdge(name string) error {
 	switch name {
+	case akariuser.EdgeDiscordUser:
+		m.ClearDiscordUser()
+		return nil
 	}
 	return fmt.Errorf("unknown AkariUser unique edge %s", name)
 }
@@ -511,6 +567,9 @@ func (m *AkariUserMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *AkariUserMutation) ResetEdge(name string) error {
 	switch name {
+	case akariuser.EdgeDiscordUser:
+		m.ResetDiscordUser()
+		return nil
 	case akariuser.EdgeConversations:
 		m.ResetConversations()
 		return nil
@@ -4545,20 +4604,22 @@ func (m *DiscordMessageMutation) ResetEdge(name string) error {
 // DiscordUserMutation represents an operation that mutates the DiscordUser nodes in the graph.
 type DiscordUserMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *string
-	username        *string
-	bot             *bool
-	created_at      *time.Time
-	updated_at      *time.Time
-	clearedFields   map[string]struct{}
-	messages        map[string]struct{}
-	removedmessages map[string]struct{}
-	clearedmessages bool
-	done            bool
-	oldValue        func(context.Context) (*DiscordUser, error)
-	predicates      []predicate.DiscordUser
+	op                Op
+	typ               string
+	id                *string
+	username          *string
+	bot               *bool
+	created_at        *time.Time
+	updated_at        *time.Time
+	clearedFields     map[string]struct{}
+	akari_user        *int
+	clearedakari_user bool
+	messages          map[string]struct{}
+	removedmessages   map[string]struct{}
+	clearedmessages   bool
+	done              bool
+	oldValue          func(context.Context) (*DiscordUser, error)
+	predicates        []predicate.DiscordUser
 }
 
 var _ ent.Mutation = (*DiscordUserMutation)(nil)
@@ -4809,6 +4870,45 @@ func (m *DiscordUserMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
+// SetAkariUserID sets the "akari_user" edge to the AkariUser entity by id.
+func (m *DiscordUserMutation) SetAkariUserID(id int) {
+	m.akari_user = &id
+}
+
+// ClearAkariUser clears the "akari_user" edge to the AkariUser entity.
+func (m *DiscordUserMutation) ClearAkariUser() {
+	m.clearedakari_user = true
+}
+
+// AkariUserCleared reports if the "akari_user" edge to the AkariUser entity was cleared.
+func (m *DiscordUserMutation) AkariUserCleared() bool {
+	return m.clearedakari_user
+}
+
+// AkariUserID returns the "akari_user" edge ID in the mutation.
+func (m *DiscordUserMutation) AkariUserID() (id int, exists bool) {
+	if m.akari_user != nil {
+		return *m.akari_user, true
+	}
+	return
+}
+
+// AkariUserIDs returns the "akari_user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// AkariUserID instead. It exists only for internal usage by the builders.
+func (m *DiscordUserMutation) AkariUserIDs() (ids []int) {
+	if id := m.akari_user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAkariUser resets all changes to the "akari_user" edge.
+func (m *DiscordUserMutation) ResetAkariUser() {
+	m.akari_user = nil
+	m.clearedakari_user = false
+}
+
 // AddMessageIDs adds the "messages" edge to the DiscordMessage entity by ids.
 func (m *DiscordUserMutation) AddMessageIDs(ids ...string) {
 	if m.messages == nil {
@@ -5047,7 +5147,10 @@ func (m *DiscordUserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DiscordUserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.akari_user != nil {
+		edges = append(edges, discorduser.EdgeAkariUser)
+	}
 	if m.messages != nil {
 		edges = append(edges, discorduser.EdgeMessages)
 	}
@@ -5058,6 +5161,10 @@ func (m *DiscordUserMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *DiscordUserMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case discorduser.EdgeAkariUser:
+		if id := m.akari_user; id != nil {
+			return []ent.Value{*id}
+		}
 	case discorduser.EdgeMessages:
 		ids := make([]ent.Value, 0, len(m.messages))
 		for id := range m.messages {
@@ -5070,7 +5177,7 @@ func (m *DiscordUserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DiscordUserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedmessages != nil {
 		edges = append(edges, discorduser.EdgeMessages)
 	}
@@ -5093,7 +5200,10 @@ func (m *DiscordUserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DiscordUserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.clearedakari_user {
+		edges = append(edges, discorduser.EdgeAkariUser)
+	}
 	if m.clearedmessages {
 		edges = append(edges, discorduser.EdgeMessages)
 	}
@@ -5104,6 +5214,8 @@ func (m *DiscordUserMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *DiscordUserMutation) EdgeCleared(name string) bool {
 	switch name {
+	case discorduser.EdgeAkariUser:
+		return m.clearedakari_user
 	case discorduser.EdgeMessages:
 		return m.clearedmessages
 	}
@@ -5114,6 +5226,9 @@ func (m *DiscordUserMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *DiscordUserMutation) ClearEdge(name string) error {
 	switch name {
+	case discorduser.EdgeAkariUser:
+		m.ClearAkariUser()
+		return nil
 	}
 	return fmt.Errorf("unknown DiscordUser unique edge %s", name)
 }
@@ -5122,6 +5237,9 @@ func (m *DiscordUserMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *DiscordUserMutation) ResetEdge(name string) error {
 	switch name {
+	case discorduser.EdgeAkariUser:
+		m.ResetAkariUser()
+		return nil
 	case discorduser.EdgeMessages:
 		m.ResetMessages()
 		return nil

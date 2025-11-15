@@ -70,6 +70,21 @@ func (mr *MockAkariUserRepositoryMockRecorder) DeleteAkariUser(ctx, id any) *gom
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAkariUser", reflect.TypeOf((*MockAkariUserRepository)(nil).DeleteAkariUser), ctx, id)
 }
 
+// GetAkariUserByDiscordUserID mocks base method.
+func (m *MockAkariUserRepository) GetAkariUserByDiscordUserID(ctx context.Context, discordUserID string) (*domain.AkariUser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAkariUserByDiscordUserID", ctx, discordUserID)
+	ret0, _ := ret[0].(*domain.AkariUser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAkariUserByDiscordUserID indicates an expected call of GetAkariUserByDiscordUserID.
+func (mr *MockAkariUserRepositoryMockRecorder) GetAkariUserByDiscordUserID(ctx, discordUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAkariUserByDiscordUserID", reflect.TypeOf((*MockAkariUserRepository)(nil).GetAkariUserByDiscordUserID), ctx, discordUserID)
+}
+
 // GetAkariUserByID mocks base method.
 func (m *MockAkariUserRepository) GetAkariUserByID(ctx context.Context, id int) (*domain.AkariUser, error) {
 	m.ctrl.T.Helper()

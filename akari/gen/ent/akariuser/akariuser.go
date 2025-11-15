@@ -18,10 +18,19 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// EdgeDiscordUser holds the string denoting the discord_user edge name in mutations.
+	EdgeDiscordUser = "discord_user"
 	// EdgeConversations holds the string denoting the conversations edge name in mutations.
 	EdgeConversations = "conversations"
 	// Table holds the table name of the akariuser in the database.
 	Table = "akari_users"
+	// DiscordUserTable is the table that holds the discord_user relation/edge.
+	DiscordUserTable = "discord_users"
+	// DiscordUserInverseTable is the table name for the DiscordUser entity.
+	// It exists in this package in order to avoid circular dependency with the "discorduser" package.
+	DiscordUserInverseTable = "discord_users"
+	// DiscordUserColumn is the table column denoting the discord_user relation/edge.
+	DiscordUserColumn = "akari_user_discord_user"
 	// ConversationsTable is the table that holds the conversations relation/edge.
 	ConversationsTable = "conversations"
 	// ConversationsInverseTable is the table name for the Conversation entity.
@@ -75,6 +84,13 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
+// ByDiscordUserField orders the results by discord_user field.
+func ByDiscordUserField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newDiscordUserStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByConversationsCount orders the results by conversations count.
 func ByConversationsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -87,6 +103,13 @@ func ByConversations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newConversationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
+}
+func newDiscordUserStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(DiscordUserInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, DiscordUserTable, DiscordUserColumn),
+	)
 }
 func newConversationsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(

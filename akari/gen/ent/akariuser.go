@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/kizuna-org/akari/gen/ent/akariuser"
+	"github.com/kizuna-org/akari/gen/ent/discorduser"
 )
 
 // AkariUser is the model entity for the AkariUser schema.
@@ -29,17 +30,30 @@ type AkariUser struct {
 
 // AkariUserEdges holds the relations/edges for other nodes in the graph.
 type AkariUserEdges struct {
+	// The Discord user linked to this Akari user
+	DiscordUser *DiscordUser `json:"discord_user,omitempty"`
 	// conversations associated with this Akari user
 	Conversations []*Conversation `json:"conversations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
+}
+
+// DiscordUserOrErr returns the DiscordUser value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e AkariUserEdges) DiscordUserOrErr() (*DiscordUser, error) {
+	if e.DiscordUser != nil {
+		return e.DiscordUser, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: discorduser.Label}
+	}
+	return nil, &NotLoadedError{edge: "discord_user"}
 }
 
 // ConversationsOrErr returns the Conversations value or an error if the edge
 // was not loaded in eager-loading.
 func (e AkariUserEdges) ConversationsOrErr() ([]*Conversation, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.Conversations, nil
 	}
 	return nil, &NotLoadedError{edge: "conversations"}
@@ -98,6 +112,11 @@ func (_m *AkariUser) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *AkariUser) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryDiscordUser queries the "discord_user" edge of the AkariUser entity.
+func (_m *AkariUser) QueryDiscordUser() *DiscordUserQuery {
+	return NewAkariUserClient(_m.config).QueryDiscordUser(_m)
 }
 
 // QueryConversations queries the "conversations" edge of the AkariUser entity.

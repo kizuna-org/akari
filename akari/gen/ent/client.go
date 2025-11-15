@@ -389,6 +389,22 @@ func (c *AkariUserClient) GetX(ctx context.Context, id int) *AkariUser {
 	return obj
 }
 
+// QueryDiscordUser queries the discord_user edge of a AkariUser.
+func (c *AkariUserClient) QueryDiscordUser(_m *AkariUser) *DiscordUserQuery {
+	query := (&DiscordUserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(akariuser.Table, akariuser.FieldID, id),
+			sqlgraph.To(discorduser.Table, discorduser.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, akariuser.DiscordUserTable, akariuser.DiscordUserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryConversations queries the conversations edge of a AkariUser.
 func (c *AkariUserClient) QueryConversations(_m *AkariUser) *ConversationQuery {
 	query := (&ConversationClient{config: c.config}).Query()
@@ -1707,6 +1723,22 @@ func (c *DiscordUserClient) GetX(ctx context.Context, id string) *DiscordUser {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryAkariUser queries the akari_user edge of a DiscordUser.
+func (c *DiscordUserClient) QueryAkariUser(_m *DiscordUser) *AkariUserQuery {
+	query := (&AkariUserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discorduser.Table, discorduser.FieldID, id),
+			sqlgraph.To(akariuser.Table, akariuser.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, discorduser.AkariUserTable, discorduser.AkariUserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryMessages queries the messages edge of a DiscordUser.

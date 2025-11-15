@@ -145,6 +145,29 @@ func UpdatedAtLTE(v time.Time) predicate.AkariUser {
 	return predicate.AkariUser(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
+// HasDiscordUser applies the HasEdge predicate on the "discord_user" edge.
+func HasDiscordUser() predicate.AkariUser {
+	return predicate.AkariUser(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, DiscordUserTable, DiscordUserColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasDiscordUserWith applies the HasEdge predicate on the "discord_user" edge with a given conditions (other predicates).
+func HasDiscordUserWith(preds ...predicate.DiscordUser) predicate.AkariUser {
+	return predicate.AkariUser(func(s *sql.Selector) {
+		step := newDiscordUserStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasConversations applies the HasEdge predicate on the "conversations" edge.
 func HasConversations() predicate.AkariUser {
 	return predicate.AkariUser(func(s *sql.Selector) {
