@@ -3,7 +3,7 @@ BIN := bin/$(APP_NAME)
 GO := go
 ENV := local
 
-.PHONY: init build run test fmt vet tidy generate lint lint-fix tools clean migrate-new migrate-apply migrate-status migrate-validate migrate-lint migrate-dry-run up down down-volumes
+.PHONY: init build run test fmt vet tidy generate lint clean up down down-volumes migrate-new migrate-apply migrate-status migrate-hash migrate-validate migrate-dry-run
 
 init:
 	go mod download
@@ -29,7 +29,7 @@ fmt:
 vet:
 	$(GO) vet ./...
 
- tidy:
+tidy:
 	$(GO) mod tidy
 
 generate: init
