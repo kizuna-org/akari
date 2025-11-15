@@ -13,6 +13,7 @@ import (
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
+	"github.com/kizuna-org/akari/gen/ent/discorduser"
 )
 
 // DiscordMessage is the model entity for the DiscordMessage schema.
@@ -21,8 +22,6 @@ type DiscordMessage struct {
 	// ID of the ent.
 	// id of the message
 	ID string `json:"id,omitempty"`
-	// the author of this message
-	AuthorID string `json:"author_id,omitempty"`
 	// contents of the message
 	Content string `json:"content,omitempty"`
 	// when this message was sent
@@ -35,19 +34,33 @@ type DiscordMessage struct {
 	// The values are being populated by the DiscordMessageQuery when eager-loading is set.
 	Edges                        DiscordMessageEdges `json:"edges"`
 	conversation_discord_message *int
+	discord_message_author       *string
 	discord_message_channel      *string
 	selectValues                 sql.SelectValues
 }
 
 // DiscordMessageEdges holds the relations/edges for other nodes in the graph.
 type DiscordMessageEdges struct {
+	// the author of this message
+	Author *DiscordUser `json:"author,omitempty"`
 	// the channel this message was sent in
 	Channel *DiscordChannel `json:"channel,omitempty"`
 	// the conversation this message relates to
 	ConversationMessage *Conversation `json:"conversation_message,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// AuthorOrErr returns the Author value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e DiscordMessageEdges) AuthorOrErr() (*DiscordUser, error) {
+	if e.Author != nil {
+		return e.Author, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: discorduser.Label}
+	}
+	return nil, &NotLoadedError{edge: "author"}
 }
 
 // ChannelOrErr returns the Channel value or an error if the edge
@@ -55,7 +68,7 @@ type DiscordMessageEdges struct {
 func (e DiscordMessageEdges) ChannelOrErr() (*DiscordChannel, error) {
 	if e.Channel != nil {
 		return e.Channel, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: discordchannel.Label}
 	}
 	return nil, &NotLoadedError{edge: "channel"}
@@ -66,7 +79,7 @@ func (e DiscordMessageEdges) ChannelOrErr() (*DiscordChannel, error) {
 func (e DiscordMessageEdges) ConversationMessageOrErr() (*Conversation, error) {
 	if e.ConversationMessage != nil {
 		return e.ConversationMessage, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: conversation.Label}
 	}
 	return nil, &NotLoadedError{edge: "conversation_message"}
@@ -79,13 +92,15 @@ func (*DiscordMessage) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case discordmessage.FieldMentions:
 			values[i] = new([]byte)
-		case discordmessage.FieldID, discordmessage.FieldAuthorID, discordmessage.FieldContent:
+		case discordmessage.FieldID, discordmessage.FieldContent:
 			values[i] = new(sql.NullString)
 		case discordmessage.FieldTimestamp, discordmessage.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		case discordmessage.ForeignKeys[0]: // conversation_discord_message
 			values[i] = new(sql.NullInt64)
-		case discordmessage.ForeignKeys[1]: // discord_message_channel
+		case discordmessage.ForeignKeys[1]: // discord_message_author
+			values[i] = new(sql.NullString)
+		case discordmessage.ForeignKeys[2]: // discord_message_channel
 			values[i] = new(sql.NullString)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -107,12 +122,6 @@ func (_m *DiscordMessage) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
 				_m.ID = value.String
-			}
-		case discordmessage.FieldAuthorID:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field author_id", values[i])
-			} else if value.Valid {
-				_m.AuthorID = value.String
 			}
 		case discordmessage.FieldContent:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -149,6 +158,13 @@ func (_m *DiscordMessage) assignValues(columns []string, values []any) error {
 			}
 		case discordmessage.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field discord_message_author", values[i])
+			} else if value.Valid {
+				_m.discord_message_author = new(string)
+				*_m.discord_message_author = value.String
+			}
+		case discordmessage.ForeignKeys[2]:
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field discord_message_channel", values[i])
 			} else if value.Valid {
 				_m.discord_message_channel = new(string)
@@ -165,6 +181,11 @@ func (_m *DiscordMessage) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *DiscordMessage) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryAuthor queries the "author" edge of the DiscordMessage entity.
+func (_m *DiscordMessage) QueryAuthor() *DiscordUserQuery {
+	return NewDiscordMessageClient(_m.config).QueryAuthor(_m)
 }
 
 // QueryChannel queries the "channel" edge of the DiscordMessage entity.
@@ -200,9 +221,6 @@ func (_m *DiscordMessage) String() string {
 	var builder strings.Builder
 	builder.WriteString("DiscordMessage(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
-	builder.WriteString("author_id=")
-	builder.WriteString(_m.AuthorID)
-	builder.WriteString(", ")
 	builder.WriteString("content=")
 	builder.WriteString(_m.Content)
 	builder.WriteString(", ")

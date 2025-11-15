@@ -28,7 +28,7 @@ func (r *repositoryImpl) CreateDiscordMessage(
 	r.logger.Info("Discord message created",
 		slog.String("message_id", message.ID),
 		slog.String("channel_id", message.Edges.Channel.ID),
-		slog.String("author_id", message.AuthorID),
+		slog.String("author_id", message.Edges.Author.ID),
 		slog.String("timestamp", message.Timestamp.String()),
 	)
 

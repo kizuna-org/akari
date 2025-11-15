@@ -27,5 +27,8 @@ type DiscordGuild func(*sql.Selector)
 // DiscordMessage is the predicate function for discordmessage builders.
 type DiscordMessage func(*sql.Selector)
 
+// DiscordUser is the predicate function for discorduser builders.
+type DiscordUser func(*sql.Selector)
+
 // SystemPrompt is the predicate function for systemprompt builders.
 type SystemPrompt func(*sql.Selector)

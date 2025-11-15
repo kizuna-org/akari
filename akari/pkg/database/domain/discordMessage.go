@@ -28,7 +28,7 @@ func ToDomainDiscordMessageFromDB(model *ent.DiscordMessage) *DiscordMessage {
 	return &DiscordMessage{
 		ID:        model.ID,
 		ChannelID: model.Edges.Channel.ID,
-		AuthorID:  model.AuthorID,
+		AuthorID:  model.Edges.Author.ID,
 		Content:   model.Content,
 		Timestamp: model.Timestamp,
 		CreatedAt: model.CreatedAt,
