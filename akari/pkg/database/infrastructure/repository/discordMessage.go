@@ -15,8 +15,8 @@ func (r *repositoryImpl) CreateDiscordMessage(
 ) (*domain.DiscordMessage, error) {
 	builder := r.client.DiscordMessageClient().Create().
 		SetID(params.ID).
-		SetChannelID(params.ChannelID).
 		SetAuthorID(params.AuthorID).
+		SetChannelID(params.ChannelID).
 		SetContent(params.Content).
 		SetTimestamp(params.Timestamp)
 
@@ -27,8 +27,8 @@ func (r *repositoryImpl) CreateDiscordMessage(
 
 	r.logger.Info("Discord message created",
 		slog.String("message_id", message.ID),
-		slog.String("channel_id", message.Edges.Channel.ID),
 		slog.String("author_id", message.Edges.Author.ID),
+		slog.String("channel_id", message.Edges.Channel.ID),
 		slog.String("timestamp", message.Timestamp.String()),
 	)
 
@@ -42,6 +42,7 @@ func (r *repositoryImpl) GetDiscordMessageByID(
 	message, err := r.client.DiscordMessageClient().
 		Query().
 		Where(discordmessage.IDEQ(messageID)).
+		WithAuthor().
 		WithChannel().
 		Only(ctx)
 	if err != nil {

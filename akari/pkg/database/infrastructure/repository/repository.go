@@ -14,6 +14,7 @@ type Repository interface {
 	domain.CharacterRepository
 	domain.ConversationRepository
 	domain.ConversationGroupRepository
+	domain.DiscordUserRepository
 	domain.DiscordMessageRepository
 	domain.DiscordChannelRepository
 	domain.DiscordGuildRepository
