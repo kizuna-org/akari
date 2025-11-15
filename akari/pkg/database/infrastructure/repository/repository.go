@@ -9,10 +9,11 @@ import (
 	"github.com/kizuna-org/akari/pkg/database/infrastructure"
 )
 
+//nolint:interfacebloat
 type Repository interface {
 	domain.DatabaseRepository
-	domain.AkariUserRepository
 	domain.CharacterRepository
+	domain.AkariUserRepository
 	domain.ConversationRepository
 	domain.ConversationGroupRepository
 	domain.DiscordUserRepository
