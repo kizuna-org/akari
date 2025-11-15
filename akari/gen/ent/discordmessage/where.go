@@ -328,6 +328,29 @@ func HasChannelWith(preds ...predicate.DiscordChannel) predicate.DiscordMessage 
 	})
 }
 
+// HasConversationMessage applies the HasEdge predicate on the "conversation_message" edge.
+func HasConversationMessage() predicate.DiscordMessage {
+	return predicate.DiscordMessage(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, ConversationMessageTable, ConversationMessageColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConversationMessageWith applies the HasEdge predicate on the "conversation_message" edge with a given conditions (other predicates).
+func HasConversationMessageWith(preds ...predicate.Conversation) predicate.DiscordMessage {
+	return predicate.DiscordMessage(func(s *sql.Selector) {
+		step := newConversationMessageStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.DiscordMessage) predicate.DiscordMessage {
 	return predicate.DiscordMessage(sql.AndPredicates(predicates...))

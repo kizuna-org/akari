@@ -34,6 +34,10 @@ func (DiscordMessage) Edges() []ent.Edge {
 			Required().
 			Unique().
 			Comment("the channel this message was sent in"),
+		edge.From("conversation_message", Conversation.Type).
+			Ref("discord_message").
+			Unique().
+			Comment("the conversation this message relates to"),
 	}
 }
 

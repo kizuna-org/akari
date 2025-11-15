@@ -261,6 +261,29 @@ func HasSystemPromptsWith(preds ...predicate.SystemPrompt) predicate.Character {
 	})
 }
 
+// HasConversationGroups applies the HasEdge predicate on the "conversation_groups" edge.
+func HasConversationGroups() predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ConversationGroupsTable, ConversationGroupsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasConversationGroupsWith applies the HasEdge predicate on the "conversation_groups" edge with a given conditions (other predicates).
+func HasConversationGroupsWith(preds ...predicate.ConversationGroup) predicate.Character {
+	return predicate.Character(func(s *sql.Selector) {
+		step := newConversationGroupsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Character) predicate.Character {
 	return predicate.Character(sql.AndPredicates(predicates...))

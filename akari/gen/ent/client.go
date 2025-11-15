@@ -17,6 +17,8 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
+	"github.com/kizuna-org/akari/gen/ent/conversation"
+	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordguild"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
@@ -32,6 +34,10 @@ type Client struct {
 	Character *CharacterClient
 	// CharacterConfig is the client for interacting with the CharacterConfig builders.
 	CharacterConfig *CharacterConfigClient
+	// Conversation is the client for interacting with the Conversation builders.
+	Conversation *ConversationClient
+	// ConversationGroup is the client for interacting with the ConversationGroup builders.
+	ConversationGroup *ConversationGroupClient
 	// DiscordChannel is the client for interacting with the DiscordChannel builders.
 	DiscordChannel *DiscordChannelClient
 	// DiscordGuild is the client for interacting with the DiscordGuild builders.
@@ -53,6 +59,8 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Character = NewCharacterClient(c.config)
 	c.CharacterConfig = NewCharacterConfigClient(c.config)
+	c.Conversation = NewConversationClient(c.config)
+	c.ConversationGroup = NewConversationGroupClient(c.config)
 	c.DiscordChannel = NewDiscordChannelClient(c.config)
 	c.DiscordGuild = NewDiscordGuildClient(c.config)
 	c.DiscordMessage = NewDiscordMessageClient(c.config)
@@ -147,14 +155,16 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:             ctx,
-		config:          cfg,
-		Character:       NewCharacterClient(cfg),
-		CharacterConfig: NewCharacterConfigClient(cfg),
-		DiscordChannel:  NewDiscordChannelClient(cfg),
-		DiscordGuild:    NewDiscordGuildClient(cfg),
-		DiscordMessage:  NewDiscordMessageClient(cfg),
-		SystemPrompt:    NewSystemPromptClient(cfg),
+		ctx:               ctx,
+		config:            cfg,
+		Character:         NewCharacterClient(cfg),
+		CharacterConfig:   NewCharacterConfigClient(cfg),
+		Conversation:      NewConversationClient(cfg),
+		ConversationGroup: NewConversationGroupClient(cfg),
+		DiscordChannel:    NewDiscordChannelClient(cfg),
+		DiscordGuild:      NewDiscordGuildClient(cfg),
+		DiscordMessage:    NewDiscordMessageClient(cfg),
+		SystemPrompt:      NewSystemPromptClient(cfg),
 	}, nil
 }
 
@@ -172,14 +182,16 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:             ctx,
-		config:          cfg,
-		Character:       NewCharacterClient(cfg),
-		CharacterConfig: NewCharacterConfigClient(cfg),
-		DiscordChannel:  NewDiscordChannelClient(cfg),
-		DiscordGuild:    NewDiscordGuildClient(cfg),
-		DiscordMessage:  NewDiscordMessageClient(cfg),
-		SystemPrompt:    NewSystemPromptClient(cfg),
+		ctx:               ctx,
+		config:            cfg,
+		Character:         NewCharacterClient(cfg),
+		CharacterConfig:   NewCharacterConfigClient(cfg),
+		Conversation:      NewConversationClient(cfg),
+		ConversationGroup: NewConversationGroupClient(cfg),
+		DiscordChannel:    NewDiscordChannelClient(cfg),
+		DiscordGuild:      NewDiscordGuildClient(cfg),
+		DiscordMessage:    NewDiscordMessageClient(cfg),
+		SystemPrompt:      NewSystemPromptClient(cfg),
 	}, nil
 }
 
@@ -209,8 +221,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Character, c.CharacterConfig, c.DiscordChannel, c.DiscordGuild,
-		c.DiscordMessage, c.SystemPrompt,
+		c.Character, c.CharacterConfig, c.Conversation, c.ConversationGroup,
+		c.DiscordChannel, c.DiscordGuild, c.DiscordMessage, c.SystemPrompt,
 	} {
 		n.Use(hooks...)
 	}
@@ -220,8 +232,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Character, c.CharacterConfig, c.DiscordChannel, c.DiscordGuild,
-		c.DiscordMessage, c.SystemPrompt,
+		c.Character, c.CharacterConfig, c.Conversation, c.ConversationGroup,
+		c.DiscordChannel, c.DiscordGuild, c.DiscordMessage, c.SystemPrompt,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -234,6 +246,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Character.mutate(ctx, m)
 	case *CharacterConfigMutation:
 		return c.CharacterConfig.mutate(ctx, m)
+	case *ConversationMutation:
+		return c.Conversation.mutate(ctx, m)
+	case *ConversationGroupMutation:
+		return c.ConversationGroup.mutate(ctx, m)
 	case *DiscordChannelMutation:
 		return c.DiscordChannel.mutate(ctx, m)
 	case *DiscordGuildMutation:
@@ -380,6 +396,22 @@ func (c *CharacterClient) QuerySystemPrompts(_m *Character) *SystemPromptQuery {
 			sqlgraph.From(character.Table, character.FieldID, id),
 			sqlgraph.To(systemprompt.Table, systemprompt.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, character.SystemPromptsTable, character.SystemPromptsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConversationGroups queries the conversation_groups edge of a Character.
+func (c *CharacterClient) QueryConversationGroups(_m *Character) *ConversationGroupQuery {
+	query := (&ConversationGroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(character.Table, character.FieldID, id),
+			sqlgraph.To(conversationgroup.Table, conversationgroup.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, character.ConversationGroupsTable, character.ConversationGroupsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -558,6 +590,336 @@ func (c *CharacterConfigClient) mutate(ctx context.Context, m *CharacterConfigMu
 		return (&CharacterConfigDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown CharacterConfig mutation op: %q", m.Op())
+	}
+}
+
+// ConversationClient is a client for the Conversation schema.
+type ConversationClient struct {
+	config
+}
+
+// NewConversationClient returns a client for the Conversation from the given config.
+func NewConversationClient(c config) *ConversationClient {
+	return &ConversationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `conversation.Hooks(f(g(h())))`.
+func (c *ConversationClient) Use(hooks ...Hook) {
+	c.hooks.Conversation = append(c.hooks.Conversation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `conversation.Intercept(f(g(h())))`.
+func (c *ConversationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Conversation = append(c.inters.Conversation, interceptors...)
+}
+
+// Create returns a builder for creating a Conversation entity.
+func (c *ConversationClient) Create() *ConversationCreate {
+	mutation := newConversationMutation(c.config, OpCreate)
+	return &ConversationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Conversation entities.
+func (c *ConversationClient) CreateBulk(builders ...*ConversationCreate) *ConversationCreateBulk {
+	return &ConversationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConversationClient) MapCreateBulk(slice any, setFunc func(*ConversationCreate, int)) *ConversationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConversationCreateBulk{err: fmt.Errorf("calling to ConversationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConversationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConversationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Conversation.
+func (c *ConversationClient) Update() *ConversationUpdate {
+	mutation := newConversationMutation(c.config, OpUpdate)
+	return &ConversationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConversationClient) UpdateOne(_m *Conversation) *ConversationUpdateOne {
+	mutation := newConversationMutation(c.config, OpUpdateOne, withConversation(_m))
+	return &ConversationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ConversationClient) UpdateOneID(id int) *ConversationUpdateOne {
+	mutation := newConversationMutation(c.config, OpUpdateOne, withConversationID(id))
+	return &ConversationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Conversation.
+func (c *ConversationClient) Delete() *ConversationDelete {
+	mutation := newConversationMutation(c.config, OpDelete)
+	return &ConversationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConversationClient) DeleteOne(_m *Conversation) *ConversationDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ConversationClient) DeleteOneID(id int) *ConversationDeleteOne {
+	builder := c.Delete().Where(conversation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ConversationDeleteOne{builder}
+}
+
+// Query returns a query builder for Conversation.
+func (c *ConversationClient) Query() *ConversationQuery {
+	return &ConversationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConversation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Conversation entity by its id.
+func (c *ConversationClient) Get(ctx context.Context, id int) (*Conversation, error) {
+	return c.Query().Where(conversation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConversationClient) GetX(ctx context.Context, id int) *Conversation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDiscordMessage queries the discord_message edge of a Conversation.
+func (c *ConversationClient) QueryDiscordMessage(_m *Conversation) *DiscordMessageQuery {
+	query := (&DiscordMessageClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(conversation.Table, conversation.FieldID, id),
+			sqlgraph.To(discordmessage.Table, discordmessage.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, conversation.DiscordMessageTable, conversation.DiscordMessageColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConversationGroup queries the conversation_group edge of a Conversation.
+func (c *ConversationClient) QueryConversationGroup(_m *Conversation) *ConversationGroupQuery {
+	query := (&ConversationGroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(conversation.Table, conversation.FieldID, id),
+			sqlgraph.To(conversationgroup.Table, conversationgroup.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, conversation.ConversationGroupTable, conversation.ConversationGroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ConversationClient) Hooks() []Hook {
+	return c.hooks.Conversation
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConversationClient) Interceptors() []Interceptor {
+	return c.inters.Conversation
+}
+
+func (c *ConversationClient) mutate(ctx context.Context, m *ConversationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConversationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConversationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConversationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConversationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Conversation mutation op: %q", m.Op())
+	}
+}
+
+// ConversationGroupClient is a client for the ConversationGroup schema.
+type ConversationGroupClient struct {
+	config
+}
+
+// NewConversationGroupClient returns a client for the ConversationGroup from the given config.
+func NewConversationGroupClient(c config) *ConversationGroupClient {
+	return &ConversationGroupClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `conversationgroup.Hooks(f(g(h())))`.
+func (c *ConversationGroupClient) Use(hooks ...Hook) {
+	c.hooks.ConversationGroup = append(c.hooks.ConversationGroup, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `conversationgroup.Intercept(f(g(h())))`.
+func (c *ConversationGroupClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ConversationGroup = append(c.inters.ConversationGroup, interceptors...)
+}
+
+// Create returns a builder for creating a ConversationGroup entity.
+func (c *ConversationGroupClient) Create() *ConversationGroupCreate {
+	mutation := newConversationGroupMutation(c.config, OpCreate)
+	return &ConversationGroupCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ConversationGroup entities.
+func (c *ConversationGroupClient) CreateBulk(builders ...*ConversationGroupCreate) *ConversationGroupCreateBulk {
+	return &ConversationGroupCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConversationGroupClient) MapCreateBulk(slice any, setFunc func(*ConversationGroupCreate, int)) *ConversationGroupCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConversationGroupCreateBulk{err: fmt.Errorf("calling to ConversationGroupClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConversationGroupCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConversationGroupCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ConversationGroup.
+func (c *ConversationGroupClient) Update() *ConversationGroupUpdate {
+	mutation := newConversationGroupMutation(c.config, OpUpdate)
+	return &ConversationGroupUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConversationGroupClient) UpdateOne(_m *ConversationGroup) *ConversationGroupUpdateOne {
+	mutation := newConversationGroupMutation(c.config, OpUpdateOne, withConversationGroup(_m))
+	return &ConversationGroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ConversationGroupClient) UpdateOneID(id int) *ConversationGroupUpdateOne {
+	mutation := newConversationGroupMutation(c.config, OpUpdateOne, withConversationGroupID(id))
+	return &ConversationGroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ConversationGroup.
+func (c *ConversationGroupClient) Delete() *ConversationGroupDelete {
+	mutation := newConversationGroupMutation(c.config, OpDelete)
+	return &ConversationGroupDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConversationGroupClient) DeleteOne(_m *ConversationGroup) *ConversationGroupDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ConversationGroupClient) DeleteOneID(id int) *ConversationGroupDeleteOne {
+	builder := c.Delete().Where(conversationgroup.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ConversationGroupDeleteOne{builder}
+}
+
+// Query returns a query builder for ConversationGroup.
+func (c *ConversationGroupClient) Query() *ConversationGroupQuery {
+	return &ConversationGroupQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConversationGroup},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ConversationGroup entity by its id.
+func (c *ConversationGroupClient) Get(ctx context.Context, id int) (*ConversationGroup, error) {
+	return c.Query().Where(conversationgroup.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConversationGroupClient) GetX(ctx context.Context, id int) *ConversationGroup {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryConversations queries the conversations edge of a ConversationGroup.
+func (c *ConversationGroupClient) QueryConversations(_m *ConversationGroup) *ConversationQuery {
+	query := (&ConversationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(conversationgroup.Table, conversationgroup.FieldID, id),
+			sqlgraph.To(conversation.Table, conversation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, conversationgroup.ConversationsTable, conversationgroup.ConversationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCharacter queries the character edge of a ConversationGroup.
+func (c *ConversationGroupClient) QueryCharacter(_m *ConversationGroup) *CharacterQuery {
+	query := (&CharacterClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(conversationgroup.Table, conversationgroup.FieldID, id),
+			sqlgraph.To(character.Table, character.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, conversationgroup.CharacterTable, conversationgroup.CharacterColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ConversationGroupClient) Hooks() []Hook {
+	return c.hooks.ConversationGroup
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConversationGroupClient) Interceptors() []Interceptor {
+	return c.inters.ConversationGroup
+}
+
+func (c *ConversationGroupClient) mutate(ctx context.Context, m *ConversationGroupMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConversationGroupCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConversationGroupUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConversationGroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConversationGroupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ConversationGroup mutation op: %q", m.Op())
 	}
 }
 
@@ -999,6 +1361,22 @@ func (c *DiscordMessageClient) QueryChannel(_m *DiscordMessage) *DiscordChannelQ
 	return query
 }
 
+// QueryConversationMessage queries the conversation_message edge of a DiscordMessage.
+func (c *DiscordMessageClient) QueryConversationMessage(_m *DiscordMessage) *ConversationQuery {
+	query := (&ConversationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(discordmessage.Table, discordmessage.FieldID, id),
+			sqlgraph.To(conversation.Table, conversation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, discordmessage.ConversationMessageTable, discordmessage.ConversationMessageColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *DiscordMessageClient) Hooks() []Hook {
 	return c.hooks.DiscordMessage
@@ -1176,11 +1554,11 @@ func (c *SystemPromptClient) mutate(ctx context.Context, m *SystemPromptMutation
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Character, CharacterConfig, DiscordChannel, DiscordGuild, DiscordMessage,
-		SystemPrompt []ent.Hook
+		Character, CharacterConfig, Conversation, ConversationGroup, DiscordChannel,
+		DiscordGuild, DiscordMessage, SystemPrompt []ent.Hook
 	}
 	inters struct {
-		Character, CharacterConfig, DiscordChannel, DiscordGuild, DiscordMessage,
-		SystemPrompt []ent.Interceptor
+		Character, CharacterConfig, Conversation, ConversationGroup, DiscordChannel,
+		DiscordGuild, DiscordMessage, SystemPrompt []ent.Interceptor
 	}
 )

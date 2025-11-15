@@ -26,6 +26,8 @@ const (
 	FieldCreatedAt = "created_at"
 	// EdgeChannel holds the string denoting the channel edge name in mutations.
 	EdgeChannel = "channel"
+	// EdgeConversationMessage holds the string denoting the conversation_message edge name in mutations.
+	EdgeConversationMessage = "conversation_message"
 	// Table holds the table name of the discordmessage in the database.
 	Table = "discord_messages"
 	// ChannelTable is the table that holds the channel relation/edge.
@@ -35,6 +37,13 @@ const (
 	ChannelInverseTable = "discord_channels"
 	// ChannelColumn is the table column denoting the channel relation/edge.
 	ChannelColumn = "discord_message_channel"
+	// ConversationMessageTable is the table that holds the conversation_message relation/edge.
+	ConversationMessageTable = "discord_messages"
+	// ConversationMessageInverseTable is the table name for the Conversation entity.
+	// It exists in this package in order to avoid circular dependency with the "conversation" package.
+	ConversationMessageInverseTable = "conversations"
+	// ConversationMessageColumn is the table column denoting the conversation_message relation/edge.
+	ConversationMessageColumn = "conversation_discord_message"
 )
 
 // Columns holds all SQL columns for discordmessage fields.
@@ -50,6 +59,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "discord_messages"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
+	"conversation_discord_message",
 	"discord_message_channel",
 }
 
@@ -113,10 +123,24 @@ func ByChannelField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newChannelStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByConversationMessageField orders the results by conversation_message field.
+func ByConversationMessageField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newConversationMessageStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newChannelStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ChannelInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, ChannelTable, ChannelColumn),
+	)
+}
+func newConversationMessageStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ConversationMessageInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, ConversationMessageTable, ConversationMessageColumn),
 	)
 }

@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
+	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
@@ -21,12 +22,13 @@ import (
 // CharacterQuery is the builder for querying Character entities.
 type CharacterQuery struct {
 	config
-	ctx               *QueryContext
-	order             []character.OrderOption
-	inters            []Interceptor
-	predicates        []predicate.Character
-	withConfig        *CharacterConfigQuery
-	withSystemPrompts *SystemPromptQuery
+	ctx                    *QueryContext
+	order                  []character.OrderOption
+	inters                 []Interceptor
+	predicates             []predicate.Character
+	withConfig             *CharacterConfigQuery
+	withSystemPrompts      *SystemPromptQuery
+	withConversationGroups *ConversationGroupQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -100,6 +102,28 @@ func (_q *CharacterQuery) QuerySystemPrompts() *SystemPromptQuery {
 			sqlgraph.From(character.Table, character.FieldID, selector),
 			sqlgraph.To(systemprompt.Table, systemprompt.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, character.SystemPromptsTable, character.SystemPromptsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryConversationGroups chains the current query on the "conversation_groups" edge.
+func (_q *CharacterQuery) QueryConversationGroups() *ConversationGroupQuery {
+	query := (&ConversationGroupClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(character.Table, character.FieldID, selector),
+			sqlgraph.To(conversationgroup.Table, conversationgroup.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, character.ConversationGroupsTable, character.ConversationGroupsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -294,13 +318,14 @@ func (_q *CharacterQuery) Clone() *CharacterQuery {
 		return nil
 	}
 	return &CharacterQuery{
-		config:            _q.config,
-		ctx:               _q.ctx.Clone(),
-		order:             append([]character.OrderOption{}, _q.order...),
-		inters:            append([]Interceptor{}, _q.inters...),
-		predicates:        append([]predicate.Character{}, _q.predicates...),
-		withConfig:        _q.withConfig.Clone(),
-		withSystemPrompts: _q.withSystemPrompts.Clone(),
+		config:                 _q.config,
+		ctx:                    _q.ctx.Clone(),
+		order:                  append([]character.OrderOption{}, _q.order...),
+		inters:                 append([]Interceptor{}, _q.inters...),
+		predicates:             append([]predicate.Character{}, _q.predicates...),
+		withConfig:             _q.withConfig.Clone(),
+		withSystemPrompts:      _q.withSystemPrompts.Clone(),
+		withConversationGroups: _q.withConversationGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -326,6 +351,17 @@ func (_q *CharacterQuery) WithSystemPrompts(opts ...func(*SystemPromptQuery)) *C
 		opt(query)
 	}
 	_q.withSystemPrompts = query
+	return _q
+}
+
+// WithConversationGroups tells the query-builder to eager-load the nodes that are connected to
+// the "conversation_groups" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *CharacterQuery) WithConversationGroups(opts ...func(*ConversationGroupQuery)) *CharacterQuery {
+	query := (&ConversationGroupClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withConversationGroups = query
 	return _q
 }
 
@@ -407,9 +443,10 @@ func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 	var (
 		nodes       = []*Character{}
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withConfig != nil,
 			_q.withSystemPrompts != nil,
+			_q.withConversationGroups != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -440,6 +477,15 @@ func (_q *CharacterQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ch
 		if err := _q.loadSystemPrompts(ctx, query, nodes,
 			func(n *Character) { n.Edges.SystemPrompts = []*SystemPrompt{} },
 			func(n *Character, e *SystemPrompt) { n.Edges.SystemPrompts = append(n.Edges.SystemPrompts, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withConversationGroups; query != nil {
+		if err := _q.loadConversationGroups(ctx, query, nodes,
+			func(n *Character) { n.Edges.ConversationGroups = []*ConversationGroup{} },
+			func(n *Character, e *ConversationGroup) {
+				n.Edges.ConversationGroups = append(n.Edges.ConversationGroups, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -500,6 +546,37 @@ func (_q *CharacterQuery) loadSystemPrompts(ctx context.Context, query *SystemPr
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "character_system_prompts" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *CharacterQuery) loadConversationGroups(ctx context.Context, query *ConversationGroupQuery, nodes []*Character, init func(*Character), assign func(*Character, *ConversationGroup)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Character)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.ConversationGroup(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(character.ConversationGroupsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.conversation_group_character
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "conversation_group_character" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "conversation_group_character" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

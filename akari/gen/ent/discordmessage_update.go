@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
@@ -39,6 +40,25 @@ func (_u *DiscordMessageUpdate) SetChannel(v *DiscordChannel) *DiscordMessageUpd
 	return _u.SetChannelID(v.ID)
 }
 
+// SetConversationMessageID sets the "conversation_message" edge to the Conversation entity by ID.
+func (_u *DiscordMessageUpdate) SetConversationMessageID(id int) *DiscordMessageUpdate {
+	_u.mutation.SetConversationMessageID(id)
+	return _u
+}
+
+// SetNillableConversationMessageID sets the "conversation_message" edge to the Conversation entity by ID if the given value is not nil.
+func (_u *DiscordMessageUpdate) SetNillableConversationMessageID(id *int) *DiscordMessageUpdate {
+	if id != nil {
+		_u = _u.SetConversationMessageID(*id)
+	}
+	return _u
+}
+
+// SetConversationMessage sets the "conversation_message" edge to the Conversation entity.
+func (_u *DiscordMessageUpdate) SetConversationMessage(v *Conversation) *DiscordMessageUpdate {
+	return _u.SetConversationMessageID(v.ID)
+}
+
 // Mutation returns the DiscordMessageMutation object of the builder.
 func (_u *DiscordMessageUpdate) Mutation() *DiscordMessageMutation {
 	return _u.mutation
@@ -47,6 +67,12 @@ func (_u *DiscordMessageUpdate) Mutation() *DiscordMessageMutation {
 // ClearChannel clears the "channel" edge to the DiscordChannel entity.
 func (_u *DiscordMessageUpdate) ClearChannel() *DiscordMessageUpdate {
 	_u.mutation.ClearChannel()
+	return _u
+}
+
+// ClearConversationMessage clears the "conversation_message" edge to the Conversation entity.
+func (_u *DiscordMessageUpdate) ClearConversationMessage() *DiscordMessageUpdate {
+	_u.mutation.ClearConversationMessage()
 	return _u
 }
 
@@ -129,6 +155,35 @@ func (_u *DiscordMessageUpdate) sqlSave(ctx context.Context) (_node int, err err
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.ConversationMessageCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   discordmessage.ConversationMessageTable,
+			Columns: []string{discordmessage.ConversationMessageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConversationMessageIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   discordmessage.ConversationMessageTable,
+			Columns: []string{discordmessage.ConversationMessageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{discordmessage.Label}
@@ -160,6 +215,25 @@ func (_u *DiscordMessageUpdateOne) SetChannel(v *DiscordChannel) *DiscordMessage
 	return _u.SetChannelID(v.ID)
 }
 
+// SetConversationMessageID sets the "conversation_message" edge to the Conversation entity by ID.
+func (_u *DiscordMessageUpdateOne) SetConversationMessageID(id int) *DiscordMessageUpdateOne {
+	_u.mutation.SetConversationMessageID(id)
+	return _u
+}
+
+// SetNillableConversationMessageID sets the "conversation_message" edge to the Conversation entity by ID if the given value is not nil.
+func (_u *DiscordMessageUpdateOne) SetNillableConversationMessageID(id *int) *DiscordMessageUpdateOne {
+	if id != nil {
+		_u = _u.SetConversationMessageID(*id)
+	}
+	return _u
+}
+
+// SetConversationMessage sets the "conversation_message" edge to the Conversation entity.
+func (_u *DiscordMessageUpdateOne) SetConversationMessage(v *Conversation) *DiscordMessageUpdateOne {
+	return _u.SetConversationMessageID(v.ID)
+}
+
 // Mutation returns the DiscordMessageMutation object of the builder.
 func (_u *DiscordMessageUpdateOne) Mutation() *DiscordMessageMutation {
 	return _u.mutation
@@ -168,6 +242,12 @@ func (_u *DiscordMessageUpdateOne) Mutation() *DiscordMessageMutation {
 // ClearChannel clears the "channel" edge to the DiscordChannel entity.
 func (_u *DiscordMessageUpdateOne) ClearChannel() *DiscordMessageUpdateOne {
 	_u.mutation.ClearChannel()
+	return _u
+}
+
+// ClearConversationMessage clears the "conversation_message" edge to the Conversation entity.
+func (_u *DiscordMessageUpdateOne) ClearConversationMessage() *DiscordMessageUpdateOne {
+	_u.mutation.ClearConversationMessage()
 	return _u
 }
 
@@ -273,6 +353,35 @@ func (_u *DiscordMessageUpdateOne) sqlSave(ctx context.Context) (_node *DiscordM
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(discordchannel.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.ConversationMessageCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   discordmessage.ConversationMessageTable,
+			Columns: []string{discordmessage.ConversationMessageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.ConversationMessageIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   discordmessage.ConversationMessageTable,
+			Columns: []string{discordmessage.ConversationMessageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
 )
@@ -82,6 +83,25 @@ func (_c *DiscordMessageCreate) SetChannelID(id string) *DiscordMessageCreate {
 // SetChannel sets the "channel" edge to the DiscordChannel entity.
 func (_c *DiscordMessageCreate) SetChannel(v *DiscordChannel) *DiscordMessageCreate {
 	return _c.SetChannelID(v.ID)
+}
+
+// SetConversationMessageID sets the "conversation_message" edge to the Conversation entity by ID.
+func (_c *DiscordMessageCreate) SetConversationMessageID(id int) *DiscordMessageCreate {
+	_c.mutation.SetConversationMessageID(id)
+	return _c
+}
+
+// SetNillableConversationMessageID sets the "conversation_message" edge to the Conversation entity by ID if the given value is not nil.
+func (_c *DiscordMessageCreate) SetNillableConversationMessageID(id *int) *DiscordMessageCreate {
+	if id != nil {
+		_c = _c.SetConversationMessageID(*id)
+	}
+	return _c
+}
+
+// SetConversationMessage sets the "conversation_message" edge to the Conversation entity.
+func (_c *DiscordMessageCreate) SetConversationMessage(v *Conversation) *DiscordMessageCreate {
+	return _c.SetConversationMessageID(v.ID)
 }
 
 // Mutation returns the DiscordMessageMutation object of the builder.
@@ -226,6 +246,23 @@ func (_c *DiscordMessageCreate) createSpec() (*DiscordMessage, *sqlgraph.CreateS
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.discord_message_channel = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConversationMessageIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   discordmessage.ConversationMessageTable,
+			Columns: []string{discordmessage.ConversationMessageColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversation.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.conversation_discord_message = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

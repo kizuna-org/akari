@@ -32,5 +32,8 @@ func (Character) Edges() []ent.Edge {
 		edge.To("system_prompts", SystemPrompt.Type).
 			Required().
 			Comment("The system prompts associated with this character"),
+		edge.From("conversation_groups", ConversationGroup.Type).
+			Ref("character").
+			Comment("The conversation groups associated with this character"),
 	}
 }

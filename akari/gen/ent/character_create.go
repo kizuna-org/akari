@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
+	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
@@ -80,6 +81,21 @@ func (_c *CharacterCreate) AddSystemPrompts(v ...*SystemPrompt) *CharacterCreate
 		ids[i] = v[i].ID
 	}
 	return _c.AddSystemPromptIDs(ids...)
+}
+
+// AddConversationGroupIDs adds the "conversation_groups" edge to the ConversationGroup entity by IDs.
+func (_c *CharacterCreate) AddConversationGroupIDs(ids ...int) *CharacterCreate {
+	_c.mutation.AddConversationGroupIDs(ids...)
+	return _c
+}
+
+// AddConversationGroups adds the "conversation_groups" edges to the ConversationGroup entity.
+func (_c *CharacterCreate) AddConversationGroups(v ...*ConversationGroup) *CharacterCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddConversationGroupIDs(ids...)
 }
 
 // Mutation returns the CharacterMutation object of the builder.
@@ -212,6 +228,22 @@ func (_c *CharacterCreate) createSpec() (*Character, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(systemprompt.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ConversationGroupsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   character.ConversationGroupsTable,
+			Columns: []string{character.ConversationGroupsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(conversationgroup.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
