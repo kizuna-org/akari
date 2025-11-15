@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
@@ -25,6 +26,7 @@ type ConversationQuery struct {
 	order                 []conversation.OrderOption
 	inters                []Interceptor
 	predicates            []predicate.Conversation
+	withUser              *AkariUserQuery
 	withDiscordMessage    *DiscordMessageQuery
 	withConversationGroup *ConversationGroupQuery
 	withFKs               bool
@@ -62,6 +64,28 @@ func (_q *ConversationQuery) Unique(unique bool) *ConversationQuery {
 func (_q *ConversationQuery) Order(o ...conversation.OrderOption) *ConversationQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryUser chains the current query on the "user" edge.
+func (_q *ConversationQuery) QueryUser() *AkariUserQuery {
+	query := (&AkariUserClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(conversation.Table, conversation.FieldID, selector),
+			sqlgraph.To(akariuser.Table, akariuser.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, conversation.UserTable, conversation.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryDiscordMessage chains the current query on the "discord_message" edge.
@@ -300,12 +324,24 @@ func (_q *ConversationQuery) Clone() *ConversationQuery {
 		order:                 append([]conversation.OrderOption{}, _q.order...),
 		inters:                append([]Interceptor{}, _q.inters...),
 		predicates:            append([]predicate.Conversation{}, _q.predicates...),
+		withUser:              _q.withUser.Clone(),
 		withDiscordMessage:    _q.withDiscordMessage.Clone(),
 		withConversationGroup: _q.withConversationGroup.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithUser tells the query-builder to eager-load the nodes that are connected to
+// the "user" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ConversationQuery) WithUser(opts ...func(*AkariUserQuery)) *ConversationQuery {
+	query := (&AkariUserClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withUser = query
+	return _q
 }
 
 // WithDiscordMessage tells the query-builder to eager-load the nodes that are connected to
@@ -409,12 +445,13 @@ func (_q *ConversationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes       = []*Conversation{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
+			_q.withUser != nil,
 			_q.withDiscordMessage != nil,
 			_q.withConversationGroup != nil,
 		}
 	)
-	if _q.withConversationGroup != nil {
+	if _q.withUser != nil || _q.withConversationGroup != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -438,6 +475,12 @@ func (_q *ConversationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withUser; query != nil {
+		if err := _q.loadUser(ctx, query, nodes, nil,
+			func(n *Conversation, e *AkariUser) { n.Edges.User = e }); err != nil {
+			return nil, err
+		}
+	}
 	if query := _q.withDiscordMessage; query != nil {
 		if err := _q.loadDiscordMessage(ctx, query, nodes, nil,
 			func(n *Conversation, e *DiscordMessage) { n.Edges.DiscordMessage = e }); err != nil {
@@ -453,6 +496,38 @@ func (_q *ConversationQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	return nodes, nil
 }
 
+func (_q *ConversationQuery) loadUser(ctx context.Context, query *AkariUserQuery, nodes []*Conversation, init func(*Conversation), assign func(*Conversation, *AkariUser)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Conversation)
+	for i := range nodes {
+		if nodes[i].conversation_user == nil {
+			continue
+		}
+		fk := *nodes[i].conversation_user
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(akariuser.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "conversation_user" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 func (_q *ConversationQuery) loadDiscordMessage(ctx context.Context, query *DiscordMessageQuery, nodes []*Conversation, init func(*Conversation), assign func(*Conversation, *DiscordMessage)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[int]*Conversation)

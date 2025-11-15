@@ -37,6 +37,7 @@ func (r *repositoryImpl) GetConversationByID(ctx context.Context, id int) (*doma
 	conv, err := r.client.ConversationClient().
 		Query().
 		Where(conversation.IDEQ(id)).
+		WithUser().
 		WithDiscordMessage().
 		WithConversationGroup().
 		Only(ctx)
@@ -51,6 +52,7 @@ func (r *repositoryImpl) ListConversations(ctx context.Context) ([]*domain.Conve
 	convs, err := r.client.ConversationClient().
 		Query().
 		Order(conversation.ByID()).
+		WithUser().
 		WithDiscordMessage().
 		WithConversationGroup().
 		All(ctx)

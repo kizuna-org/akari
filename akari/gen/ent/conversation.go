@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
@@ -24,19 +25,33 @@ type Conversation struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ConversationQuery when eager-loading is set.
 	Edges                            ConversationEdges `json:"edges"`
+	conversation_user                *int
 	conversation_group_conversations *int
 	selectValues                     sql.SelectValues
 }
 
 // ConversationEdges holds the relations/edges for other nodes in the graph.
 type ConversationEdges struct {
+	// The Akari user who owns this conversation
+	User *AkariUser `json:"user,omitempty"`
 	// The Discord message that related to this conversation
 	DiscordMessage *DiscordMessage `json:"discord_message,omitempty"`
 	// The conversation group this conversation belongs to
 	ConversationGroup *ConversationGroup `json:"conversation_group,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// UserOrErr returns the User value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ConversationEdges) UserOrErr() (*AkariUser, error) {
+	if e.User != nil {
+		return e.User, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: akariuser.Label}
+	}
+	return nil, &NotLoadedError{edge: "user"}
 }
 
 // DiscordMessageOrErr returns the DiscordMessage value or an error if the edge
@@ -44,7 +59,7 @@ type ConversationEdges struct {
 func (e ConversationEdges) DiscordMessageOrErr() (*DiscordMessage, error) {
 	if e.DiscordMessage != nil {
 		return e.DiscordMessage, nil
-	} else if e.loadedTypes[0] {
+	} else if e.loadedTypes[1] {
 		return nil, &NotFoundError{label: discordmessage.Label}
 	}
 	return nil, &NotLoadedError{edge: "discord_message"}
@@ -55,7 +70,7 @@ func (e ConversationEdges) DiscordMessageOrErr() (*DiscordMessage, error) {
 func (e ConversationEdges) ConversationGroupOrErr() (*ConversationGroup, error) {
 	if e.ConversationGroup != nil {
 		return e.ConversationGroup, nil
-	} else if e.loadedTypes[1] {
+	} else if e.loadedTypes[2] {
 		return nil, &NotFoundError{label: conversationgroup.Label}
 	}
 	return nil, &NotLoadedError{edge: "conversation_group"}
@@ -70,7 +85,9 @@ func (*Conversation) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case conversation.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case conversation.ForeignKeys[0]: // conversation_group_conversations
+		case conversation.ForeignKeys[0]: // conversation_user
+			values[i] = new(sql.NullInt64)
+		case conversation.ForeignKeys[1]: // conversation_group_conversations
 			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -101,6 +118,13 @@ func (_m *Conversation) assignValues(columns []string, values []any) error {
 			}
 		case conversation.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field conversation_user", value)
+			} else if value.Valid {
+				_m.conversation_user = new(int)
+				*_m.conversation_user = int(value.Int64)
+			}
+		case conversation.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field conversation_group_conversations", value)
 			} else if value.Valid {
 				_m.conversation_group_conversations = new(int)
@@ -117,6 +141,11 @@ func (_m *Conversation) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *Conversation) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryUser queries the "user" edge of the Conversation entity.
+func (_m *Conversation) QueryUser() *AkariUserQuery {
+	return NewConversationClient(_m.config).QueryUser(_m)
 }
 
 // QueryDiscordMessage queries the "discord_message" edge of the Conversation entity.

@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
@@ -34,6 +35,17 @@ func (_c *ConversationCreate) SetNillableCreatedAt(v *time.Time) *ConversationCr
 		_c.SetCreatedAt(*v)
 	}
 	return _c
+}
+
+// SetUserID sets the "user" edge to the AkariUser entity by ID.
+func (_c *ConversationCreate) SetUserID(id int) *ConversationCreate {
+	_c.mutation.SetUserID(id)
+	return _c
+}
+
+// SetUser sets the "user" edge to the AkariUser entity.
+func (_c *ConversationCreate) SetUser(v *AkariUser) *ConversationCreate {
+	return _c.SetUserID(v.ID)
 }
 
 // SetDiscordMessageID sets the "discord_message" edge to the DiscordMessage entity by ID.
@@ -104,6 +116,9 @@ func (_c *ConversationCreate) check() error {
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Conversation.created_at"`)}
 	}
+	if len(_c.mutation.UserIDs()) == 0 {
+		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Conversation.user"`)}
+	}
 	if len(_c.mutation.DiscordMessageIDs()) == 0 {
 		return &ValidationError{Name: "discord_message", err: errors.New(`ent: missing required edge "Conversation.discord_message"`)}
 	}
@@ -139,6 +154,23 @@ func (_c *ConversationCreate) createSpec() (*Conversation, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(conversation.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   conversation.UserTable,
+			Columns: []string{conversation.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(akariuser.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.conversation_user = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.DiscordMessageIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

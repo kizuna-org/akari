@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/gen/ent/predicate"
@@ -28,6 +29,17 @@ func (_u *ConversationUpdate) Where(ps ...predicate.Conversation) *ConversationU
 	return _u
 }
 
+// SetUserID sets the "user" edge to the AkariUser entity by ID.
+func (_u *ConversationUpdate) SetUserID(id int) *ConversationUpdate {
+	_u.mutation.SetUserID(id)
+	return _u
+}
+
+// SetUser sets the "user" edge to the AkariUser entity.
+func (_u *ConversationUpdate) SetUser(v *AkariUser) *ConversationUpdate {
+	return _u.SetUserID(v.ID)
+}
+
 // SetConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by ID.
 func (_u *ConversationUpdate) SetConversationGroupID(id int) *ConversationUpdate {
 	_u.mutation.SetConversationGroupID(id)
@@ -42,6 +54,12 @@ func (_u *ConversationUpdate) SetConversationGroup(v *ConversationGroup) *Conver
 // Mutation returns the ConversationMutation object of the builder.
 func (_u *ConversationUpdate) Mutation() *ConversationMutation {
 	return _u.mutation
+}
+
+// ClearUser clears the "user" edge to the AkariUser entity.
+func (_u *ConversationUpdate) ClearUser() *ConversationUpdate {
+	_u.mutation.ClearUser()
+	return _u
 }
 
 // ClearConversationGroup clears the "conversation_group" edge to the ConversationGroup entity.
@@ -79,6 +97,9 @@ func (_u *ConversationUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ConversationUpdate) check() error {
+	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Conversation.user"`)
+	}
 	if _u.mutation.DiscordMessageCleared() && len(_u.mutation.DiscordMessageIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Conversation.discord_message"`)
 	}
@@ -99,6 +120,35 @@ func (_u *ConversationUpdate) sqlSave(ctx context.Context) (_node int, err error
 				ps[i](selector)
 			}
 		}
+	}
+	if _u.mutation.UserCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   conversation.UserTable,
+			Columns: []string{conversation.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(akariuser.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   conversation.UserTable,
+			Columns: []string{conversation.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(akariuser.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.ConversationGroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -149,6 +199,17 @@ type ConversationUpdateOne struct {
 	mutation *ConversationMutation
 }
 
+// SetUserID sets the "user" edge to the AkariUser entity by ID.
+func (_u *ConversationUpdateOne) SetUserID(id int) *ConversationUpdateOne {
+	_u.mutation.SetUserID(id)
+	return _u
+}
+
+// SetUser sets the "user" edge to the AkariUser entity.
+func (_u *ConversationUpdateOne) SetUser(v *AkariUser) *ConversationUpdateOne {
+	return _u.SetUserID(v.ID)
+}
+
 // SetConversationGroupID sets the "conversation_group" edge to the ConversationGroup entity by ID.
 func (_u *ConversationUpdateOne) SetConversationGroupID(id int) *ConversationUpdateOne {
 	_u.mutation.SetConversationGroupID(id)
@@ -163,6 +224,12 @@ func (_u *ConversationUpdateOne) SetConversationGroup(v *ConversationGroup) *Con
 // Mutation returns the ConversationMutation object of the builder.
 func (_u *ConversationUpdateOne) Mutation() *ConversationMutation {
 	return _u.mutation
+}
+
+// ClearUser clears the "user" edge to the AkariUser entity.
+func (_u *ConversationUpdateOne) ClearUser() *ConversationUpdateOne {
+	_u.mutation.ClearUser()
+	return _u
 }
 
 // ClearConversationGroup clears the "conversation_group" edge to the ConversationGroup entity.
@@ -213,6 +280,9 @@ func (_u *ConversationUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *ConversationUpdateOne) check() error {
+	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "Conversation.user"`)
+	}
 	if _u.mutation.DiscordMessageCleared() && len(_u.mutation.DiscordMessageIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "Conversation.discord_message"`)
 	}
@@ -250,6 +320,35 @@ func (_u *ConversationUpdateOne) sqlSave(ctx context.Context) (_node *Conversati
 				ps[i](selector)
 			}
 		}
+	}
+	if _u.mutation.UserCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   conversation.UserTable,
+			Columns: []string{conversation.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(akariuser.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   conversation.UserTable,
+			Columns: []string{conversation.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(akariuser.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _u.mutation.ConversationGroupCleared() {
 		edge := &sqlgraph.EdgeSpec{

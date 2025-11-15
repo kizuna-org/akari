@@ -20,6 +20,7 @@ type Client interface {
 	Close() error
 	WithTx(ctx context.Context, txFunc domain.TxFunc) error
 	CharacterClient() *ent.CharacterClient
+	AkariUserClient() *ent.AkariUserClient
 	ConversationClient() *ent.ConversationClient
 	ConversationGroupClient() *ent.ConversationGroupClient
 	DiscordMessageClient() *ent.DiscordMessageClient
@@ -85,6 +86,10 @@ func (c *client) Close() error {
 
 func (c *client) CharacterClient() *ent.CharacterClient {
 	return c.Character
+}
+
+func (c *client) AkariUserClient() *ent.AkariUserClient {
+	return c.AkariUser
 }
 
 func (c *client) ConversationClient() *ent.ConversationClient {

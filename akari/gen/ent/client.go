@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
@@ -31,6 +32,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// AkariUser is the client for interacting with the AkariUser builders.
+	AkariUser *AkariUserClient
 	// Character is the client for interacting with the Character builders.
 	Character *CharacterClient
 	// CharacterConfig is the client for interacting with the CharacterConfig builders.
@@ -60,6 +63,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.AkariUser = NewAkariUserClient(c.config)
 	c.Character = NewCharacterClient(c.config)
 	c.CharacterConfig = NewCharacterConfigClient(c.config)
 	c.Conversation = NewConversationClient(c.config)
@@ -161,6 +165,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:               ctx,
 		config:            cfg,
+		AkariUser:         NewAkariUserClient(cfg),
 		Character:         NewCharacterClient(cfg),
 		CharacterConfig:   NewCharacterConfigClient(cfg),
 		Conversation:      NewConversationClient(cfg),
@@ -189,6 +194,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:               ctx,
 		config:            cfg,
+		AkariUser:         NewAkariUserClient(cfg),
 		Character:         NewCharacterClient(cfg),
 		CharacterConfig:   NewCharacterConfigClient(cfg),
 		Conversation:      NewConversationClient(cfg),
@@ -204,7 +210,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Character.
+//		AkariUser.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -227,9 +233,9 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Character, c.CharacterConfig, c.Conversation, c.ConversationGroup,
-		c.DiscordChannel, c.DiscordGuild, c.DiscordMessage, c.DiscordUser,
-		c.SystemPrompt,
+		c.AkariUser, c.Character, c.CharacterConfig, c.Conversation,
+		c.ConversationGroup, c.DiscordChannel, c.DiscordGuild, c.DiscordMessage,
+		c.DiscordUser, c.SystemPrompt,
 	} {
 		n.Use(hooks...)
 	}
@@ -239,9 +245,9 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Character, c.CharacterConfig, c.Conversation, c.ConversationGroup,
-		c.DiscordChannel, c.DiscordGuild, c.DiscordMessage, c.DiscordUser,
-		c.SystemPrompt,
+		c.AkariUser, c.Character, c.CharacterConfig, c.Conversation,
+		c.ConversationGroup, c.DiscordChannel, c.DiscordGuild, c.DiscordMessage,
+		c.DiscordUser, c.SystemPrompt,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -250,6 +256,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *AkariUserMutation:
+		return c.AkariUser.mutate(ctx, m)
 	case *CharacterMutation:
 		return c.Character.mutate(ctx, m)
 	case *CharacterConfigMutation:
@@ -270,6 +278,155 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.SystemPrompt.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// AkariUserClient is a client for the AkariUser schema.
+type AkariUserClient struct {
+	config
+}
+
+// NewAkariUserClient returns a client for the AkariUser from the given config.
+func NewAkariUserClient(c config) *AkariUserClient {
+	return &AkariUserClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `akariuser.Hooks(f(g(h())))`.
+func (c *AkariUserClient) Use(hooks ...Hook) {
+	c.hooks.AkariUser = append(c.hooks.AkariUser, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `akariuser.Intercept(f(g(h())))`.
+func (c *AkariUserClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AkariUser = append(c.inters.AkariUser, interceptors...)
+}
+
+// Create returns a builder for creating a AkariUser entity.
+func (c *AkariUserClient) Create() *AkariUserCreate {
+	mutation := newAkariUserMutation(c.config, OpCreate)
+	return &AkariUserCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AkariUser entities.
+func (c *AkariUserClient) CreateBulk(builders ...*AkariUserCreate) *AkariUserCreateBulk {
+	return &AkariUserCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AkariUserClient) MapCreateBulk(slice any, setFunc func(*AkariUserCreate, int)) *AkariUserCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AkariUserCreateBulk{err: fmt.Errorf("calling to AkariUserClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AkariUserCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AkariUserCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AkariUser.
+func (c *AkariUserClient) Update() *AkariUserUpdate {
+	mutation := newAkariUserMutation(c.config, OpUpdate)
+	return &AkariUserUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AkariUserClient) UpdateOne(_m *AkariUser) *AkariUserUpdateOne {
+	mutation := newAkariUserMutation(c.config, OpUpdateOne, withAkariUser(_m))
+	return &AkariUserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AkariUserClient) UpdateOneID(id int) *AkariUserUpdateOne {
+	mutation := newAkariUserMutation(c.config, OpUpdateOne, withAkariUserID(id))
+	return &AkariUserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AkariUser.
+func (c *AkariUserClient) Delete() *AkariUserDelete {
+	mutation := newAkariUserMutation(c.config, OpDelete)
+	return &AkariUserDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AkariUserClient) DeleteOne(_m *AkariUser) *AkariUserDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AkariUserClient) DeleteOneID(id int) *AkariUserDeleteOne {
+	builder := c.Delete().Where(akariuser.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AkariUserDeleteOne{builder}
+}
+
+// Query returns a query builder for AkariUser.
+func (c *AkariUserClient) Query() *AkariUserQuery {
+	return &AkariUserQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAkariUser},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a AkariUser entity by its id.
+func (c *AkariUserClient) Get(ctx context.Context, id int) (*AkariUser, error) {
+	return c.Query().Where(akariuser.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AkariUserClient) GetX(ctx context.Context, id int) *AkariUser {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryConversations queries the conversations edge of a AkariUser.
+func (c *AkariUserClient) QueryConversations(_m *AkariUser) *ConversationQuery {
+	query := (&ConversationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(akariuser.Table, akariuser.FieldID, id),
+			sqlgraph.To(conversation.Table, conversation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, akariuser.ConversationsTable, akariuser.ConversationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AkariUserClient) Hooks() []Hook {
+	return c.hooks.AkariUser
+}
+
+// Interceptors returns the client interceptors.
+func (c *AkariUserClient) Interceptors() []Interceptor {
+	return c.inters.AkariUser
+}
+
+func (c *AkariUserClient) mutate(ctx context.Context, m *AkariUserMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AkariUserCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AkariUserUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AkariUserUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AkariUserDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown AkariUser mutation op: %q", m.Op())
 	}
 }
 
@@ -709,6 +866,22 @@ func (c *ConversationClient) GetX(ctx context.Context, id int) *Conversation {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryUser queries the user edge of a Conversation.
+func (c *ConversationClient) QueryUser(_m *Conversation) *AkariUserQuery {
+	query := (&AkariUserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(conversation.Table, conversation.FieldID, id),
+			sqlgraph.To(akariuser.Table, akariuser.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, conversation.UserTable, conversation.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // QueryDiscordMessage queries the discord_message edge of a Conversation.
@@ -1729,11 +1902,13 @@ func (c *SystemPromptClient) mutate(ctx context.Context, m *SystemPromptMutation
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Character, CharacterConfig, Conversation, ConversationGroup, DiscordChannel,
-		DiscordGuild, DiscordMessage, DiscordUser, SystemPrompt []ent.Hook
+		AkariUser, Character, CharacterConfig, Conversation, ConversationGroup,
+		DiscordChannel, DiscordGuild, DiscordMessage, DiscordUser,
+		SystemPrompt []ent.Hook
 	}
 	inters struct {
-		Character, CharacterConfig, Conversation, ConversationGroup, DiscordChannel,
-		DiscordGuild, DiscordMessage, DiscordUser, SystemPrompt []ent.Interceptor
+		AkariUser, Character, CharacterConfig, Conversation, ConversationGroup,
+		DiscordChannel, DiscordGuild, DiscordMessage, DiscordUser,
+		SystemPrompt []ent.Interceptor
 	}
 )
