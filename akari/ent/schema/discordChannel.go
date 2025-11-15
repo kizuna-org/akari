@@ -14,7 +14,7 @@ type DiscordChannel struct {
 
 // https://discord.com/developers/docs/resources/channel
 func (DiscordChannel) Fields() []ent.Field {
-	DiscordChannelType := []string{
+	discordChannelType := []string{
 		"GUILD_TEXT",
 		"DM",
 		"GUILD_VOICE",
@@ -32,7 +32,7 @@ func (DiscordChannel) Fields() []ent.Field {
 
 	return []ent.Field{
 		field.String("id").NotEmpty().Immutable().Unique().Comment("the id of this channel"),
-		field.Enum("type").Values(DiscordChannelType...).Immutable().Comment("the type of channel"),
+		field.Enum("type").Values(discordChannelType...).Comment("the type of channel"),
 		field.String("name").NotEmpty().Comment("the name of the channel"),
 		field.Time("created_at").
 			Immutable().

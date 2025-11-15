@@ -30,6 +30,20 @@ func (_u *DiscordChannelUpdate) Where(ps ...predicate.DiscordChannel) *DiscordCh
 	return _u
 }
 
+// SetType sets the "type" field.
+func (_u *DiscordChannelUpdate) SetType(v discordchannel.Type) *DiscordChannelUpdate {
+	_u.mutation.SetType(v)
+	return _u
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (_u *DiscordChannelUpdate) SetNillableType(v *discordchannel.Type) *DiscordChannelUpdate {
+	if v != nil {
+		_u.SetType(*v)
+	}
+	return _u
+}
+
 // SetName sets the "name" field.
 func (_u *DiscordChannelUpdate) SetName(v string) *DiscordChannelUpdate {
 	_u.mutation.SetName(v)
@@ -146,6 +160,11 @@ func (_u *DiscordChannelUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *DiscordChannelUpdate) check() error {
+	if v, ok := _u.mutation.GetType(); ok {
+		if err := discordchannel.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "DiscordChannel.type": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := discordchannel.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "DiscordChannel.name": %w`, err)}
@@ -168,6 +187,9 @@ func (_u *DiscordChannelUpdate) sqlSave(ctx context.Context) (_node int, err err
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.GetType(); ok {
+		_spec.SetField(discordchannel.FieldType, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(discordchannel.FieldName, field.TypeString, value)
@@ -267,6 +289,20 @@ type DiscordChannelUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *DiscordChannelMutation
+}
+
+// SetType sets the "type" field.
+func (_u *DiscordChannelUpdateOne) SetType(v discordchannel.Type) *DiscordChannelUpdateOne {
+	_u.mutation.SetType(v)
+	return _u
+}
+
+// SetNillableType sets the "type" field if the given value is not nil.
+func (_u *DiscordChannelUpdateOne) SetNillableType(v *discordchannel.Type) *DiscordChannelUpdateOne {
+	if v != nil {
+		_u.SetType(*v)
+	}
+	return _u
 }
 
 // SetName sets the "name" field.
@@ -398,6 +434,11 @@ func (_u *DiscordChannelUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *DiscordChannelUpdateOne) check() error {
+	if v, ok := _u.mutation.GetType(); ok {
+		if err := discordchannel.TypeValidator(v); err != nil {
+			return &ValidationError{Name: "type", err: fmt.Errorf(`ent: validator failed for field "DiscordChannel.type": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Name(); ok {
 		if err := discordchannel.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "DiscordChannel.name": %w`, err)}
@@ -437,6 +478,9 @@ func (_u *DiscordChannelUpdateOne) sqlSave(ctx context.Context) (_node *DiscordC
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.GetType(); ok {
+		_spec.SetField(discordchannel.FieldType, field.TypeEnum, value)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(discordchannel.FieldName, field.TypeString, value)
