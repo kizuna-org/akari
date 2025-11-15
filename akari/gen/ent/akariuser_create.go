@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
+	"github.com/kizuna-org/akari/gen/ent/discorduser"
 )
 
 // AkariUserCreate is the builder for creating a AkariUser entity.
@@ -47,6 +48,25 @@ func (_c *AkariUserCreate) SetNillableUpdatedAt(v *time.Time) *AkariUserCreate {
 		_c.SetUpdatedAt(*v)
 	}
 	return _c
+}
+
+// SetDiscordUserID sets the "discord_user" edge to the DiscordUser entity by ID.
+func (_c *AkariUserCreate) SetDiscordUserID(id string) *AkariUserCreate {
+	_c.mutation.SetDiscordUserID(id)
+	return _c
+}
+
+// SetNillableDiscordUserID sets the "discord_user" edge to the DiscordUser entity by ID if the given value is not nil.
+func (_c *AkariUserCreate) SetNillableDiscordUserID(id *string) *AkariUserCreate {
+	if id != nil {
+		_c = _c.SetDiscordUserID(*id)
+	}
+	return _c
+}
+
+// SetDiscordUser sets the "discord_user" edge to the DiscordUser entity.
+func (_c *AkariUserCreate) SetDiscordUser(v *DiscordUser) *AkariUserCreate {
+	return _c.SetDiscordUserID(v.ID)
 }
 
 // AddConversationIDs adds the "conversations" edge to the Conversation entity by IDs.
@@ -150,6 +170,22 @@ func (_c *AkariUserCreate) createSpec() (*AkariUser, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(akariuser.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if nodes := _c.mutation.DiscordUserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   akariuser.DiscordUserTable,
+			Columns: []string{akariuser.DiscordUserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(discorduser.FieldID, field.TypeString),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.ConversationsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

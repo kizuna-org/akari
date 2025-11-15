@@ -195,12 +195,21 @@ var (
 		{Name: "bot", Type: field.TypeBool, Default: false},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "akari_user_discord_user", Type: field.TypeInt, Unique: true},
 	}
 	// DiscordUsersTable holds the schema information for the "discord_users" table.
 	DiscordUsersTable = &schema.Table{
 		Name:       "discord_users",
 		Columns:    DiscordUsersColumns,
 		PrimaryKey: []*schema.Column{DiscordUsersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "discord_users_akari_users_discord_user",
+				Columns:    []*schema.Column{DiscordUsersColumns[5]},
+				RefColumns: []*schema.Column{AkariUsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
 	}
 	// SystemPromptsColumns holds the columns for the "system_prompts" table.
 	SystemPromptsColumns = []*schema.Column{
@@ -250,5 +259,6 @@ func init() {
 	DiscordMessagesTable.ForeignKeys[0].RefTable = ConversationsTable
 	DiscordMessagesTable.ForeignKeys[1].RefTable = DiscordUsersTable
 	DiscordMessagesTable.ForeignKeys[2].RefTable = DiscordChannelsTable
+	DiscordUsersTable.ForeignKeys[0].RefTable = AkariUsersTable
 	SystemPromptsTable.ForeignKeys[0].RefTable = CharactersTable
 }
