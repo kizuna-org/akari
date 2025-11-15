@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/kizuna-org/akari/ent/schema"
+	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
@@ -20,6 +21,22 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	akariuserFields := schema.AkariUser{}.Fields()
+	_ = akariuserFields
+	// akariuserDescName is the schema descriptor for name field.
+	akariuserDescName := akariuserFields[0].Descriptor()
+	// akariuser.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	akariuser.NameValidator = akariuserDescName.Validators[0].(func(string) error)
+	// akariuserDescCreatedAt is the schema descriptor for created_at field.
+	akariuserDescCreatedAt := akariuserFields[1].Descriptor()
+	// akariuser.DefaultCreatedAt holds the default value on creation for the created_at field.
+	akariuser.DefaultCreatedAt = akariuserDescCreatedAt.Default.(func() time.Time)
+	// akariuserDescUpdatedAt is the schema descriptor for updated_at field.
+	akariuserDescUpdatedAt := akariuserFields[2].Descriptor()
+	// akariuser.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	akariuser.DefaultUpdatedAt = akariuserDescUpdatedAt.Default.(func() time.Time)
+	// akariuser.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	akariuser.UpdateDefaultUpdatedAt = akariuserDescUpdatedAt.UpdateDefault.(func() time.Time)
 	characterFields := schema.Character{}.Fields()
 	_ = characterFields
 	// characterDescName is the schema descriptor for name field.

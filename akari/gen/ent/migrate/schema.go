@@ -8,6 +8,19 @@ import (
 )
 
 var (
+	// AkariUsersColumns holds the columns for the "akari_users" table.
+	AkariUsersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// AkariUsersTable holds the schema information for the "akari_users" table.
+	AkariUsersTable = &schema.Table{
+		Name:       "akari_users",
+		Columns:    AkariUsersColumns,
+		PrimaryKey: []*schema.Column{AkariUsersColumns[0]},
+	}
 	// CharactersColumns holds the columns for the "characters" table.
 	CharactersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -46,6 +59,7 @@ var (
 	ConversationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "created_at", Type: field.TypeTime},
+		{Name: "conversation_user", Type: field.TypeInt},
 		{Name: "conversation_group_conversations", Type: field.TypeInt},
 	}
 	// ConversationsTable holds the schema information for the "conversations" table.
@@ -55,8 +69,14 @@ var (
 		PrimaryKey: []*schema.Column{ConversationsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "conversations_conversation_groups_conversations",
+				Symbol:     "conversations_akari_users_user",
 				Columns:    []*schema.Column{ConversationsColumns[2]},
+				RefColumns: []*schema.Column{AkariUsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "conversations_conversation_groups_conversations",
+				Columns:    []*schema.Column{ConversationsColumns[3]},
 				RefColumns: []*schema.Column{ConversationGroupsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -196,6 +216,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AkariUsersTable,
 		CharactersTable,
 		CharacterConfigsTable,
 		ConversationsTable,
@@ -209,7 +230,8 @@ var (
 
 func init() {
 	CharacterConfigsTable.ForeignKeys[0].RefTable = CharactersTable
-	ConversationsTable.ForeignKeys[0].RefTable = ConversationGroupsTable
+	ConversationsTable.ForeignKeys[0].RefTable = AkariUsersTable
+	ConversationsTable.ForeignKeys[1].RefTable = ConversationGroupsTable
 	ConversationGroupsTable.ForeignKeys[0].RefTable = CharactersTable
 	DiscordChannelsTable.ForeignKeys[0].RefTable = DiscordGuildsTable
 	DiscordMessagesTable.ForeignKeys[0].RefTable = ConversationsTable

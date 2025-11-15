@@ -9,6 +9,18 @@ import (
 	"github.com/kizuna-org/akari/gen/ent"
 )
 
+// The AkariUserFunc type is an adapter to allow the use of ordinary
+// function as AkariUser mutator.
+type AkariUserFunc func(context.Context, *ent.AkariUserMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AkariUserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AkariUserMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AkariUserMutation", m)
+}
+
 // The CharacterFunc type is an adapter to allow the use of ordinary
 // function as Character mutator.
 type CharacterFunc func(context.Context, *ent.CharacterMutation) (ent.Value, error)

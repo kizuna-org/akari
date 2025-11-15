@@ -11,6 +11,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/kizuna-org/akari/gen/ent/akariuser"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/characterconfig"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
@@ -31,6 +32,7 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeAkariUser         = "AkariUser"
 	TypeCharacter         = "Character"
 	TypeCharacterConfig   = "CharacterConfig"
 	TypeConversation      = "Conversation"
@@ -40,6 +42,533 @@ const (
 	TypeDiscordMessage    = "DiscordMessage"
 	TypeSystemPrompt      = "SystemPrompt"
 )
+
+// AkariUserMutation represents an operation that mutates the AkariUser nodes in the graph.
+type AkariUserMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int
+	name                 *string
+	created_at           *time.Time
+	updated_at           *time.Time
+	clearedFields        map[string]struct{}
+	conversations        map[int]struct{}
+	removedconversations map[int]struct{}
+	clearedconversations bool
+	done                 bool
+	oldValue             func(context.Context) (*AkariUser, error)
+	predicates           []predicate.AkariUser
+}
+
+var _ ent.Mutation = (*AkariUserMutation)(nil)
+
+// akariuserOption allows management of the mutation configuration using functional options.
+type akariuserOption func(*AkariUserMutation)
+
+// newAkariUserMutation creates new mutation for the AkariUser entity.
+func newAkariUserMutation(c config, op Op, opts ...akariuserOption) *AkariUserMutation {
+	m := &AkariUserMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAkariUser,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAkariUserID sets the ID field of the mutation.
+func withAkariUserID(id int) akariuserOption {
+	return func(m *AkariUserMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AkariUser
+		)
+		m.oldValue = func(ctx context.Context) (*AkariUser, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AkariUser.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAkariUser sets the old AkariUser of the mutation.
+func withAkariUser(node *AkariUser) akariuserOption {
+	return func(m *AkariUserMutation) {
+		m.oldValue = func(context.Context) (*AkariUser, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AkariUserMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AkariUserMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AkariUserMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AkariUserMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AkariUser.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *AkariUserMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *AkariUserMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the AkariUser entity.
+// If the AkariUser object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AkariUserMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *AkariUserMutation) ResetName() {
+	m.name = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AkariUserMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AkariUserMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AkariUser entity.
+// If the AkariUser object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AkariUserMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AkariUserMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *AkariUserMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *AkariUserMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the AkariUser entity.
+// If the AkariUser object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AkariUserMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *AkariUserMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddConversationIDs adds the "conversations" edge to the Conversation entity by ids.
+func (m *AkariUserMutation) AddConversationIDs(ids ...int) {
+	if m.conversations == nil {
+		m.conversations = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.conversations[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConversations clears the "conversations" edge to the Conversation entity.
+func (m *AkariUserMutation) ClearConversations() {
+	m.clearedconversations = true
+}
+
+// ConversationsCleared reports if the "conversations" edge to the Conversation entity was cleared.
+func (m *AkariUserMutation) ConversationsCleared() bool {
+	return m.clearedconversations
+}
+
+// RemoveConversationIDs removes the "conversations" edge to the Conversation entity by IDs.
+func (m *AkariUserMutation) RemoveConversationIDs(ids ...int) {
+	if m.removedconversations == nil {
+		m.removedconversations = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.conversations, ids[i])
+		m.removedconversations[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConversations returns the removed IDs of the "conversations" edge to the Conversation entity.
+func (m *AkariUserMutation) RemovedConversationsIDs() (ids []int) {
+	for id := range m.removedconversations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConversationsIDs returns the "conversations" edge IDs in the mutation.
+func (m *AkariUserMutation) ConversationsIDs() (ids []int) {
+	for id := range m.conversations {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConversations resets all changes to the "conversations" edge.
+func (m *AkariUserMutation) ResetConversations() {
+	m.conversations = nil
+	m.clearedconversations = false
+	m.removedconversations = nil
+}
+
+// Where appends a list predicates to the AkariUserMutation builder.
+func (m *AkariUserMutation) Where(ps ...predicate.AkariUser) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AkariUserMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AkariUserMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AkariUser, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AkariUserMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AkariUserMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (AkariUser).
+func (m *AkariUserMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AkariUserMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.name != nil {
+		fields = append(fields, akariuser.FieldName)
+	}
+	if m.created_at != nil {
+		fields = append(fields, akariuser.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, akariuser.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AkariUserMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case akariuser.FieldName:
+		return m.Name()
+	case akariuser.FieldCreatedAt:
+		return m.CreatedAt()
+	case akariuser.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AkariUserMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case akariuser.FieldName:
+		return m.OldName(ctx)
+	case akariuser.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case akariuser.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown AkariUser field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AkariUserMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case akariuser.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case akariuser.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case akariuser.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AkariUser field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AkariUserMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AkariUserMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AkariUserMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown AkariUser numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AkariUserMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AkariUserMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AkariUserMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown AkariUser nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AkariUserMutation) ResetField(name string) error {
+	switch name {
+	case akariuser.FieldName:
+		m.ResetName()
+		return nil
+	case akariuser.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case akariuser.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown AkariUser field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AkariUserMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.conversations != nil {
+		edges = append(edges, akariuser.EdgeConversations)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AkariUserMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case akariuser.EdgeConversations:
+		ids := make([]ent.Value, 0, len(m.conversations))
+		for id := range m.conversations {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AkariUserMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedconversations != nil {
+		edges = append(edges, akariuser.EdgeConversations)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AkariUserMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case akariuser.EdgeConversations:
+		ids := make([]ent.Value, 0, len(m.removedconversations))
+		for id := range m.removedconversations {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AkariUserMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedconversations {
+		edges = append(edges, akariuser.EdgeConversations)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AkariUserMutation) EdgeCleared(name string) bool {
+	switch name {
+	case akariuser.EdgeConversations:
+		return m.clearedconversations
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AkariUserMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown AkariUser unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AkariUserMutation) ResetEdge(name string) error {
+	switch name {
+	case akariuser.EdgeConversations:
+		m.ResetConversations()
+		return nil
+	}
+	return fmt.Errorf("unknown AkariUser edge %s", name)
+}
 
 // CharacterMutation represents an operation that mutates the Character nodes in the graph.
 type CharacterMutation struct {
@@ -1187,6 +1716,8 @@ type ConversationMutation struct {
 	id                        *int
 	created_at                *time.Time
 	clearedFields             map[string]struct{}
+	user                      *int
+	cleareduser               bool
 	discord_message           *string
 	cleareddiscord_message    bool
 	conversation_group        *int
@@ -1328,6 +1859,45 @@ func (m *ConversationMutation) OldCreatedAt(ctx context.Context) (v time.Time, e
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *ConversationMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetUserID sets the "user" edge to the AkariUser entity by id.
+func (m *ConversationMutation) SetUserID(id int) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the AkariUser entity.
+func (m *ConversationMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the AkariUser entity was cleared.
+func (m *ConversationMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *ConversationMutation) UserID() (id int, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *ConversationMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *ConversationMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
 }
 
 // SetDiscordMessageID sets the "discord_message" edge to the DiscordMessage entity by id.
@@ -1541,7 +2111,10 @@ func (m *ConversationMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ConversationMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.user != nil {
+		edges = append(edges, conversation.EdgeUser)
+	}
 	if m.discord_message != nil {
 		edges = append(edges, conversation.EdgeDiscordMessage)
 	}
@@ -1555,6 +2128,10 @@ func (m *ConversationMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *ConversationMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case conversation.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
 	case conversation.EdgeDiscordMessage:
 		if id := m.discord_message; id != nil {
 			return []ent.Value{*id}
@@ -1569,7 +2146,7 @@ func (m *ConversationMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ConversationMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
@@ -1581,7 +2158,10 @@ func (m *ConversationMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ConversationMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.cleareduser {
+		edges = append(edges, conversation.EdgeUser)
+	}
 	if m.cleareddiscord_message {
 		edges = append(edges, conversation.EdgeDiscordMessage)
 	}
@@ -1595,6 +2175,8 @@ func (m *ConversationMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *ConversationMutation) EdgeCleared(name string) bool {
 	switch name {
+	case conversation.EdgeUser:
+		return m.cleareduser
 	case conversation.EdgeDiscordMessage:
 		return m.cleareddiscord_message
 	case conversation.EdgeConversationGroup:
@@ -1607,6 +2189,9 @@ func (m *ConversationMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ConversationMutation) ClearEdge(name string) error {
 	switch name {
+	case conversation.EdgeUser:
+		m.ClearUser()
+		return nil
 	case conversation.EdgeDiscordMessage:
 		m.ClearDiscordMessage()
 		return nil
@@ -1621,6 +2206,9 @@ func (m *ConversationMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ConversationMutation) ResetEdge(name string) error {
 	switch name {
+	case conversation.EdgeUser:
+		m.ResetUser()
+		return nil
 	case conversation.EdgeDiscordMessage:
 		m.ResetDiscordMessage()
 		return nil

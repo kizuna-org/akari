@@ -24,6 +24,10 @@ func (Conversation) Fields() []ent.Field {
 
 func (Conversation) Edges() []ent.Edge {
 	return []ent.Edge{
+		edge.To("user", AkariUser.Type).
+			Required().
+			Unique().
+			Comment("The Akari user who owns this conversation"),
 		edge.To("discord_message", DiscordMessage.Type).
 			Unique().
 			Immutable().

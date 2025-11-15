@@ -16,12 +16,21 @@ const (
 	FieldID = "id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// EdgeUser holds the string denoting the user edge name in mutations.
+	EdgeUser = "user"
 	// EdgeDiscordMessage holds the string denoting the discord_message edge name in mutations.
 	EdgeDiscordMessage = "discord_message"
 	// EdgeConversationGroup holds the string denoting the conversation_group edge name in mutations.
 	EdgeConversationGroup = "conversation_group"
 	// Table holds the table name of the conversation in the database.
 	Table = "conversations"
+	// UserTable is the table that holds the user relation/edge.
+	UserTable = "conversations"
+	// UserInverseTable is the table name for the AkariUser entity.
+	// It exists in this package in order to avoid circular dependency with the "akariuser" package.
+	UserInverseTable = "akari_users"
+	// UserColumn is the table column denoting the user relation/edge.
+	UserColumn = "conversation_user"
 	// DiscordMessageTable is the table that holds the discord_message relation/edge.
 	DiscordMessageTable = "discord_messages"
 	// DiscordMessageInverseTable is the table name for the DiscordMessage entity.
@@ -47,6 +56,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "conversations"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
+	"conversation_user",
 	"conversation_group_conversations",
 }
 
@@ -83,6 +93,13 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
+// ByUserField orders the results by user field.
+func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
+	}
+}
+
 // ByDiscordMessageField orders the results by discord_message field.
 func ByDiscordMessageField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -95,6 +112,13 @@ func ByConversationGroupField(field string, opts ...sql.OrderTermOption) OrderOp
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newConversationGroupStep(), sql.OrderByField(field, opts...))
 	}
+}
+func newUserStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, UserTable, UserColumn),
+	)
 }
 func newDiscordMessageStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
