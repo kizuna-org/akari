@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
 )
@@ -16,4 +17,20 @@ type AkariUserRepository interface {
 	DeleteAkariUser(ctx context.Context, id int) error
 }
 
-type AkariUser = ent.AkariUser
+type AkariUser struct {
+	ID        int
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func FromEntAkariUser(entAkariUser *ent.AkariUser) *AkariUser {
+	if entAkariUser == nil {
+		return nil
+	}
+
+	return &AkariUser{
+		ID:        entAkariUser.ID,
+		CreatedAt: entAkariUser.CreatedAt,
+		UpdatedAt: entAkariUser.UpdatedAt,
+	}
+}

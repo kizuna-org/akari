@@ -17,20 +17,34 @@ type DiscordMessageRepository interface {
 
 type DiscordMessage struct {
 	ID        string
-	ChannelID string
-	AuthorID  string
+	Channel   *DiscordChannel
+	Author    *DiscordUser
 	Content   string
 	Timestamp time.Time
 	CreatedAt time.Time
 }
 
-func ToDomainDiscordMessageFromDB(model *ent.DiscordMessage) *DiscordMessage {
+func FromEntDiscordMessage(discordMessage *ent.DiscordMessage) *DiscordMessage {
+	if discordMessage == nil {
+		return nil
+	}
+
+	var discordChannel *DiscordChannel
+	if discordMessage.Edges.Channel != nil {
+		discordChannel = FromEntDiscordChannel(discordMessage.Edges.Channel)
+	}
+
+	var discordAuthor *DiscordUser
+	if discordMessage.Edges.Author != nil {
+		discordAuthor = FromEntDiscordUser(discordMessage.Edges.Author)
+	}
+
 	return &DiscordMessage{
-		ID:        model.ID,
-		ChannelID: model.Edges.Channel.ID,
-		AuthorID:  model.Edges.Author.ID,
-		Content:   model.Content,
-		Timestamp: model.Timestamp,
-		CreatedAt: model.CreatedAt,
+		ID:        discordMessage.ID,
+		Channel:   discordChannel,
+		Author:    discordAuthor,
+		Content:   discordMessage.Content,
+		Timestamp: discordMessage.Timestamp,
+		CreatedAt: discordMessage.CreatedAt,
 	}
 }

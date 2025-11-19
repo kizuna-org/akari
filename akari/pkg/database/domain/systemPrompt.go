@@ -4,16 +4,35 @@ package domain
 
 import (
 	"context"
+	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
-	"github.com/kizuna-org/akari/gen/ent/systemprompt"
 )
 
 type SystemPromptRepository interface {
 	GetSystemPromptByID(ctx context.Context, id int) (*SystemPrompt, error)
 }
 
-type (
-	SystemPrompt        = ent.SystemPrompt
-	SystemPromptPurpose = systemprompt.Purpose
-)
+type SystemPrompt struct {
+	ID        int
+	Title     string
+	Purpose   string
+	Prompt    string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+func FromEntSystemPrompt(entSystemPrompt *ent.SystemPrompt) *SystemPrompt {
+	if entSystemPrompt == nil {
+		return nil
+	}
+
+	return &SystemPrompt{
+		ID:        entSystemPrompt.ID,
+		Title:     entSystemPrompt.Title,
+		Purpose:   string(entSystemPrompt.Purpose),
+		Prompt:    entSystemPrompt.Prompt,
+		CreatedAt: entSystemPrompt.CreatedAt,
+		UpdatedAt: entSystemPrompt.UpdatedAt,
+	}
+}

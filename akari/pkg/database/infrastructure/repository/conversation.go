@@ -21,20 +21,20 @@ func (r *repositoryImpl) CreateConversation(
 		builder = builder.SetConversationGroupID(*conversationGroupID)
 	}
 
-	conv, err := builder.Save(ctx)
+	conversation, err := builder.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create conversation: %w", err)
 	}
 
 	r.logger.Info("Conversation created",
-		slog.Int("id", conv.ID),
+		slog.Int("id", conversation.ID),
 	)
 
-	return conv, nil
+	return domain.FromEntConversation(conversation), nil
 }
 
 func (r *repositoryImpl) GetConversationByID(ctx context.Context, id int) (*domain.Conversation, error) {
-	conv, err := r.client.ConversationClient().
+	conversation, err := r.client.ConversationClient().
 		Query().
 		Where(conversation.IDEQ(id)).
 		WithUser().
@@ -45,11 +45,11 @@ func (r *repositoryImpl) GetConversationByID(ctx context.Context, id int) (*doma
 		return nil, fmt.Errorf("failed to get conversation by id: %w", err)
 	}
 
-	return conv, nil
+	return domain.FromEntConversation(conversation), nil
 }
 
 func (r *repositoryImpl) ListConversations(ctx context.Context) ([]*domain.Conversation, error) {
-	convs, err := r.client.ConversationClient().
+	conversations, err := r.client.ConversationClient().
 		Query().
 		Order(conversation.ByID()).
 		WithUser().
@@ -60,7 +60,12 @@ func (r *repositoryImpl) ListConversations(ctx context.Context) ([]*domain.Conve
 		return nil, fmt.Errorf("failed to list conversations: %w", err)
 	}
 
-	return convs, nil
+	domainConversations := make([]*domain.Conversation, len(conversations))
+	for i, conversation := range conversations {
+		domainConversations[i] = domain.FromEntConversation(conversation)
+	}
+
+	return domainConversations, nil
 }
 
 func (r *repositoryImpl) DeleteConversation(ctx context.Context, conversationID int) error {

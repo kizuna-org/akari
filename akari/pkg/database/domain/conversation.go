@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
 )
@@ -15,4 +16,39 @@ type ConversationRepository interface {
 	DeleteConversation(ctx context.Context, id int) error
 }
 
-type Conversation = ent.Conversation
+type Conversation struct {
+	ID                int
+	User              *AkariUser
+	DiscordMessage    *DiscordMessage
+	ConversationGroup *ConversationGroup
+	CreatedAt         time.Time
+}
+
+func FromEntConversation(entConversation *ent.Conversation) *Conversation {
+	if entConversation == nil {
+		return nil
+	}
+
+	var user *AkariUser
+	if entConversation.Edges.User != nil {
+		user = FromEntAkariUser(entConversation.Edges.User)
+	}
+
+	var discordMessage *DiscordMessage
+	if entConversation.Edges.DiscordMessage != nil {
+		discordMessage = FromEntDiscordMessage(entConversation.Edges.DiscordMessage)
+	}
+
+	var conversationGroup *ConversationGroup
+	if entConversation.Edges.ConversationGroup != nil {
+		conversationGroup = FromEntConversationGroup(entConversation.Edges.ConversationGroup)
+	}
+
+	return &Conversation{
+		ID:                entConversation.ID,
+		User:              user,
+		DiscordMessage:    discordMessage,
+		ConversationGroup: conversationGroup,
+		CreatedAt:         entConversation.CreatedAt,
+	}
+}

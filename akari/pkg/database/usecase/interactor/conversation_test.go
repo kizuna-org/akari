@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kizuna-org/akari/gen/ent"
+	"github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/database/domain/mock"
 	"github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	"github.com/stretchr/testify/assert"
@@ -40,7 +40,7 @@ func TestConversationInteractor_CreateConversation(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockConversationRepository, ctx context.Context) {
-				m.EXPECT().CreateConversation(ctx, messageID, &groupID).Return(&ent.Conversation{
+				m.EXPECT().CreateConversation(ctx, messageID, &groupID).Return(&domain.Conversation{
 					ID:        1,
 					CreatedAt: time.Now(),
 				}, nil)
@@ -98,7 +98,7 @@ func TestConversationInteractor_GetConversationByID(t *testing.T) {
 				m.EXPECT().GetConversationByID(
 					ctx,
 					conversationID,
-				).Return(&ent.Conversation{ID: conversationID, CreatedAt: time.Now()}, nil)
+				).Return(&domain.Conversation{ID: conversationID, CreatedAt: time.Now()}, nil)
 			},
 			wantErr: false,
 		},
@@ -148,7 +148,7 @@ func TestConversationInteractor_ListConversations(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockConversationRepository, ctx context.Context) {
-				m.EXPECT().ListConversations(ctx).Return([]*ent.Conversation{{ID: 1, CreatedAt: time.Now()}}, nil)
+				m.EXPECT().ListConversations(ctx).Return([]*domain.Conversation{{ID: 1, CreatedAt: time.Now()}}, nil)
 			},
 			wantErr: false,
 		},

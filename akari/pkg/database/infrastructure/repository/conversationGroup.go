@@ -26,7 +26,7 @@ func (r *repositoryImpl) CreateConversationGroup(
 		slog.Int("id", conversationGroup.ID),
 	)
 
-	return conversationGroup, nil
+	return domain.FromEntConversationGroup(conversationGroup), nil
 }
 
 func (r *repositoryImpl) GetConversationGroupByID(
@@ -42,7 +42,7 @@ func (r *repositoryImpl) GetConversationGroupByID(
 		return nil, fmt.Errorf("failed to get conversation group by id: %w", err)
 	}
 
-	return conversationGroup, nil
+	return domain.FromEntConversationGroup(conversationGroup), nil
 }
 
 func (r *repositoryImpl) GetConversationGroupByCharacterID(
@@ -58,19 +58,25 @@ func (r *repositoryImpl) GetConversationGroupByCharacterID(
 		return nil, fmt.Errorf("failed to get conversation group by character id: %w", err)
 	}
 
-	return conversationGroup, nil
+	return domain.FromEntConversationGroup(conversationGroup), nil
 }
 
 func (r *repositoryImpl) ListConversationGroups(ctx context.Context) ([]*domain.ConversationGroup, error) {
-	cgs, err := r.client.ConversationGroupClient().
+	conversationGroups, err := r.client.ConversationGroupClient().
 		Query().
 		WithCharacter().
+		WithConversations().
 		All(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list conversation groups: %w", err)
 	}
 
-	return cgs, nil
+	domainConversationGroups := make([]*domain.ConversationGroup, len(conversationGroups))
+	for i, conversationGroup := range conversationGroups {
+		domainConversationGroups[i] = domain.FromEntConversationGroup(conversationGroup)
+	}
+
+	return domainConversationGroups, nil
 }
 
 func (r *repositoryImpl) DeleteConversationGroup(ctx context.Context, conversationGroupID int) error {

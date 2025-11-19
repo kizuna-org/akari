@@ -15,7 +15,7 @@ func (r *repositoryImpl) CreateAkariUser(ctx context.Context) (*domain.AkariUser
 		return nil, fmt.Errorf("failed to create akari user: %w", err)
 	}
 
-	return user, nil
+	return domain.FromEntAkariUser(user), nil
 }
 
 func (r *repositoryImpl) GetAkariUserByID(ctx context.Context, id int) (*domain.AkariUser, error) {
@@ -24,7 +24,7 @@ func (r *repositoryImpl) GetAkariUserByID(ctx context.Context, id int) (*domain.
 		return nil, fmt.Errorf("failed to get akari user: %w", err)
 	}
 
-	return user, nil
+	return domain.FromEntAkariUser(user), nil
 }
 
 func (r *repositoryImpl) GetAkariUserByDiscordUserID(ctx context.Context, discordID string) (*domain.AkariUser, error) {
@@ -36,7 +36,7 @@ func (r *repositoryImpl) GetAkariUserByDiscordUserID(ctx context.Context, discor
 		return nil, fmt.Errorf("failed to get akari user by discord id: %w", err)
 	}
 
-	return user, nil
+	return domain.FromEntAkariUser(user), nil
 }
 
 func (r *repositoryImpl) ListAkariUsers(ctx context.Context) ([]*domain.AkariUser, error) {
@@ -47,7 +47,12 @@ func (r *repositoryImpl) ListAkariUsers(ctx context.Context) ([]*domain.AkariUse
 		return nil, fmt.Errorf("failed to list akari users: %w", err)
 	}
 
-	return users, nil
+	domainAkariUser := make([]*domain.AkariUser, len(users))
+	for i, akariUser := range users {
+		domainAkariUser[i] = domain.FromEntAkariUser(akariUser)
+	}
+
+	return domainAkariUser, nil
 }
 
 func (r *repositoryImpl) DeleteAkariUser(ctx context.Context, id int) error {

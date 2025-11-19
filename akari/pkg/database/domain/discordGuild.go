@@ -18,24 +18,29 @@ type DiscordGuildRepository interface {
 }
 
 type DiscordGuild struct {
-	ID         string
-	Name       string
-	ChannelIDs []string
-	CreatedAt  time.Time
+	ID        string
+	Name      string
+	Channels  []*DiscordChannel
+	CreatedAt time.Time
 }
 
-func ToDomainDiscordGuildFromDB(model *ent.DiscordGuild) *DiscordGuild {
-	return &DiscordGuild{
-		ID:   model.ID,
-		Name: model.Name,
-		ChannelIDs: func() []string {
-			ids := make([]string, len(model.Edges.Channels))
-			for i, channel := range model.Edges.Channels {
-				ids[i] = channel.ID
-			}
+func FromEntDiscordGuild(entDiscordGuild *ent.DiscordGuild) *DiscordGuild {
+	if entDiscordGuild == nil {
+		return nil
+	}
 
-			return ids
-		}(),
-		CreatedAt: model.CreatedAt,
+	var discordChannels []*DiscordChannel
+	if entDiscordGuild.Edges.Channels != nil {
+		discordChannels = make([]*DiscordChannel, len(entDiscordGuild.Edges.Channels))
+		for i, discordChannel := range entDiscordGuild.Edges.Channels {
+			discordChannels[i] = FromEntDiscordChannel(discordChannel)
+		}
+	}
+
+	return &DiscordGuild{
+		ID:        entDiscordGuild.ID,
+		Name:      entDiscordGuild.Name,
+		Channels:  discordChannels,
+		CreatedAt: entDiscordGuild.CreatedAt,
 	}
 }

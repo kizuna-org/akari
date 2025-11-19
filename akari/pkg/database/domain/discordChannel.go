@@ -37,18 +37,27 @@ type DiscordChannelRepository interface {
 
 type DiscordChannel struct {
 	ID        string
-	Type      DiscordChannelType
+	Type      string
 	Name      string
-	GuildID   string
+	Guild     *DiscordGuild
 	CreatedAt time.Time
 }
 
-func ToDomainDiscordChannelFromDB(model *ent.DiscordChannel) *DiscordChannel {
+func FromEntDiscordChannel(entDiscordChannel *ent.DiscordChannel) *DiscordChannel {
+	if entDiscordChannel == nil {
+		return nil
+	}
+
+	var discordGuild *DiscordGuild
+	if entDiscordChannel.Edges.Guild != nil {
+		discordGuild = FromEntDiscordGuild(entDiscordChannel.Edges.Guild)
+	}
+
 	return &DiscordChannel{
-		ID:        model.ID,
-		Type:      DiscordChannelType(model.Type),
-		Name:      model.Name,
-		GuildID:   model.Edges.Guild.ID,
-		CreatedAt: model.CreatedAt,
+		ID:        entDiscordChannel.ID,
+		Type:      string(entDiscordChannel.Type),
+		Name:      entDiscordChannel.Name,
+		Guild:     discordGuild,
+		CreatedAt: entDiscordChannel.CreatedAt,
 	}
 }
