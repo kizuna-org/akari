@@ -8,35 +8,51 @@ import (
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
 
+type domainDiscordUserWant struct {
+	ID       string
+	Username string
+}
+
 func TestFromEntDiscordUser_NilAndFields(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
 
-	if domain.FromEntDiscordUser(nil) != nil {
-		t.Fatalf("expected nil for nil input")
+	valid := &ent.DiscordUser{ID: "user-id", Username: "user-name", Bot: false, CreatedAt: now, UpdatedAt: now}
+
+	tests := []struct {
+		name  string
+		input *ent.DiscordUser
+		want  *domainDiscordUserWant
+	}{
+		{name: "nil input", input: nil, want: nil},
+		{name: "valid input", input: valid, want: &domainDiscordUserWant{ID: valid.ID, Username: valid.Username}},
 	}
 
-	entUser := &ent.DiscordUser{ID: "user-id", Username: "user-name", Bot: false, CreatedAt: now, UpdatedAt: now}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	duser := domain.FromEntDiscordUser(entUser)
-	if duser == nil {
-		t.Fatalf("expected non-nil domain user")
-	}
+			got := domain.FromEntDiscordUser(testCase.input)
+			if testCase.want == nil {
+				if got != nil {
+					t.Fatalf("expected nil result for nil input, got: %+v", got)
+				}
 
-	if duser.ID != entUser.ID {
-		t.Fatalf("ID mismatch: got=%v want=%v", duser.ID, entUser.ID)
-	}
+				return
+			}
 
-	if duser.Username != entUser.Username {
-		t.Fatalf("Username mismatch: got=%v want=%v", duser.Username, entUser.Username)
-	}
-}
+			if got == nil {
+				t.Fatalf("expected non-nil result")
+			}
 
-func TestFromEntDiscordUser_Nil(t *testing.T) {
-	t.Parallel()
+			if got.ID != testCase.want.ID {
+				t.Fatalf("ID mismatch: got=%v want=%v", got.ID, testCase.want.ID)
+			}
 
-	if domain.FromEntDiscordUser(nil) != nil {
-		t.Fatalf("expected nil when input is nil")
+			if got.Username != testCase.want.Username {
+				t.Fatalf("Username mismatch: got=%v want=%v", got.Username, testCase.want.Username)
+			}
+		})
 	}
 }

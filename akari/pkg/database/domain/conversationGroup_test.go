@@ -8,45 +8,62 @@ import (
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
 
-func TestFromEntConversationGroup_IncludesCharacter(t *testing.T) {
+func TestFromEntConversationGroup_TableDriven(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
 	entCharacter := &ent.Character{ID: 1, Name: "name", CreatedAt: now, UpdatedAt: now}
-	entConversationGroup := &ent.ConversationGroup{
+
+	withChar := &ent.ConversationGroup{
 		ID:        3,
 		CreatedAt: now,
 		Edges:     ent.ConversationGroupEdges{Character: entCharacter},
 	}
 
-	conversationGroup, err := domain.FromEntConversationGroup(entConversationGroup)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	withoutChar := &ent.ConversationGroup{
+		ID:        4,
+		CreatedAt: now,
+		Edges:     ent.ConversationGroupEdges{Character: nil},
 	}
 
-	if conversationGroup == nil {
-		t.Fatalf("expected non-nil domain conversation group")
+	tests := []struct {
+		name    string
+		input   *ent.ConversationGroup
+		wantErr bool
+	}{
+		{name: "with character edge", input: withChar, wantErr: false},
+		{name: "missing character edge", input: withoutChar, wantErr: true},
+		{name: "nil input", input: nil, wantErr: true},
 	}
 
-	if conversationGroup.ID != entConversationGroup.ID {
-		t.Fatalf("ID mismatch: %d", conversationGroup.ID)
-	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	if conversationGroup.CharacterID != entCharacter.ID {
-		t.Fatalf("Character ID incorrect: %+v", conversationGroup.CharacterID)
-	}
-}
+			got, err := domain.FromEntConversationGroup(testCase.input)
+			if (err != nil) != testCase.wantErr {
+				t.Fatalf("unexpected error state: %v", err)
+			}
 
-func TestFromEntConversationGroup_Nil(t *testing.T) {
-	t.Parallel()
+			if testCase.wantErr {
+				if got != nil {
+					t.Fatalf("expected nil on error, got: %+v", got)
+				}
 
-	conversationGroup, err := domain.FromEntConversationGroup(nil)
+				return
+			}
 
-	if err == nil {
-		t.Fatalf("expected error when input is nil")
-	}
+			if got == nil {
+				t.Fatalf("expected non-nil result")
+			}
 
-	if conversationGroup != nil {
-		t.Fatalf("expected nil domain conversation group when input is nil")
+			if got.ID != testCase.input.ID {
+				t.Fatalf("ID mismatch: got=%d want=%d", got.ID, testCase.input.ID)
+			}
+
+			if got.CharacterID != testCase.input.Edges.Character.ID {
+				t.Fatalf("CharacterID mismatch: got=%d want=%d", got.CharacterID, testCase.input.Edges.Character.ID)
+			}
+		})
 	}
 }

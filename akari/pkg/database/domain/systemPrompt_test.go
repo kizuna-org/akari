@@ -22,40 +22,63 @@ func TestFromEntSystemPrompt_Converts(t *testing.T) {
 		UpdatedAt: now,
 	}
 
-	systemPrompt := domain.FromEntSystemPrompt(entSystemPrompt)
-	if systemPrompt == nil {
-		t.Fatalf("expected non-nil system prompt")
+	tests := []struct {
+		name    string
+		input   *ent.SystemPrompt
+		wantErr bool
+	}{
+		{name: "valid system prompt", input: entSystemPrompt, wantErr: false},
+		{name: "nil input", input: nil, wantErr: false}, // FromEntSystemPrompt returns nil rather than error
 	}
 
-	if systemPrompt.ID != entSystemPrompt.ID {
-		t.Fatalf("ID mismatch: got=%d want=%d", systemPrompt.ID, entSystemPrompt.ID)
-	}
+	runSystemPromptCases(t, tests)
+}
 
-	if systemPrompt.Title != entSystemPrompt.Title {
-		t.Fatalf("Title mismatch: got=%q want=%q", systemPrompt.Title, entSystemPrompt.Title)
-	}
+func runSystemPromptCases(t *testing.T, tests []struct {
+	name    string
+	input   *ent.SystemPrompt
+	wantErr bool
+}) {
+	t.Helper()
 
-	if systemPrompt.Purpose != string(entSystemPrompt.Purpose) {
-		t.Fatalf("Purpose mismatch: got=%q want=%q", systemPrompt.Purpose, entSystemPrompt.Purpose)
-	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	if systemPrompt.Prompt != entSystemPrompt.Prompt {
-		t.Fatalf("Prompt mismatch: got=%q want=%q", systemPrompt.Prompt, entSystemPrompt.Prompt)
-	}
+			got := domain.FromEntSystemPrompt(testCase.input)
+			if testCase.input == nil {
+				if got != nil {
+					t.Fatalf("expected nil for nil input")
+				}
 
-	if !systemPrompt.CreatedAt.Equal(entSystemPrompt.CreatedAt) {
-		t.Fatalf("CreatedAt mismatch: got=%v want=%v", systemPrompt.CreatedAt, entSystemPrompt.CreatedAt)
-	}
+				return
+			}
 
-	if !systemPrompt.UpdatedAt.Equal(entSystemPrompt.UpdatedAt) {
-		t.Fatalf("UpdatedAt mismatch: got=%v want=%v", systemPrompt.UpdatedAt, entSystemPrompt.UpdatedAt)
+			validateSystemPromptResult(t, got, testCase.input)
+		})
 	}
 }
 
-func TestFromEntSystemPrompt_Nil(t *testing.T) {
-	t.Parallel()
+func validateSystemPromptResult(t *testing.T, got *domain.SystemPrompt, want *ent.SystemPrompt) {
+	t.Helper()
 
-	if domain.FromEntSystemPrompt(nil) != nil {
-		t.Fatalf("expected nil when input is nil")
+	if got.ID != want.ID {
+		t.Fatalf("ID mismatch: got=%d want=%d", got.ID, want.ID)
+	}
+
+	if got.Title != want.Title {
+		t.Fatalf("Title mismatch: got=%q want=%q", got.Title, want.Title)
+	}
+
+	if got.Purpose != string(want.Purpose) {
+		t.Fatalf("Purpose mismatch: got=%q want=%q", got.Purpose, want.Purpose)
+	}
+
+	if got.Prompt != want.Prompt {
+		t.Fatalf("Prompt mismatch: got=%q want=%q", got.Prompt, want.Prompt)
+	}
+
+	if !got.CreatedAt.Equal(want.CreatedAt) || !got.UpdatedAt.Equal(want.UpdatedAt) {
+		t.Fatalf("timestamps mismatch")
 	}
 }

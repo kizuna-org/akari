@@ -8,35 +8,6 @@ import (
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
 
-func TestFromEntDiscordGuild_ChannelIDsNil(t *testing.T) {
-	t.Parallel()
-
-	now := time.Now()
-	entDiscordGuild := &ent.DiscordGuild{ID: "guild-id", Name: "guild-name", CreatedAt: now}
-
-	discordGuild, err := domain.FromEntDiscordGuild(entDiscordGuild)
-	if err == nil {
-		t.Fatalf("expected error when Channels edge is nil")
-	}
-
-	if discordGuild != nil {
-		t.Fatalf("expected nil domain guild")
-	}
-}
-
-func TestFromEntDiscordGuild_Nil(t *testing.T) {
-	t.Parallel()
-
-	discordGuild, err := domain.FromEntDiscordGuild(nil)
-	if err == nil {
-		t.Fatalf("expected error when input is nil")
-	}
-
-	if discordGuild != nil {
-		t.Fatalf("expected nil domain guild when input is nil")
-	}
-}
-
 func TestFromEntDiscordGuild_IncludesChannels(t *testing.T) {
 	t.Parallel()
 
@@ -51,22 +22,46 @@ func TestFromEntDiscordGuild_IncludesChannels(t *testing.T) {
 		},
 	}
 
-	discordGuild, err := domain.FromEntDiscordGuild(entDiscordGuild)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	tests := []struct {
+		name    string
+		input   *ent.DiscordGuild
+		wantErr bool
+	}{
+		{name: "channels nil edge", input: &ent.DiscordGuild{ID: "g1", Name: "n1", CreatedAt: now}, wantErr: true},
+		{name: "with channels", input: entDiscordGuild, wantErr: false},
+		{name: "nil input", input: nil, wantErr: true},
 	}
 
-	if discordGuild == nil {
-		t.Fatalf("expected non-nil domain guild")
-	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	if len(discordGuild.ChannelIDs) != 1 {
-		t.Fatalf("expected 1 Channel converted, got=%d", len(discordGuild.ChannelIDs))
-	}
+			got, err := domain.FromEntDiscordGuild(testCase.input)
+			if (err != nil) != testCase.wantErr {
+				t.Fatalf("unexpected error state: %v", err)
+			}
 
-	for i, discordChannel := range discordGuild.ChannelIDs {
-		if discordChannel != entDiscordGuild.Edges.Channels[i].ID {
-			t.Fatalf("converted Channel ID mismatch: got=%s want=%s", discordChannel, entDiscordGuild.Edges.Channels[i].ID)
-		}
+			if testCase.wantErr {
+				if got != nil {
+					t.Fatalf("expected nil on error, got: %+v", got)
+				}
+
+				return
+			}
+
+			if got == nil {
+				t.Fatalf("expected non-nil result")
+			}
+
+			if len(got.ChannelIDs) != len(testCase.input.Edges.Channels) {
+				t.Fatalf("channels length mismatch: got=%d want=%d", len(got.ChannelIDs), len(testCase.input.Edges.Channels))
+			}
+
+			for i := range got.ChannelIDs {
+				if got.ChannelIDs[i] != testCase.input.Edges.Channels[i].ID {
+					t.Fatalf("converted Channel ID mismatch: got=%s want=%s", got.ChannelIDs[i], testCase.input.Edges.Channels[i].ID)
+				}
+			}
+		})
 	}
 }

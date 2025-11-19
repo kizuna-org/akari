@@ -12,44 +12,53 @@ func TestFromEntAkariUser_Converts(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	entUser := &ent.AkariUser{
-		ID:        1,
-		CreatedAt: now,
-		UpdatedAt: now,
+
+	tests := []struct {
+		name    string
+		ent     *ent.AkariUser
+		wantErr bool
+	}{
+		{
+			name:    "valid ent user",
+			ent:     &ent.AkariUser{ID: 1, CreatedAt: now, UpdatedAt: now},
+			wantErr: false,
+		},
+		{
+			name:    "nil ent user",
+			ent:     nil,
+			wantErr: true,
+		},
 	}
 
-	user, err := domain.FromEntAkariUser(entUser)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+			got, err := domain.FromEntAkariUser(testCase.ent)
+			if (err != nil) != testCase.wantErr {
+				t.Fatalf("unexpected error state: %v", err)
+			}
 
-	if user == nil {
-		t.Fatalf("expected non-nil domain user")
-	}
+			if testCase.wantErr {
+				if got != nil {
+					t.Fatalf("expected nil result when error, got non-nil")
+				}
 
-	if user.ID != entUser.ID {
-		t.Fatalf("ID mismatch: got=%d want=%d", user.ID, entUser.ID)
-	}
+				return
+			}
 
-	if !user.CreatedAt.Equal(entUser.CreatedAt) {
-		t.Fatalf("CreatedAt mismatch: got=%v want=%v", user.CreatedAt, entUser.CreatedAt)
-	}
+			if got == nil {
+				t.Fatalf("expected non-nil result")
+			}
 
-	if !user.UpdatedAt.Equal(entUser.UpdatedAt) {
-		t.Fatalf("UpdatedAt mismatch: got=%v want=%v", user.UpdatedAt, entUser.UpdatedAt)
-	}
-}
+			if got.ID != testCase.ent.ID {
+				t.Fatalf("ID mismatch: got=%d want=%d", got.ID, testCase.ent.ID)
+			}
 
-func TestFromEntAkariUser_Nil(t *testing.T) {
-	t.Parallel()
-
-	user, err := domain.FromEntAkariUser(nil)
-	if err == nil {
-		t.Fatalf("expected error for nil input, got nil")
-	}
-
-	if user != nil {
-		t.Fatalf("expected nil user for nil input, got non-nil")
+			if !got.CreatedAt.Equal(testCase.ent.CreatedAt) || !got.UpdatedAt.Equal(testCase.ent.UpdatedAt) {
+				ca, ua, ea, eb := got.CreatedAt, got.UpdatedAt, testCase.ent.CreatedAt, testCase.ent.UpdatedAt
+				t.Fatalf("timestamps mismatch: got=%v/%v want=%v/%v", ca, ua, ea, eb)
+			}
+		})
 	}
 }

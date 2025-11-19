@@ -11,49 +11,52 @@ func TestFromEntCharacterConfig_Converts(t *testing.T) {
 	t.Parallel()
 
 	nameRegex := "^name$"
-	entCfg := &ent.CharacterConfig{
+	valid := &ent.CharacterConfig{
 		NameRegexp:          &nameRegex,
 		DefaultSystemPrompt: "default-systemPrompt",
 	}
 
-	characterConfig, err := domain.FromEntCharacterConfig(entCfg)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	tests := []struct {
+		name    string
+		ent     *ent.CharacterConfig
+		wantErr bool
+	}{
+		{name: "valid config", ent: valid, wantErr: false},
+		{name: "nil config", ent: nil, wantErr: true},
 	}
 
-	if characterConfig == nil {
-		t.Fatalf("expected non-nil config")
-	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	if characterConfig.DefaultSystemPrompt != entCfg.DefaultSystemPrompt {
-		t.Fatalf(
-			"DefaultSystemPrompt mismatch: got=%q want=%q",
-			characterConfig.DefaultSystemPrompt, entCfg.DefaultSystemPrompt,
-		)
-	}
+			got, err := domain.FromEntCharacterConfig(testCase.ent)
+			if (err != nil) != testCase.wantErr {
+				t.Fatalf("unexpected error state: %v", err)
+			}
 
-	if characterConfig.NameRegexp == nil {
-		t.Fatalf("NameRegexp missing in domain config")
-	}
+			if testCase.wantErr {
+				if got != nil {
+					t.Fatalf("expected nil on error, got: %+v", got)
+				}
 
-	if entCfg.NameRegexp == nil {
-		t.Fatalf("NameRegexp missing in ent fixture")
-	}
+				return
+			}
 
-	if characterConfig.NameRegexp != entCfg.NameRegexp {
-		t.Fatalf("NameRegexp pointer mismatch")
-	}
-}
+			if got == nil {
+				t.Fatalf("expected non-nil result")
+			}
 
-func TestFromEntCharacterConfig_Nil(t *testing.T) {
-	t.Parallel()
+			if got.DefaultSystemPrompt != testCase.ent.DefaultSystemPrompt {
+				t.Fatalf("DefaultSystemPrompt mismatch: got=%q want=%q", got.DefaultSystemPrompt, testCase.ent.DefaultSystemPrompt)
+			}
 
-	characterConfig, err := domain.FromEntCharacterConfig(nil)
-	if err == nil {
-		t.Fatalf("expected error when input is nil")
-	}
+			if got.NameRegexp == nil || testCase.ent.NameRegexp == nil {
+				t.Fatalf("unexpected nil NameRegexp pointers")
+			}
 
-	if characterConfig != nil {
-		t.Fatalf("expected nil characterConfig when input is nil")
+			if got.NameRegexp != testCase.ent.NameRegexp {
+				t.Fatalf("NameRegexp pointer mismatch")
+			}
+		})
 	}
 }

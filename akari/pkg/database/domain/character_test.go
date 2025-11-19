@@ -13,7 +13,8 @@ func TestFromEntCharacter(t *testing.T) {
 
 	now := time.Now()
 	nameRegex := "^name$"
-	entCharacter := &ent.Character{
+
+	valid := &ent.Character{
 		ID:        1,
 		Name:      "character-name",
 		CreatedAt: now,
@@ -26,20 +27,66 @@ func TestFromEntCharacter(t *testing.T) {
 		},
 	}
 
-	character, err := domain.FromEntCharacter(entCharacter)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	missingConfig := &ent.Character{
+		ID:        2,
+		Name:      "no-config",
+		CreatedAt: now,
+		UpdatedAt: now,
+		Edges: ent.CharacterEdges{
+			Config:        nil,
+			SystemPrompts: []*ent.SystemPrompt{{ID: 1}},
+		},
 	}
 
-	if character == nil {
-		t.Fatalf("expected non-nil domain character")
+	missingPrompts := &ent.Character{
+		ID:        3,
+		Name:      "no-prompts",
+		CreatedAt: now,
+		UpdatedAt: now,
+		Edges: ent.CharacterEdges{
+			Config: &ent.CharacterConfig{ID: 1},
+		},
 	}
 
-	if character.ID != entCharacter.ID || character.Name != entCharacter.Name {
-		t.Fatalf("ID/Name mismatch: got id=%d name=%s", character.ID, character.Name)
+	tests := []struct {
+		name    string
+		input   *ent.Character
+		wantErr bool
+	}{
+		{name: "valid character", input: valid, wantErr: false},
+		{name: "nil input", input: nil, wantErr: true},
+		{name: "missing config edge", input: missingConfig, wantErr: true},
+		{name: "missing system prompts edge", input: missingPrompts, wantErr: true},
 	}
 
-	checkCharacterConversion(t, character, entCharacter)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := domain.FromEntCharacter(testCase.input)
+			if (err != nil) != testCase.wantErr {
+				t.Fatalf("unexpected error state: %v", err)
+			}
+
+			if testCase.wantErr {
+				if got != nil {
+					t.Fatalf("expected nil on error, got: %+v", got)
+				}
+
+				return
+			}
+
+			if got == nil {
+				t.Fatalf("expected non-nil result")
+			}
+
+			if got.ID != testCase.input.ID || got.Name != testCase.input.Name {
+				t.Fatalf("ID/Name mismatch: got id=%d name=%s", got.ID, got.Name)
+			}
+
+			checkCharacterConversion(t, got, testCase.input)
+		})
+	}
 }
 
 func checkCharacterConversion(t *testing.T, character *domain.Character, entCharacter *ent.Character) {
@@ -57,18 +104,5 @@ func checkCharacterConversion(t *testing.T, character *domain.Character, entChar
 		if character.SystemPromptIDs[i] != systemPrompt.ID {
 			t.Fatalf("SystemPrompts ID mismatch at index %d", i)
 		}
-	}
-}
-
-func TestFromEntCharacter_Nil(t *testing.T) {
-	t.Parallel()
-
-	character, err := domain.FromEntCharacter(nil)
-	if err == nil {
-		t.Fatalf("expected error when input is nil")
-	}
-
-	if character != nil {
-		t.Fatalf("expected nil character when input is nil")
 	}
 }

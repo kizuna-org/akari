@@ -20,15 +20,6 @@ func TestFromEntDiscordChannel_NilAndEdges(t *testing.T) {
 		CreatedAt: now,
 	}
 
-	discordChannel, err := domain.FromEntDiscordChannel(entChannelWithoutEdge)
-	if err == nil {
-		t.Fatalf("expected error when Guild edge is nil")
-	}
-
-	if discordChannel != nil {
-		t.Fatalf("expected nil channel for ent without edges")
-	}
-
 	entGuild := &ent.DiscordGuild{ID: "guild-id"}
 	entChannelWithEdge := &ent.DiscordChannel{
 		ID:        "channel-id",
@@ -38,29 +29,40 @@ func TestFromEntDiscordChannel_NilAndEdges(t *testing.T) {
 		Edges:     ent.DiscordChannelEdges{Guild: entGuild},
 	}
 
-	discordChannelWithEdge, err := domain.FromEntDiscordChannel(entChannelWithEdge)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	tests := []struct {
+		name    string
+		input   *ent.DiscordChannel
+		wantErr bool
+	}{
+		{name: "missing guild edge", input: entChannelWithoutEdge, wantErr: true},
+		{name: "with guild edge", input: entChannelWithEdge, wantErr: false},
+		{name: "nil input", input: nil, wantErr: true},
 	}
 
-	if discordChannelWithEdge == nil {
-		t.Fatalf("expected non-nil channel for ent with guild edge")
-	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	if discordChannelWithEdge.GuildID != entGuild.ID {
-		t.Fatalf("GuildID mismatch: got=%v want=%v", discordChannelWithEdge.GuildID, entGuild.ID)
-	}
-}
+			got, err := domain.FromEntDiscordChannel(testCase.input)
+			if (err != nil) != testCase.wantErr {
+				t.Fatalf("unexpected error state: %v", err)
+			}
 
-func TestFromEntDiscordChannel_Nil(t *testing.T) {
-	t.Parallel()
+			if testCase.wantErr {
+				if got != nil {
+					t.Fatalf("expected nil on error, got: %+v", got)
+				}
 
-	discordChannel, err := domain.FromEntDiscordChannel(nil)
-	if err == nil {
-		t.Fatalf("expected error when input is nil")
-	}
+				return
+			}
 
-	if discordChannel != nil {
-		t.Fatalf("expected nil channel when input is nil")
+			if got == nil {
+				t.Fatalf("expected non-nil result")
+			}
+
+			if got.GuildID != entGuild.ID {
+				t.Fatalf("GuildID mismatch: got=%v want=%v", got.GuildID, entGuild.ID)
+			}
+		})
 	}
 }
