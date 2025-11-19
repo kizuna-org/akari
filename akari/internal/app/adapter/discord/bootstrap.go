@@ -2,6 +2,7 @@ package discord
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -18,6 +19,9 @@ import (
 func RunDiscordBot(ctx context.Context) error {
 	slog.Info("Starting Discord bot mode")
 
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+
 	app := fx.New(
 		di.NewModule(),
 		fx.NopLogger,
@@ -25,58 +29,64 @@ func RunDiscordBot(ctx context.Context) error {
 	)
 
 	if err := app.Start(ctx); err != nil {
-		slog.Error("Failed to start application", "error", err)
+		slog.Error("discord: failed to start application", "error", err)
 
-		return err
+		return fmt.Errorf("discord: failed to start application: %w", err)
 	}
 
-	if err := app.Stop(ctx); err != nil {
-		slog.Error("Failed to stop application", "error", err)
+	<-signalCh
+	slog.Info("Received shutdown signal")
 
-		return err
+	if err := app.Stop(ctx); err != nil {
+		slog.Error("discord: failed to stop application", "error", err)
+
+		return fmt.Errorf("discord: failed to stop application: %w", err)
 	}
 
 	return nil
 }
 
 func initDiscord(
+	lifecycle fx.Lifecycle,
 	repo repository.DiscordRepository,
 	usecase internalUsecase.DiscordMessageUsecase,
 	characterInteractor databaseInteractor.CharacterInteractor,
 	client *infrastructure.DiscordClient,
-) {
-	character, err := characterInteractor.GetCharacterByID(context.Background(), defaultCharacterID)
-	if err != nil {
-		slog.Error("Failed to get character", "error", err)
+) error {
+	lifecycle.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			character, err := characterInteractor.GetCharacterByID(ctx, defaultCharacterID)
+			if err != nil {
+				return fmt.Errorf("discord: failed to get character: %w", err)
+			}
 
-		return
-	}
+			var nameRegexp string
+			if character.Config != nil && character.Config.NameRegexp != nil {
+				nameRegexp = *character.Config.NameRegexp
+			}
 
-	var nameRegexp string
-	if character.Config != nil && character.Config.NameRegexp != nil {
-		nameRegexp = *character.Config.NameRegexp
-	}
+			var prompt string
+			if len(character.SystemPrompts) > defaultSystemPromptID {
+				prompt = character.SystemPrompts[defaultSystemPromptID].Prompt
+			}
 
-	var prompt string
-	if len(character.SystemPrompts) > defaultSystemPromptID {
-		prompt = character.SystemPrompts[defaultSystemPromptID].Prompt
-	}
+			client.Session.AddHandler(makeHandler(ctx, usecase, nameRegexp, prompt))
 
-	client.Session.AddHandler(makeHandler(usecase, nameRegexp, prompt))
+			if err := repo.Start(); err != nil {
+				return fmt.Errorf("discord: failed to start repository: %w", err)
+			}
+			slog.Info("Discord bot is now running. Press CTRL-C to exit.")
 
-	if err := repo.Start(); err != nil {
-		slog.Error("Failed to start Discord bot", "error", err)
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			if err := repo.Stop(); err != nil {
+				return fmt.Errorf("discord: failed to stop repository: %w", err)
+			}
 
-		return
-	}
+			return nil
+		},
+	})
 
-	slog.Info("Discord bot is now running. Press CTRL-C to exit.")
-
-	sc := make(chan os.Signal, 1)
-	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM)
-	<-sc
-
-	if err := repo.Stop(); err != nil {
-		slog.Error("Failed to stop Discord bot", "error", err)
-	}
+	return nil
 }

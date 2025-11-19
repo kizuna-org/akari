@@ -21,6 +21,7 @@ func isBotMentioned(session *discordgo.Session, message *discordgo.MessageCreate
 }
 
 func makeHandler(
+	ctx context.Context,
 	usecase internalUsecase.DiscordMessageUsecase,
 	botNameRegExp, systemPrompt string,
 ) func(*discordgo.Session, *discordgo.MessageCreate) {
@@ -36,8 +37,8 @@ func makeHandler(
 			"message_id", message.ID,
 		)
 
-		if err := usecase.HandleMessage(context.Background(), message.ChannelID, message.Content, systemPrompt); err != nil {
-			slog.Error("usecase.HandleMessage failed", "error", err)
+		if err := usecase.HandleMessage(ctx, message.ChannelID, message.Content, systemPrompt); err != nil {
+			slog.Error("discord: usecase.HandleMessage failed", "error", err)
 		}
 	}
 }
