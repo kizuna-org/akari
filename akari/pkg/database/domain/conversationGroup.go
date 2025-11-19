@@ -18,10 +18,9 @@ type ConversationGroupRepository interface {
 }
 
 type ConversationGroup struct {
-	ID            int
-	Character     *Character
-	Conversations []*Conversation
-	CreatedAt     time.Time
+	ID        int
+	Character *Character
+	CreatedAt time.Time
 }
 
 func FromEntConversationGroup(entConversationGroup *ent.ConversationGroup) *ConversationGroup {
@@ -34,18 +33,9 @@ func FromEntConversationGroup(entConversationGroup *ent.ConversationGroup) *Conv
 		character = FromEntCharacter(entConversationGroup.Edges.Character)
 	}
 
-	var conversations []*Conversation
-	if entConversationGroup.Edges.Conversations != nil {
-		conversations = make([]*Conversation, len(entConversationGroup.Edges.Conversations))
-		for i, conv := range entConversationGroup.Edges.Conversations {
-			conversations[i] = FromEntConversation(conv)
-		}
-	}
-
 	return &ConversationGroup{
-		ID:            entConversationGroup.ID,
-		Character:     character,
-		Conversations: conversations,
-		CreatedAt:     entConversationGroup.CreatedAt,
+		ID:        entConversationGroup.ID,
+		Character: character,
+		CreatedAt: entConversationGroup.CreatedAt,
 	}
 }
