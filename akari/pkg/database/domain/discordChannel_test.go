@@ -13,36 +13,36 @@ func TestFromEntDiscordChannel_NilAndEdges(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	entChNoEdge := &ent.DiscordChannel{
-		ID:        "c-no-edge",
-		Name:      "channel",
+	entChannelWithoutEdge := &ent.DiscordChannel{
+		ID:        "channel-id",
+		Name:      "channel-name",
 		Type:      discordchannel.TypeGUILD_TEXT,
 		CreatedAt: now,
 	}
 
-	discordChannel := domain.FromEntDiscordChannel(entChNoEdge)
+	discordChannel := domain.FromEntDiscordChannel(entChannelWithoutEdge)
 	if discordChannel == nil {
 		t.Fatalf("expected non-nil channel for ent without edges")
 	}
 
-	if discordChannel.ID != entChNoEdge.ID {
-		t.Fatalf("ID mismatch: got=%v want=%v", discordChannel.ID, entChNoEdge.ID)
+	if discordChannel.ID != entChannelWithoutEdge.ID {
+		t.Fatalf("ID mismatch: got=%v want=%v", discordChannel.ID, entChannelWithoutEdge.ID)
 	}
 
 	if discordChannel.Guild != nil {
 		t.Fatalf("expected non-nil Guild struct even when edge missing")
 	}
 
-	entGuild := &ent.DiscordGuild{ID: "g-1"}
-	entChWithEdge := &ent.DiscordChannel{
-		ID:        "c-1",
-		Name:      "channel-1",
+	entGuild := &ent.DiscordGuild{ID: "guild-id"}
+	entChannelWithEdge := &ent.DiscordChannel{
+		ID:        "channel-id",
+		Name:      "channel-name",
 		Type:      discordchannel.TypeGUILD_TEXT,
 		CreatedAt: now,
 		Edges:     ent.DiscordChannelEdges{Guild: entGuild},
 	}
 
-	discordChannelWithEdge := domain.FromEntDiscordChannel(entChWithEdge)
+	discordChannelWithEdge := domain.FromEntDiscordChannel(entChannelWithEdge)
 	if discordChannelWithEdge == nil {
 		t.Fatalf("expected non-nil channel for ent with guild edge")
 	}

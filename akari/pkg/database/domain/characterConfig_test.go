@@ -10,10 +10,10 @@ import (
 func TestFromEntCharacterConfig_Converts(t *testing.T) {
 	t.Parallel()
 
-	nameRegex := "^hello$"
+	nameRegex := "^name$"
 	entCfg := &ent.CharacterConfig{
 		NameRegexp:          &nameRegex,
-		DefaultSystemPrompt: "default-prompt",
+		DefaultSystemPrompt: "default-systemPrompt",
 	}
 
 	cfg := domain.FromEntCharacterConfig(entCfg)

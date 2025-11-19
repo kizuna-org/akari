@@ -12,16 +12,16 @@ func TestFromEntCharacter(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	nameRegex := "^character$"
+	nameRegex := "^name$"
 	entCharacter := &ent.Character{
-		ID:        42,
-		Name:      "character",
+		ID:        1,
+		Name:      "character-name",
 		CreatedAt: now,
 		UpdatedAt: now,
 		Edges: ent.CharacterEdges{
-			Config: &ent.CharacterConfig{NameRegexp: &nameRegex, DefaultSystemPrompt: "default"},
+			Config: &ent.CharacterConfig{NameRegexp: &nameRegex, DefaultSystemPrompt: "default-systemPrompt"},
 			SystemPrompts: []*ent.SystemPrompt{
-				{ID: 11, Prompt: "hello"},
+				{ID: 1, Prompt: "systemPrompt"},
 			},
 		},
 	}

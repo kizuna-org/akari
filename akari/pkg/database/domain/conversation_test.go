@@ -13,12 +13,12 @@ func TestFromEntConversation_ConvertsNestedEdges(t *testing.T) {
 
 	now := time.Now()
 
-	entUser := &ent.AkariUser{ID: 11, CreatedAt: now, UpdatedAt: now}
-	entDiscordMessage := &ent.DiscordMessage{ID: "22", CreatedAt: now}
-	entConversationGroup := &ent.ConversationGroup{ID: 33, CreatedAt: now}
+	entUser := &ent.AkariUser{ID: 1, CreatedAt: now, UpdatedAt: now}
+	entDiscordMessage := &ent.DiscordMessage{ID: "message-id", CreatedAt: now}
+	entConversationGroup := &ent.ConversationGroup{ID: 1, CreatedAt: now}
 
 	entConversation := &ent.Conversation{
-		ID:        5,
+		ID:        1,
 		CreatedAt: now,
 		Edges: ent.ConversationEdges{
 			User:              entUser,

@@ -17,7 +17,7 @@ func TestFromEntDiscordUser_NilAndFields(t *testing.T) {
 		t.Fatalf("expected nil for nil input")
 	}
 
-	entUser := &ent.DiscordUser{ID: "u-1", Username: "user1", Bot: false, CreatedAt: now, UpdatedAt: now}
+	entUser := &ent.DiscordUser{ID: "user-id", Username: "user-name", Bot: false, CreatedAt: now, UpdatedAt: now}
 
 	duser := domain.FromEntDiscordUser(entUser)
 	if duser == nil {

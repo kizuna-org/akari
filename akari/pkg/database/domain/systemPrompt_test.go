@@ -14,10 +14,10 @@ func TestFromEntSystemPrompt_Converts(t *testing.T) {
 
 	now := time.Now()
 	entSystemPrompt := &ent.SystemPrompt{
-		ID:        13,
-		Title:     "Greeting",
+		ID:        1,
+		Title:     "systemPrompt-title",
 		Purpose:   systemprompt.PurposeTextChat,
-		Prompt:    "Say hello",
+		Prompt:    "systemPrompt",
 		CreatedAt: now,
 		UpdatedAt: now,
 	}

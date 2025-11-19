@@ -13,7 +13,7 @@ func TestFromEntAkariUser_Converts(t *testing.T) {
 
 	now := time.Now()
 	entUser := &ent.AkariUser{
-		ID:        7,
+		ID:        1,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}

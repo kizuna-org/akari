@@ -12,7 +12,7 @@ func TestFromEntConversationGroup_IncludesCharacter(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	entCharacter := &ent.Character{ID: 5, Name: "character", CreatedAt: now, UpdatedAt: now}
+	entCharacter := &ent.Character{ID: 1, Name: "name", CreatedAt: now, UpdatedAt: now}
 	entConversationGroup := &ent.ConversationGroup{
 		ID:        3,
 		CreatedAt: now,

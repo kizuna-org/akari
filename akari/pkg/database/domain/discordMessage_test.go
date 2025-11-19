@@ -12,7 +12,7 @@ func TestToDomainDiscordMessage_HandlesNilEdges(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	entDiscordMessage := &ent.DiscordMessage{ID: "12345", Content: "hi", Timestamp: now, CreatedAt: now}
+	entDiscordMessage := &ent.DiscordMessage{ID: "message-id", Content: "hi", Timestamp: now, CreatedAt: now}
 
 	discordMessage := domain.FromEntDiscordMessage(entDiscordMessage)
 	if discordMessage == nil {
@@ -40,10 +40,10 @@ func TestFromEntDiscordMessage_IncludesChannelAndAuthor(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	entChannel := &ent.DiscordChannel{ID: "ch1", Name: "chan", CreatedAt: now}
+	entChannel := &ent.DiscordChannel{ID: "channel-id", Name: "channel-name", CreatedAt: now}
 	entAuthor := &ent.DiscordUser{ID: "u1", CreatedAt: now}
 	entDiscordMessage := &ent.DiscordMessage{
-		ID: "m1", Content: "hello", Timestamp: now, CreatedAt: now,
+		ID: "message-id", Content: "hello", Timestamp: now, CreatedAt: now,
 		Edges: ent.DiscordMessageEdges{Channel: entChannel, Author: entAuthor},
 	}
 

@@ -12,7 +12,7 @@ func TestFromEntDiscordGuild_ChannelIDsNil(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	entDiscordGuild := &ent.DiscordGuild{ID: "12345", Name: "Guild1", CreatedAt: now}
+	entDiscordGuild := &ent.DiscordGuild{ID: "guild-id", Name: "guild-name", CreatedAt: now}
 
 	discordGuild := domain.FromEntDiscordGuild(entDiscordGuild)
 	if discordGuild == nil {
@@ -36,10 +36,10 @@ func TestFromEntDiscordGuild_IncludesChannels(t *testing.T) {
 	t.Parallel()
 
 	now := time.Now()
-	entChannel := &ent.DiscordChannel{ID: "c1", Name: "Channel1", CreatedAt: now}
+	entChannel := &ent.DiscordChannel{ID: "channel-id", Name: "channel-name", CreatedAt: now}
 	entDiscordGuild := &ent.DiscordGuild{
-		ID:        "12345",
-		Name:      "Guild1",
+		ID:        "guild-id",
+		Name:      "guild-name",
 		CreatedAt: now,
 		Edges: ent.DiscordGuildEdges{
 			Channels: []*ent.DiscordChannel{entChannel},
