@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
@@ -18,24 +19,25 @@ type ConversationGroupRepository interface {
 }
 
 type ConversationGroup struct {
-	ID        int
-	Character *Character
-	CreatedAt time.Time
+	ID          int
+	CharacterID int
+	CreatedAt   time.Time
 }
 
-func FromEntConversationGroup(entConversationGroup *ent.ConversationGroup) *ConversationGroup {
+func FromEntConversationGroup(entConversationGroup *ent.ConversationGroup) (*ConversationGroup, error) {
 	if entConversationGroup == nil {
-		return nil
+		return nil, errors.New("conversationGroup is nil")
 	}
 
-	var character *Character
-	if entConversationGroup.Edges.Character != nil {
-		character = FromEntCharacter(entConversationGroup.Edges.Character)
+	if entConversationGroup.Edges.Character == nil {
+		return nil, errors.New("conversationGroup.Character edge is nil")
 	}
+
+	characterID := entConversationGroup.Edges.Character.ID
 
 	return &ConversationGroup{
-		ID:        entConversationGroup.ID,
-		Character: character,
-		CreatedAt: entConversationGroup.CreatedAt,
-	}
+		ID:          entConversationGroup.ID,
+		CharacterID: characterID,
+		CreatedAt:   entConversationGroup.CreatedAt,
+	}, nil
 }

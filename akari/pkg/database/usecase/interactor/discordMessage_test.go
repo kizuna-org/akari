@@ -31,8 +31,8 @@ func TestDiscordMessageInteractor_CreateDiscordMessage(t *testing.T) {
 
 	params := &domain.DiscordMessage{
 		ID:        "m1",
-		Channel:   &domain.DiscordChannel{ID: "c1"},
-		Author:    &domain.DiscordUser{ID: "a1"},
+		ChannelID: "c1",
+		AuthorID:  "a1",
 		Content:   "hello",
 		Timestamp: time.Now(),
 	}

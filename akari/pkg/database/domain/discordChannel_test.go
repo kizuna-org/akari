@@ -20,17 +20,13 @@ func TestFromEntDiscordChannel_NilAndEdges(t *testing.T) {
 		CreatedAt: now,
 	}
 
-	discordChannel := domain.FromEntDiscordChannel(entChannelWithoutEdge)
-	if discordChannel == nil {
-		t.Fatalf("expected non-nil channel for ent without edges")
+	discordChannel, err := domain.FromEntDiscordChannel(entChannelWithoutEdge)
+	if err == nil {
+		t.Fatalf("expected error when Guild edge is nil")
 	}
 
-	if discordChannel.ID != entChannelWithoutEdge.ID {
-		t.Fatalf("ID mismatch: got=%v want=%v", discordChannel.ID, entChannelWithoutEdge.ID)
-	}
-
-	if discordChannel.Guild != nil {
-		t.Fatalf("expected non-nil Guild struct even when edge missing")
+	if discordChannel != nil {
+		t.Fatalf("expected nil channel for ent without edges")
 	}
 
 	entGuild := &ent.DiscordGuild{ID: "guild-id"}
@@ -42,20 +38,29 @@ func TestFromEntDiscordChannel_NilAndEdges(t *testing.T) {
 		Edges:     ent.DiscordChannelEdges{Guild: entGuild},
 	}
 
-	discordChannelWithEdge := domain.FromEntDiscordChannel(entChannelWithEdge)
+	discordChannelWithEdge, err := domain.FromEntDiscordChannel(entChannelWithEdge)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
 	if discordChannelWithEdge == nil {
 		t.Fatalf("expected non-nil channel for ent with guild edge")
 	}
 
-	if discordChannelWithEdge.Guild.ID != entGuild.ID {
-		t.Fatalf("GuildID mismatch: got=%v want=%v", discordChannelWithEdge.Guild.ID, entGuild.ID)
+	if discordChannelWithEdge.GuildID != entGuild.ID {
+		t.Fatalf("GuildID mismatch: got=%v want=%v", discordChannelWithEdge.GuildID, entGuild.ID)
 	}
 }
 
 func TestFromEntDiscordChannel_Nil(t *testing.T) {
 	t.Parallel()
 
-	if domain.FromEntDiscordChannel(nil) != nil {
-		t.Fatalf("expected nil when input is nil")
+	discordChannel, err := domain.FromEntDiscordChannel(nil)
+	if err == nil {
+		t.Fatalf("expected error when input is nil")
+	}
+
+	if discordChannel != nil {
+		t.Fatalf("expected nil channel when input is nil")
 	}
 }

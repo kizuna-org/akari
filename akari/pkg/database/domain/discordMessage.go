@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
@@ -17,34 +18,36 @@ type DiscordMessageRepository interface {
 
 type DiscordMessage struct {
 	ID        string
-	Channel   *DiscordChannel
-	Author    *DiscordUser
+	ChannelID string
+	AuthorID  string
 	Content   string
 	Timestamp time.Time
 	CreatedAt time.Time
 }
 
-func FromEntDiscordMessage(discordMessage *ent.DiscordMessage) *DiscordMessage {
+func FromEntDiscordMessage(discordMessage *ent.DiscordMessage) (*DiscordMessage, error) {
 	if discordMessage == nil {
-		return nil
+		return nil, errors.New("discordMessage is nil")
 	}
 
-	var discordChannel *DiscordChannel
-	if discordMessage.Edges.Channel != nil {
-		discordChannel = FromEntDiscordChannel(discordMessage.Edges.Channel)
+	if discordMessage.Edges.Channel == nil {
+		return nil, errors.New("discordMessage.Channel edge is nil")
 	}
 
-	var discordAuthor *DiscordUser
-	if discordMessage.Edges.Author != nil {
-		discordAuthor = FromEntDiscordUser(discordMessage.Edges.Author)
+	channelID := discordMessage.Edges.Channel.ID
+
+	if discordMessage.Edges.Author == nil {
+		return nil, errors.New("discordMessage.Author edge is nil")
 	}
+
+	authorID := discordMessage.Edges.Author.ID
 
 	return &DiscordMessage{
 		ID:        discordMessage.ID,
-		Channel:   discordChannel,
-		Author:    discordAuthor,
+		ChannelID: channelID,
+		AuthorID:  authorID,
 		Content:   discordMessage.Content,
 		Timestamp: discordMessage.Timestamp,
 		CreatedAt: discordMessage.CreatedAt,
-	}
+	}, nil
 }

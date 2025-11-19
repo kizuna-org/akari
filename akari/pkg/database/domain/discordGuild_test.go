@@ -14,21 +14,26 @@ func TestFromEntDiscordGuild_ChannelIDsNil(t *testing.T) {
 	now := time.Now()
 	entDiscordGuild := &ent.DiscordGuild{ID: "guild-id", Name: "guild-name", CreatedAt: now}
 
-	discordGuild := domain.FromEntDiscordGuild(entDiscordGuild)
-	if discordGuild == nil {
-		t.Fatalf("expected non-nil domain guild")
+	discordGuild, err := domain.FromEntDiscordGuild(entDiscordGuild)
+	if err == nil {
+		t.Fatalf("expected error when Channels edge is nil")
 	}
 
-	if len(discordGuild.Channels) != 0 {
-		t.Fatalf("expected empty Channels when edges not loaded, got: %+v", discordGuild.Channels)
+	if discordGuild != nil {
+		t.Fatalf("expected nil domain guild")
 	}
 }
 
 func TestFromEntDiscordGuild_Nil(t *testing.T) {
 	t.Parallel()
 
-	if domain.FromEntDiscordGuild(nil) != nil {
-		t.Fatalf("expected nil when input is nil")
+	discordGuild, err := domain.FromEntDiscordGuild(nil)
+	if err == nil {
+		t.Fatalf("expected error when input is nil")
+	}
+
+	if discordGuild != nil {
+		t.Fatalf("expected nil domain guild when input is nil")
 	}
 }
 
@@ -46,17 +51,22 @@ func TestFromEntDiscordGuild_IncludesChannels(t *testing.T) {
 		},
 	}
 
-	discordGuild := domain.FromEntDiscordGuild(entDiscordGuild)
+	discordGuild, err := domain.FromEntDiscordGuild(entDiscordGuild)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
 	if discordGuild == nil {
 		t.Fatalf("expected non-nil domain guild")
 	}
 
-	if len(discordGuild.Channels) != 1 {
-		t.Fatalf("expected 1 Channel converted, got=%d", len(discordGuild.Channels))
+	if len(discordGuild.ChannelIDs) != 1 {
+		t.Fatalf("expected 1 Channel converted, got=%d", len(discordGuild.ChannelIDs))
 	}
 
-	ch := discordGuild.Channels[0]
-	if ch.ID != entChannel.ID || ch.Name != entChannel.Name {
-		t.Fatalf("converted Channel fields mismatch: got=%+v want id=%s name=%s", ch, entChannel.ID, entChannel.Name)
+	for i, discordChannel := range discordGuild.ChannelIDs {
+		if discordChannel != entDiscordGuild.Edges.Channels[i].ID {
+			t.Fatalf("converted Channel ID mismatch: got=%s want=%s", discordChannel, entDiscordGuild.Edges.Channels[i].ID)
+		}
 	}
 }

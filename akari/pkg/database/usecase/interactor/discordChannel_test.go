@@ -30,9 +30,9 @@ func TestDiscordChannelInteractor_CreateDiscordChannel(t *testing.T) {
 	t.Parallel()
 
 	params := &domain.DiscordChannel{
-		ID:    "m1",
-		Name:  "channel1",
-		Guild: &domain.DiscordGuild{ID: "g1"},
+		ID:      "m1",
+		Name:    "channel1",
+		GuildID: "g1",
 	}
 
 	tests := []struct {
@@ -202,7 +202,7 @@ func TestDiscordChannelInteractor_GetDiscordChannelsByGuildID(t *testing.T) {
 			name: "success",
 			mockSetup: func(m *mock.MockDiscordChannelRepository, ctx context.Context) {
 				m.EXPECT().GetDiscordChannelsByGuildID(ctx, guildID).
-					Return([]*domain.DiscordChannel{{ID: "m1", Guild: &domain.DiscordGuild{ID: guildID}, CreatedAt: time.Now()}}, nil)
+					Return([]*domain.DiscordChannel{{ID: "m1", GuildID: guildID, CreatedAt: time.Now()}}, nil)
 			},
 			wantErr: false,
 		},

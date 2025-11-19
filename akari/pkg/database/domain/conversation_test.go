@@ -27,48 +27,45 @@ func TestFromEntConversation_ConvertsNestedEdges(t *testing.T) {
 		},
 	}
 
-	conv := domain.FromEntConversation(entConversation)
-	if conv == nil {
+	conversation, err := domain.FromEntConversation(entConversation)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if conversation == nil {
 		t.Fatalf("expected non-nil domain conversation")
 	}
 
-	if conv.ID != entConversation.ID {
-		t.Fatalf("ID mismatch: got=%d want=%d", conv.ID, entConversation.ID)
+	if conversation.ID != entConversation.ID {
+		t.Fatalf("ID mismatch: got=%d want=%d", conversation.ID, entConversation.ID)
 	}
 
-	if conv.User == nil {
-		t.Fatalf("expected nested User to be converted")
+	if conversation.UserID != entUser.ID {
+		t.Fatalf("User ID mismatch: got=%d want=%d", conversation.UserID, entUser.ID)
 	}
 
-	if conv.User.ID != entUser.ID {
-		t.Fatalf("User ID mismatch: got=%d want=%d", conv.User.ID, entUser.ID)
+	if conversation.DiscordMessageID != entDiscordMessage.ID {
+		t.Fatalf("DiscordMessage ID mismatch: got=%s want=%s", conversation.DiscordMessageID, entDiscordMessage.ID)
 	}
 
-	if conv.DiscordMessage == nil {
-		t.Fatalf("expected nested DiscordMessage to be converted")
+	if conversation.ConversationGroupID != entConversationGroup.ID {
+		t.Fatalf("ConversationGroup ID mismatch: got=%d want=%d", conversation.ConversationGroupID, entConversationGroup.ID)
 	}
 
-	if conv.DiscordMessage.ID != entDiscordMessage.ID {
-		t.Fatalf("DiscordMessage ID mismatch: got=%s want=%s", conv.DiscordMessage.ID, entDiscordMessage.ID)
-	}
-
-	if conv.ConversationGroup == nil {
-		t.Fatalf("expected nested ConversationGroup to be converted")
-	}
-
-	if conv.ConversationGroup.ID != entConversationGroup.ID {
-		t.Fatalf("ConversationGroup ID mismatch: got=%d want=%d", conv.ConversationGroup.ID, entConversationGroup.ID)
-	}
-
-	if !conv.CreatedAt.Equal(entConversation.CreatedAt) {
-		t.Fatalf("CreatedAt mismatch: got=%v want=%v", conv.CreatedAt, entConversation.CreatedAt)
+	if !conversation.CreatedAt.Equal(entConversation.CreatedAt) {
+		t.Fatalf("CreatedAt mismatch: got=%v want=%v", conversation.CreatedAt, entConversation.CreatedAt)
 	}
 }
 
 func TestFromEntConversation_Nil(t *testing.T) {
 	t.Parallel()
 
-	if domain.FromEntConversation(nil) != nil {
-		t.Fatalf("expected nil when input is nil")
+	conversation, err := domain.FromEntConversation(nil)
+	if err == nil {
+		t.Fatalf("expected error when input is nil")
+	}
+
+	if conversation != nil {
+		t.Fatalf("expected nil conversation when input is nil")
 	}
 }

@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
@@ -23,14 +24,14 @@ type AkariUser struct {
 	UpdatedAt time.Time
 }
 
-func FromEntAkariUser(entAkariUser *ent.AkariUser) *AkariUser {
+func FromEntAkariUser(entAkariUser *ent.AkariUser) (*AkariUser, error) {
 	if entAkariUser == nil {
-		return nil
+		return nil, errors.New("akariUser is nil")
 	}
 
 	return &AkariUser{
 		ID:        entAkariUser.ID,
 		CreatedAt: entAkariUser.CreatedAt,
 		UpdatedAt: entAkariUser.UpdatedAt,
-	}
+	}, nil
 }

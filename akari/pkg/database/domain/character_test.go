@@ -26,7 +26,11 @@ func TestFromEntCharacter(t *testing.T) {
 		},
 	}
 
-	character := domain.FromEntCharacter(entCharacter)
+	character, err := domain.FromEntCharacter(entCharacter)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
 	if character == nil {
 		t.Fatalf("expected non-nil domain character")
 	}
@@ -41,47 +45,30 @@ func TestFromEntCharacter(t *testing.T) {
 func checkCharacterConversion(t *testing.T, character *domain.Character, entCharacter *ent.Character) {
 	t.Helper()
 
-	if character.Config == nil {
-		t.Fatalf("Config missing in domain character: %+v", character.Config)
-	}
-
 	if entCharacter.Edges.Config == nil {
 		t.Fatalf("Config missing in ent fixture: %+v", entCharacter.Edges.Config)
 	}
 
-	if character.Config.DefaultSystemPrompt != entCharacter.Edges.Config.DefaultSystemPrompt {
-		t.Fatalf("Config.DefaultSystemPrompt mismatch")
+	if character.ConfigID != entCharacter.Edges.Config.ID {
+		t.Fatalf("Config mismatch")
 	}
 
-	if character.Config.NameRegexp == nil {
-		t.Fatalf("Config.NameRegexp missing in domain")
-	}
-
-	if entCharacter.Edges.Config.NameRegexp == nil {
-		t.Fatalf("Config.NameRegexp missing in ent fixture")
-	}
-
-	if character.Config.NameRegexp != entCharacter.Edges.Config.NameRegexp {
-		t.Fatalf("Config.NameRegexp mismatch")
-	}
-
-	if len(character.SystemPrompts) != len(entCharacter.Edges.SystemPrompts) {
-		t.Fatalf("SystemPrompts length mismatch")
-	}
-
-	if character.SystemPrompts[0].ID != entCharacter.Edges.SystemPrompts[0].ID {
-		t.Fatalf("SystemPrompts ID mismatch")
-	}
-
-	if character.SystemPrompts[0].Prompt != entCharacter.Edges.SystemPrompts[0].Prompt {
-		t.Fatalf("SystemPrompts Prompt mismatch")
+	for i, systemPrompt := range entCharacter.Edges.SystemPrompts {
+		if character.SystemPromptIDs[i] != systemPrompt.ID {
+			t.Fatalf("SystemPrompts ID mismatch at index %d", i)
+		}
 	}
 }
 
 func TestFromEntCharacter_Nil(t *testing.T) {
 	t.Parallel()
 
-	if domain.FromEntCharacter(nil) != nil {
-		t.Fatalf("expected nil when input is nil")
+	character, err := domain.FromEntCharacter(nil)
+	if err == nil {
+		t.Fatalf("expected error when input is nil")
+	}
+
+	if character != nil {
+		t.Fatalf("expected nil character when input is nil")
 	}
 }

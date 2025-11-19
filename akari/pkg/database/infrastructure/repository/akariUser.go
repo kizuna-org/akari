@@ -15,7 +15,7 @@ func (r *repositoryImpl) CreateAkariUser(ctx context.Context) (*domain.AkariUser
 		return nil, fmt.Errorf("failed to create akari user: %w", err)
 	}
 
-	return domain.FromEntAkariUser(user), nil
+	return domain.FromEntAkariUser(user)
 }
 
 func (r *repositoryImpl) GetAkariUserByID(ctx context.Context, id int) (*domain.AkariUser, error) {
@@ -24,7 +24,7 @@ func (r *repositoryImpl) GetAkariUserByID(ctx context.Context, id int) (*domain.
 		return nil, fmt.Errorf("failed to get akari user: %w", err)
 	}
 
-	return domain.FromEntAkariUser(user), nil
+	return domain.FromEntAkariUser(user)
 }
 
 func (r *repositoryImpl) GetAkariUserByDiscordUserID(ctx context.Context, discordID string) (*domain.AkariUser, error) {
@@ -36,7 +36,7 @@ func (r *repositoryImpl) GetAkariUserByDiscordUserID(ctx context.Context, discor
 		return nil, fmt.Errorf("failed to get akari user by discord id: %w", err)
 	}
 
-	return domain.FromEntAkariUser(user), nil
+	return domain.FromEntAkariUser(user)
 }
 
 func (r *repositoryImpl) ListAkariUsers(ctx context.Context) ([]*domain.AkariUser, error) {
@@ -48,8 +48,14 @@ func (r *repositoryImpl) ListAkariUsers(ctx context.Context) ([]*domain.AkariUse
 	}
 
 	domainAkariUser := make([]*domain.AkariUser, len(users))
+
 	for i, akariUser := range users {
-		domainAkariUser[i] = domain.FromEntAkariUser(akariUser)
+		var err error
+
+		domainAkariUser[i], err = domain.FromEntAkariUser(akariUser)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert akari user: %w", err)
+		}
 	}
 
 	return domainAkariUser, nil

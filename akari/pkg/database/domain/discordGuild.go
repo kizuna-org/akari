@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
@@ -18,29 +19,30 @@ type DiscordGuildRepository interface {
 }
 
 type DiscordGuild struct {
-	ID        string
-	Name      string
-	Channels  []*DiscordChannel
-	CreatedAt time.Time
+	ID         string
+	Name       string
+	ChannelIDs []string
+	CreatedAt  time.Time
 }
 
-func FromEntDiscordGuild(entDiscordGuild *ent.DiscordGuild) *DiscordGuild {
+func FromEntDiscordGuild(entDiscordGuild *ent.DiscordGuild) (*DiscordGuild, error) {
 	if entDiscordGuild == nil {
-		return nil
+		return nil, errors.New("discordGuild is nil")
 	}
 
-	var discordChannels []*DiscordChannel
-	if entDiscordGuild.Edges.Channels != nil {
-		discordChannels = make([]*DiscordChannel, len(entDiscordGuild.Edges.Channels))
-		for i, discordChannel := range entDiscordGuild.Edges.Channels {
-			discordChannels[i] = FromEntDiscordChannel(discordChannel)
-		}
+	if entDiscordGuild.Edges.Channels == nil {
+		return nil, errors.New("discordGuild.Channels edge is nil")
+	}
+
+	discordChannelIDs := make([]string, len(entDiscordGuild.Edges.Channels))
+	for i, discordChannel := range entDiscordGuild.Edges.Channels {
+		discordChannelIDs[i] = discordChannel.ID
 	}
 
 	return &DiscordGuild{
-		ID:        entDiscordGuild.ID,
-		Name:      entDiscordGuild.Name,
-		Channels:  discordChannels,
-		CreatedAt: entDiscordGuild.CreatedAt,
-	}
+		ID:         entDiscordGuild.ID,
+		Name:       entDiscordGuild.Name,
+		ChannelIDs: discordChannelIDs,
+		CreatedAt:  entDiscordGuild.CreatedAt,
+	}, nil
 }

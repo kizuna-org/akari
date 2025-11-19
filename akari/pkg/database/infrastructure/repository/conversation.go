@@ -30,7 +30,7 @@ func (r *repositoryImpl) CreateConversation(
 		slog.Int("id", conversation.ID),
 	)
 
-	return domain.FromEntConversation(conversation), nil
+	return domain.FromEntConversation(conversation)
 }
 
 func (r *repositoryImpl) GetConversationByID(ctx context.Context, id int) (*domain.Conversation, error) {
@@ -45,7 +45,7 @@ func (r *repositoryImpl) GetConversationByID(ctx context.Context, id int) (*doma
 		return nil, fmt.Errorf("failed to get conversation by id: %w", err)
 	}
 
-	return domain.FromEntConversation(conversation), nil
+	return domain.FromEntConversation(conversation)
 }
 
 func (r *repositoryImpl) ListConversations(ctx context.Context) ([]*domain.Conversation, error) {
@@ -61,8 +61,14 @@ func (r *repositoryImpl) ListConversations(ctx context.Context) ([]*domain.Conve
 	}
 
 	domainConversations := make([]*domain.Conversation, len(conversations))
+
 	for i, conversation := range conversations {
-		domainConversations[i] = domain.FromEntConversation(conversation)
+		var err error
+
+		domainConversations[i], err = domain.FromEntConversation(conversation)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert conversation: %w", err)
+		}
 	}
 
 	return domainConversations, nil

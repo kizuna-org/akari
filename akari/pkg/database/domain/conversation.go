@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
@@ -17,38 +18,41 @@ type ConversationRepository interface {
 }
 
 type Conversation struct {
-	ID                int
-	User              *AkariUser
-	DiscordMessage    *DiscordMessage
-	ConversationGroup *ConversationGroup
-	CreatedAt         time.Time
+	ID                  int
+	UserID              int
+	DiscordMessageID    string
+	ConversationGroupID int
+	CreatedAt           time.Time
 }
 
-func FromEntConversation(entConversation *ent.Conversation) *Conversation {
+func FromEntConversation(entConversation *ent.Conversation) (*Conversation, error) {
 	if entConversation == nil {
-		return nil
+		return nil, errors.New("conversation is nil")
 	}
 
-	var user *AkariUser
-	if entConversation.Edges.User != nil {
-		user = FromEntAkariUser(entConversation.Edges.User)
+	if entConversation.Edges.User == nil {
+		return nil, errors.New("conversation.User edge is nil")
 	}
 
-	var discordMessage *DiscordMessage
-	if entConversation.Edges.DiscordMessage != nil {
-		discordMessage = FromEntDiscordMessage(entConversation.Edges.DiscordMessage)
+	userID := entConversation.Edges.User.ID
+
+	if entConversation.Edges.DiscordMessage == nil {
+		return nil, errors.New("conversation.DiscordMessage edge is nil")
 	}
 
-	var conversationGroup *ConversationGroup
-	if entConversation.Edges.ConversationGroup != nil {
-		conversationGroup = FromEntConversationGroup(entConversation.Edges.ConversationGroup)
+	discordMessageID := entConversation.Edges.DiscordMessage.ID
+
+	if entConversation.Edges.ConversationGroup == nil {
+		return nil, errors.New("conversation.ConversationGroup edge is nil")
 	}
+
+	conversationGroupID := entConversation.Edges.ConversationGroup.ID
 
 	return &Conversation{
-		ID:                entConversation.ID,
-		User:              user,
-		DiscordMessage:    discordMessage,
-		ConversationGroup: conversationGroup,
-		CreatedAt:         entConversation.CreatedAt,
-	}
+		ID:                  entConversation.ID,
+		UserID:              userID,
+		DiscordMessageID:    discordMessageID,
+		ConversationGroupID: conversationGroupID,
+		CreatedAt:           entConversation.CreatedAt,
+	}, nil
 }

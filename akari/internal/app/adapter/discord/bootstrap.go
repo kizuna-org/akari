@@ -10,6 +10,7 @@ import (
 
 	internalUsecase "github.com/kizuna-org/akari/internal/app/usecase/discord"
 	"github.com/kizuna-org/akari/internal/di"
+	"github.com/kizuna-org/akari/pkg/config"
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	"github.com/kizuna-org/akari/pkg/discord/domain/repository"
 	"github.com/kizuna-org/akari/pkg/discord/infrastructure"
@@ -51,6 +52,8 @@ func initDiscord(
 	repo repository.DiscordRepository,
 	usecase internalUsecase.DiscordMessageUsecase,
 	characterInteractor databaseInteractor.CharacterInteractor,
+	systemPromptInteractor databaseInteractor.SystemPromptInteractor,
+	cfgRepo config.ConfigRepository,
 	client *infrastructure.DiscordClient,
 ) error {
 	lifecycle.Append(fx.Hook{
@@ -60,14 +63,15 @@ func initDiscord(
 				return fmt.Errorf("discord: failed to get character: %w", err)
 			}
 
-			var nameRegexp string
-			if character.Config != nil && character.Config.NameRegexp != nil {
-				nameRegexp = *character.Config.NameRegexp
-			}
+			var nameRegexp = cfgRepo.GetConfig().Discord.BotNameRegExp
 
 			var prompt string
-			if len(character.SystemPrompts) > defaultSystemPromptID {
-				prompt = character.SystemPrompts[defaultSystemPromptID].Prompt
+			if len(character.SystemPromptIDs) > defaultSystemPromptID {
+				systemPromptID := character.SystemPromptIDs[defaultSystemPromptID]
+				systemPrompt, err := systemPromptInteractor.GetSystemPromptByID(ctx, systemPromptID)
+				if err == nil && systemPrompt != nil {
+					prompt = systemPrompt.Prompt
+				}
 			}
 
 			client.Session.AddHandler(makeHandler(ctx, usecase, nameRegexp, prompt))

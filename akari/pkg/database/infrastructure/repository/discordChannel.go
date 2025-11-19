@@ -19,7 +19,7 @@ func (r *repositoryImpl) CreateDiscordChannel(
 		SetID(params.ID).
 		SetType(discordchannel.Type(params.Type)).
 		SetName(params.Name).
-		SetGuildID(params.Guild.ID)
+		SetGuildID(params.GuildID)
 
 	channel, err := builder.Save(ctx)
 	if err != nil {
@@ -32,7 +32,7 @@ func (r *repositoryImpl) CreateDiscordChannel(
 		slog.String("author_id", channel.Edges.Guild.ID),
 	)
 
-	return domain.FromEntDiscordChannel(channel), nil
+	return domain.FromEntDiscordChannel(channel)
 }
 
 func (r *repositoryImpl) GetDiscordChannelByID(
@@ -48,7 +48,7 @@ func (r *repositoryImpl) GetDiscordChannelByID(
 		return nil, fmt.Errorf("failed to get discord channel by id: %w", err)
 	}
 
-	return domain.FromEntDiscordChannel(channel), nil
+	return domain.FromEntDiscordChannel(channel)
 }
 
 func (r *repositoryImpl) GetDiscordChannelByMessageID(
@@ -64,7 +64,7 @@ func (r *repositoryImpl) GetDiscordChannelByMessageID(
 		return nil, fmt.Errorf("failed to get discord channel: %w", err)
 	}
 
-	return domain.FromEntDiscordChannel(channel), nil
+	return domain.FromEntDiscordChannel(channel)
 }
 
 func (r *repositoryImpl) GetDiscordChannelsByGuildID(
@@ -81,8 +81,14 @@ func (r *repositoryImpl) GetDiscordChannelsByGuildID(
 	}
 
 	domainDiscordChannels := make([]*domain.DiscordChannel, len(channels))
+
 	for i, domainDiscordChannel := range channels {
-		domainDiscordChannels[i] = domain.FromEntDiscordChannel(domainDiscordChannel)
+		var err error
+
+		domainDiscordChannels[i], err = domain.FromEntDiscordChannel(domainDiscordChannel)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert discord channel: %w", err)
+		}
 	}
 
 	return domainDiscordChannels, nil

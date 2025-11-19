@@ -19,7 +19,11 @@ func TestFromEntConversationGroup_IncludesCharacter(t *testing.T) {
 		Edges:     ent.ConversationGroupEdges{Character: entCharacter},
 	}
 
-	conversationGroup := domain.FromEntConversationGroup(entConversationGroup)
+	conversationGroup, err := domain.FromEntConversationGroup(entConversationGroup)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
 	if conversationGroup == nil {
 		t.Fatalf("expected non-nil domain conversation group")
 	}
@@ -28,19 +32,21 @@ func TestFromEntConversationGroup_IncludesCharacter(t *testing.T) {
 		t.Fatalf("ID mismatch: %d", conversationGroup.ID)
 	}
 
-	if conversationGroup.Character == nil {
-		t.Fatalf("Character not converted: %+v", conversationGroup.Character)
-	}
-
-	if conversationGroup.Character.ID != entCharacter.ID || conversationGroup.Character.Name != entCharacter.Name {
-		t.Fatalf("Character fields incorrect: %+v", conversationGroup.Character)
+	if conversationGroup.CharacterID != entCharacter.ID {
+		t.Fatalf("Character ID incorrect: %+v", conversationGroup.CharacterID)
 	}
 }
 
 func TestFromEntConversationGroup_Nil(t *testing.T) {
 	t.Parallel()
 
-	if domain.FromEntConversationGroup(nil) != nil {
-		t.Fatalf("expected nil when input is nil")
+	conversationGroup, err := domain.FromEntConversationGroup(nil)
+
+	if err == nil {
+		t.Fatalf("expected error when input is nil")
+	}
+
+	if conversationGroup != nil {
+		t.Fatalf("expected nil domain conversation group when input is nil")
 	}
 }

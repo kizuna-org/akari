@@ -14,25 +14,26 @@ func TestToDomainDiscordMessage_HandlesNilEdges(t *testing.T) {
 	now := time.Now()
 	entDiscordMessage := &ent.DiscordMessage{ID: "message-id", Content: "hi", Timestamp: now, CreatedAt: now}
 
-	discordMessage := domain.FromEntDiscordMessage(entDiscordMessage)
+	discordMessage, err := domain.FromEntDiscordMessage(entDiscordMessage)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
 	if discordMessage == nil {
 		t.Fatalf("expected non-nil domain message")
-	}
-
-	if discordMessage.Channel != nil {
-		t.Fatalf("expected nil Channel when edges missing, got %+v", discordMessage.Channel)
-	}
-
-	if discordMessage.Author != nil {
-		t.Fatalf("expected nil Author when edges missing, got %+v", discordMessage.Author)
 	}
 }
 
 func TestFromEntDiscordMessage_Nil(t *testing.T) {
 	t.Parallel()
 
-	if domain.FromEntDiscordMessage(nil) != nil {
-		t.Fatalf("expected nil when input is nil")
+	discordMessage, err := domain.FromEntDiscordMessage(nil)
+	if err == nil {
+		t.Fatalf("expected error when input is nil")
+	}
+
+	if discordMessage != nil {
+		t.Fatalf("expected nil domain message when input is nil")
 	}
 }
 
@@ -47,26 +48,22 @@ func TestFromEntDiscordMessage_IncludesChannelAndAuthor(t *testing.T) {
 		Edges: ent.DiscordMessageEdges{Channel: entChannel, Author: entAuthor},
 	}
 
-	discordMessage := domain.FromEntDiscordMessage(entDiscordMessage)
+	discordMessage, err := domain.FromEntDiscordMessage(entDiscordMessage)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
 	if discordMessage == nil {
 		t.Fatalf("expected non-nil domain message")
 	}
 
-	if discordMessage.Channel == nil {
-		t.Fatalf("expected Channel to be converted")
-	}
-
-	if discordMessage.Channel.ID != entChannel.ID || discordMessage.Channel.Name != entChannel.Name {
-		t.Fatalf("Channel fields mismatch: got=%+v want id=%s name=%s",
-			discordMessage.Channel, entChannel.ID, entChannel.Name,
+	if discordMessage.ChannelID != entChannel.ID {
+		t.Fatalf("Channel ID mismatch: got=%s want id=%s",
+			discordMessage.ChannelID, entChannel.ID,
 		)
 	}
 
-	if discordMessage.Author == nil {
-		t.Fatalf("expected Author to be converted")
-	}
-
-	if discordMessage.Author.ID != entAuthor.ID {
-		t.Fatalf("Author ID mismatch: got=%s want=%s", discordMessage.Author.ID, entAuthor.ID)
+	if discordMessage.AuthorID != entAuthor.ID {
+		t.Fatalf("Author ID mismatch: got=%s want=%s", discordMessage.AuthorID, entAuthor.ID)
 	}
 }

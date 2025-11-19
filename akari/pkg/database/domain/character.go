@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
@@ -15,38 +16,40 @@ type CharacterRepository interface {
 }
 
 type Character struct {
-	ID            int
-	Name          string
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
-	Config        *CharacterConfig
-	SystemPrompts []*SystemPrompt
+	ID              int
+	Name            string
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	ConfigID        int
+	SystemPromptIDs []int
 }
 
-func FromEntCharacter(entCharacter *ent.Character) *Character {
+func FromEntCharacter(entCharacter *ent.Character) (*Character, error) {
 	if entCharacter == nil {
-		return nil
+		return nil, errors.New("character is nil")
 	}
 
-	var characterConfig *CharacterConfig
-	if entCharacter.Edges.Config != nil {
-		characterConfig = FromEntCharacterConfig(entCharacter.Edges.Config)
+	if entCharacter.Edges.Config == nil {
+		return nil, errors.New("character.Config edge is nil")
 	}
 
-	var systemPrompts []*SystemPrompt
-	if entCharacter.Edges.SystemPrompts != nil {
-		systemPrompts = make([]*SystemPrompt, len(entCharacter.Edges.SystemPrompts))
-		for i, systemPrompt := range entCharacter.Edges.SystemPrompts {
-			systemPrompts[i] = FromEntSystemPrompt(systemPrompt)
-		}
+	characterConfigID := entCharacter.Edges.Config.ID
+
+	if entCharacter.Edges.SystemPrompts == nil {
+		return nil, errors.New("character.SystemPrompts edge is nil")
+	}
+
+	systemPromptIDs := make([]int, len(entCharacter.Edges.SystemPrompts))
+	for i, systemPrompt := range entCharacter.Edges.SystemPrompts {
+		systemPromptIDs[i] = systemPrompt.ID
 	}
 
 	return &Character{
-		ID:            entCharacter.ID,
-		Name:          entCharacter.Name,
-		CreatedAt:     entCharacter.CreatedAt,
-		UpdatedAt:     entCharacter.UpdatedAt,
-		Config:        characterConfig,
-		SystemPrompts: systemPrompts,
-	}
+		ID:              entCharacter.ID,
+		Name:            entCharacter.Name,
+		CreatedAt:       entCharacter.CreatedAt,
+		UpdatedAt:       entCharacter.UpdatedAt,
+		ConfigID:        characterConfigID,
+		SystemPromptIDs: systemPromptIDs,
+	}, nil
 }

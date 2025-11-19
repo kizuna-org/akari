@@ -18,7 +18,12 @@ func TestFromEntAkariUser_Converts(t *testing.T) {
 		UpdatedAt: now,
 	}
 
-	user := domain.FromEntAkariUser(entUser)
+	user, err := domain.FromEntAkariUser(entUser)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
 	if user == nil {
 		t.Fatalf("expected non-nil domain user")
 	}
@@ -39,7 +44,12 @@ func TestFromEntAkariUser_Converts(t *testing.T) {
 func TestFromEntAkariUser_Nil(t *testing.T) {
 	t.Parallel()
 
-	if domain.FromEntAkariUser(nil) != nil {
-		t.Fatalf("expected nil when input is nil")
+	user, err := domain.FromEntAkariUser(nil)
+	if err == nil {
+		t.Fatalf("expected error for nil input, got nil")
+	}
+
+	if user != nil {
+		t.Fatalf("expected nil user for nil input, got non-nil")
 	}
 }

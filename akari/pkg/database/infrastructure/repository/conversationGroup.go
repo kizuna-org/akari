@@ -26,7 +26,7 @@ func (r *repositoryImpl) CreateConversationGroup(
 		slog.Int("id", conversationGroup.ID),
 	)
 
-	return domain.FromEntConversationGroup(conversationGroup), nil
+	return domain.FromEntConversationGroup(conversationGroup)
 }
 
 func (r *repositoryImpl) GetConversationGroupByID(
@@ -42,7 +42,7 @@ func (r *repositoryImpl) GetConversationGroupByID(
 		return nil, fmt.Errorf("failed to get conversation group by id: %w", err)
 	}
 
-	return domain.FromEntConversationGroup(conversationGroup), nil
+	return domain.FromEntConversationGroup(conversationGroup)
 }
 
 func (r *repositoryImpl) GetConversationGroupByCharacterID(
@@ -58,7 +58,7 @@ func (r *repositoryImpl) GetConversationGroupByCharacterID(
 		return nil, fmt.Errorf("failed to get conversation group by character id: %w", err)
 	}
 
-	return domain.FromEntConversationGroup(conversationGroup), nil
+	return domain.FromEntConversationGroup(conversationGroup)
 }
 
 func (r *repositoryImpl) ListConversationGroups(ctx context.Context) ([]*domain.ConversationGroup, error) {
@@ -72,8 +72,14 @@ func (r *repositoryImpl) ListConversationGroups(ctx context.Context) ([]*domain.
 	}
 
 	domainConversationGroups := make([]*domain.ConversationGroup, len(conversationGroups))
+
 	for i, conversationGroup := range conversationGroups {
-		domainConversationGroups[i] = domain.FromEntConversationGroup(conversationGroup)
+		var err error
+
+		domainConversationGroups[i], err = domain.FromEntConversationGroup(conversationGroup)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert conversation group: %w", err)
+		}
 	}
 
 	return domainConversationGroups, nil

@@ -16,16 +16,23 @@ func TestFromEntCharacterConfig_Converts(t *testing.T) {
 		DefaultSystemPrompt: "default-systemPrompt",
 	}
 
-	cfg := domain.FromEntCharacterConfig(entCfg)
-	if cfg == nil {
+	characterConfig, err := domain.FromEntCharacterConfig(entCfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if characterConfig == nil {
 		t.Fatalf("expected non-nil config")
 	}
 
-	if cfg.DefaultSystemPrompt != entCfg.DefaultSystemPrompt {
-		t.Fatalf("DefaultSystemPrompt mismatch: got=%q want=%q", cfg.DefaultSystemPrompt, entCfg.DefaultSystemPrompt)
+	if characterConfig.DefaultSystemPrompt != entCfg.DefaultSystemPrompt {
+		t.Fatalf(
+			"DefaultSystemPrompt mismatch: got=%q want=%q",
+			characterConfig.DefaultSystemPrompt, entCfg.DefaultSystemPrompt,
+		)
 	}
 
-	if cfg.NameRegexp == nil {
+	if characterConfig.NameRegexp == nil {
 		t.Fatalf("NameRegexp missing in domain config")
 	}
 
@@ -33,7 +40,7 @@ func TestFromEntCharacterConfig_Converts(t *testing.T) {
 		t.Fatalf("NameRegexp missing in ent fixture")
 	}
 
-	if cfg.NameRegexp != entCfg.NameRegexp {
+	if characterConfig.NameRegexp != entCfg.NameRegexp {
 		t.Fatalf("NameRegexp pointer mismatch")
 	}
 }
@@ -41,7 +48,12 @@ func TestFromEntCharacterConfig_Converts(t *testing.T) {
 func TestFromEntCharacterConfig_Nil(t *testing.T) {
 	t.Parallel()
 
-	if domain.FromEntCharacterConfig(nil) != nil {
-		t.Fatalf("expected nil when input is nil")
+	characterConfig, err := domain.FromEntCharacterConfig(nil)
+	if err == nil {
+		t.Fatalf("expected error when input is nil")
+	}
+
+	if characterConfig != nil {
+		t.Fatalf("expected nil characterConfig when input is nil")
 	}
 }
