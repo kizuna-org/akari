@@ -38,7 +38,7 @@ type DiscordChannelRepository interface {
 
 type DiscordChannel struct {
 	ID        string
-	Type      string
+	Type      DiscordChannelType
 	Name      string
 	GuildID   string
 	CreatedAt time.Time
@@ -57,7 +57,7 @@ func FromEntDiscordChannel(entDiscordChannel *ent.DiscordChannel) (*DiscordChann
 
 	return &DiscordChannel{
 		ID:        entDiscordChannel.ID,
-		Type:      string(entDiscordChannel.Type),
+		Type:      DiscordChannelType(entDiscordChannel.Type),
 		Name:      entDiscordChannel.Name,
 		GuildID:   discordGuildID,
 		CreatedAt: entDiscordChannel.CreatedAt,
