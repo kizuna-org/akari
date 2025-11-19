@@ -20,8 +20,13 @@ type Character struct {
 	Name            string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
-	ConfigID        int
+	Config          *Config
 	SystemPromptIDs []int
+}
+
+type Config struct {
+	NameRegExp          *string
+	DefaultSystemPrompt string
 }
 
 func FromEntCharacter(entCharacter *ent.Character) (*Character, error) {
@@ -33,7 +38,7 @@ func FromEntCharacter(entCharacter *ent.Character) (*Character, error) {
 		return nil, errors.New("character.Config edge is nil")
 	}
 
-	characterConfigID := entCharacter.Edges.Config.ID
+	characterConfig := fromEntCharacterConfig(entCharacter.Edges.Config)
 
 	if entCharacter.Edges.SystemPrompts == nil {
 		return nil, errors.New("character.SystemPrompts edge is nil")
@@ -49,7 +54,14 @@ func FromEntCharacter(entCharacter *ent.Character) (*Character, error) {
 		Name:            entCharacter.Name,
 		CreatedAt:       entCharacter.CreatedAt,
 		UpdatedAt:       entCharacter.UpdatedAt,
-		ConfigID:        characterConfigID,
+		Config:          characterConfig,
 		SystemPromptIDs: systemPromptIDs,
 	}, nil
+}
+
+func fromEntCharacterConfig(entCharacterConfig *ent.CharacterConfig) *Config {
+	return &Config{
+		NameRegExp:          entCharacterConfig.NameRegexp,
+		DefaultSystemPrompt: entCharacterConfig.DefaultSystemPrompt,
+	}
 }
