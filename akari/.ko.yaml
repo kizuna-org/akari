@@ -1,0 +1,7 @@
+defaultBaseImage: gcr.io/distroless/static:nonroot
+builds:
+  - id: akari
+    dir: .
+    main: ./cmd/akari
+    env:
+      - CGO_ENABLED=0
