@@ -57,9 +57,9 @@ jobs:
           KOSCHEME: github.com
         run: |
           TAGS=""
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          if [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
             TAGS="--tags=${{ github.ref_name }},latest"
-          elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
             TAGS="--tags=main,${{ github.sha }}"
           else
             TAGS="--tags=${{ github.ref_name }},${{ github.sha }}"
