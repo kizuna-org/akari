@@ -56,8 +56,8 @@ jobs:
         env:
           KO_DOCKER_REPO: ghcr.io/${{ github.repository }}
           KOSCHEME: github.com
+          TAGS: --tags=${{ needs.release-please.outputs.release-tag-name }},latest
         run: |
-          TAGS="--tags=${{ needs.release-please.outputs.release-tag-name }},latest"
           IMAGE="$(ko build --bare "$TAGS" ./cmd/akari)"
           echo "Built image: ${IMAGE}"
           docker images | grep akari || true
