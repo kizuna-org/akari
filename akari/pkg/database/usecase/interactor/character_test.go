@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kizuna-org/akari/gen/ent"
+	"github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/database/domain/mock"
 	"github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	"github.com/stretchr/testify/assert"
@@ -41,7 +41,7 @@ func TestCharacterInteractor_GetCharacterByID(t *testing.T) {
 			mockSetup: func(m *mock.MockCharacterRepository, ctx context.Context) {
 				m.EXPECT().
 					GetCharacterByID(ctx, characterID).
-					Return(&ent.Character{
+					Return(&domain.Character{
 						ID:        characterID,
 						Name:      "Test Character",
 						CreatedAt: time.Now(),
@@ -111,7 +111,7 @@ func TestCharacterInteractor_ListCharacters(t *testing.T) {
 			mockSetup: func(m *mock.MockCharacterRepository, ctx context.Context) {
 				m.EXPECT().
 					ListCharacters(ctx).
-					Return([]*ent.Character{
+					Return([]*domain.Character{
 						{
 							ID:        1,
 							Name:      "Character 1",
@@ -140,7 +140,7 @@ func TestCharacterInteractor_ListCharacters(t *testing.T) {
 			mockSetup: func(m *mock.MockCharacterRepository, ctx context.Context) {
 				m.EXPECT().
 					ListCharacters(ctx).
-					Return([]*ent.Character{}, nil)
+					Return([]*domain.Character{}, nil)
 			},
 			wantErr:   false,
 			wantCount: 0,

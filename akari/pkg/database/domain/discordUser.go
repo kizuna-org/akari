@@ -24,12 +24,16 @@ type DiscordUser struct {
 	UpdatedAt time.Time
 }
 
-func ToDomainDiscordUserFromDB(model *ent.DiscordUser) *DiscordUser {
+func FromEntDiscordUser(entDiscordUser *ent.DiscordUser) *DiscordUser {
+	if entDiscordUser == nil {
+		return nil
+	}
+
 	return &DiscordUser{
-		ID:        model.ID,
-		Username:  model.Username,
-		Bot:       model.Bot,
-		CreatedAt: model.CreatedAt,
-		UpdatedAt: model.UpdatedAt,
+		ID:        entDiscordUser.ID,
+		Username:  entDiscordUser.Username,
+		Bot:       entDiscordUser.Bot,
+		CreatedAt: entDiscordUser.CreatedAt,
+		UpdatedAt: entDiscordUser.UpdatedAt,
 	}
 }

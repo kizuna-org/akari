@@ -27,7 +27,7 @@ func (r *repositoryImpl) CreateDiscordUser(
 		slog.String("username", user.Username),
 	)
 
-	return domain.ToDomainDiscordUserFromDB(user), nil
+	return domain.FromEntDiscordUser(user), nil
 }
 
 func (r *repositoryImpl) GetDiscordUserByID(
@@ -42,7 +42,7 @@ func (r *repositoryImpl) GetDiscordUserByID(
 		return nil, fmt.Errorf("failed to get discord user by id: %w", err)
 	}
 
-	return domain.ToDomainDiscordUserFromDB(user), nil
+	return domain.FromEntDiscordUser(user), nil
 }
 
 func (r *repositoryImpl) ListDiscordUsers(ctx context.Context) ([]*domain.DiscordUser, error) {
@@ -51,9 +51,9 @@ func (r *repositoryImpl) ListDiscordUsers(ctx context.Context) ([]*domain.Discor
 		return nil, fmt.Errorf("failed to list discord users: %w", err)
 	}
 
-	domainUsers := make([]*domain.DiscordUser, 0, len(users))
-	for _, user := range users {
-		domainUsers = append(domainUsers, domain.ToDomainDiscordUserFromDB(user))
+	domainUsers := make([]*domain.DiscordUser, len(users))
+	for i, user := range users {
+		domainUsers[i] = domain.FromEntDiscordUser(user)
 	}
 
 	return domainUsers, nil

@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/gen/ent/systemprompt"
+	"github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/database/domain/mock"
 	"github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	"github.com/stretchr/testify/assert"
@@ -42,11 +42,11 @@ func TestSystemPromptInteractor_GetSystemPromptByID(t *testing.T) {
 			mockSetup: func(m *mock.MockSystemPromptRepository, ctx context.Context) {
 				m.EXPECT().
 					GetSystemPromptByID(ctx, promptID).
-					Return(&ent.SystemPrompt{
+					Return(&domain.SystemPrompt{
 						ID:        promptID,
 						Title:     "Test Prompt",
 						Prompt:    "This is a test prompt",
-						Purpose:   systemprompt.PurposeTextChat,
+						Purpose:   string(systemprompt.PurposeTextChat),
 						CreatedAt: time.Now(),
 						UpdatedAt: time.Now(),
 					}, nil)

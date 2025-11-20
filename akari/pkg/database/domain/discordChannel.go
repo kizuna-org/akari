@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
@@ -43,12 +44,22 @@ type DiscordChannel struct {
 	CreatedAt time.Time
 }
 
-func ToDomainDiscordChannelFromDB(model *ent.DiscordChannel) *DiscordChannel {
-	return &DiscordChannel{
-		ID:        model.ID,
-		Type:      DiscordChannelType(model.Type),
-		Name:      model.Name,
-		GuildID:   model.Edges.Guild.ID,
-		CreatedAt: model.CreatedAt,
+func FromEntDiscordChannel(entDiscordChannel *ent.DiscordChannel) (*DiscordChannel, error) {
+	if entDiscordChannel == nil {
+		return nil, errors.New("discordChannel is nil")
 	}
+
+	if entDiscordChannel.Edges.Guild == nil {
+		return nil, errors.New("discordChannel.Guild edge is nil")
+	}
+
+	discordGuildID := entDiscordChannel.Edges.Guild.ID
+
+	return &DiscordChannel{
+		ID:        entDiscordChannel.ID,
+		Type:      DiscordChannelType(entDiscordChannel.Type),
+		Name:      entDiscordChannel.Name,
+		GuildID:   discordGuildID,
+		CreatedAt: entDiscordChannel.CreatedAt,
+	}, nil
 }

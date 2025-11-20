@@ -4,6 +4,8 @@ package domain
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
 )
@@ -16,4 +18,26 @@ type ConversationGroupRepository interface {
 	DeleteConversationGroup(ctx context.Context, id int) error
 }
 
-type ConversationGroup = ent.ConversationGroup
+type ConversationGroup struct {
+	ID          int
+	CharacterID int
+	CreatedAt   time.Time
+}
+
+func FromEntConversationGroup(entConversationGroup *ent.ConversationGroup) (*ConversationGroup, error) {
+	if entConversationGroup == nil {
+		return nil, errors.New("conversationGroup is nil")
+	}
+
+	if entConversationGroup.Edges.Character == nil {
+		return nil, errors.New("conversationGroup.Character edge is nil")
+	}
+
+	characterID := entConversationGroup.Edges.Character.ID
+
+	return &ConversationGroup{
+		ID:          entConversationGroup.ID,
+		CharacterID: characterID,
+		CreatedAt:   entConversationGroup.CreatedAt,
+	}, nil
+}

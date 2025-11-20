@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/kizuna-org/akari/gen/ent"
@@ -24,13 +25,29 @@ type DiscordMessage struct {
 	CreatedAt time.Time
 }
 
-func ToDomainDiscordMessageFromDB(model *ent.DiscordMessage) *DiscordMessage {
-	return &DiscordMessage{
-		ID:        model.ID,
-		ChannelID: model.Edges.Channel.ID,
-		AuthorID:  model.Edges.Author.ID,
-		Content:   model.Content,
-		Timestamp: model.Timestamp,
-		CreatedAt: model.CreatedAt,
+func FromEntDiscordMessage(discordMessage *ent.DiscordMessage) (*DiscordMessage, error) {
+	if discordMessage == nil {
+		return nil, errors.New("discordMessage is nil")
 	}
+
+	if discordMessage.Edges.Channel == nil {
+		return nil, errors.New("discordMessage.Channel edge is nil")
+	}
+
+	channelID := discordMessage.Edges.Channel.ID
+
+	if discordMessage.Edges.Author == nil {
+		return nil, errors.New("discordMessage.Author edge is nil")
+	}
+
+	authorID := discordMessage.Edges.Author.ID
+
+	return &DiscordMessage{
+		ID:        discordMessage.ID,
+		ChannelID: channelID,
+		AuthorID:  authorID,
+		Content:   discordMessage.Content,
+		Timestamp: discordMessage.Timestamp,
+		CreatedAt: discordMessage.CreatedAt,
+	}, nil
 }

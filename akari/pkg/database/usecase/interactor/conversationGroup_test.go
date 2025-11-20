@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kizuna-org/akari/gen/ent"
+	"github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/database/domain/mock"
 	"github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	"github.com/stretchr/testify/assert"
@@ -40,7 +40,7 @@ func TestConversationGroupInteractor_CreateConversationGroup(t *testing.T) {
 			name: "success",
 			mockSetup: func(m *mock.MockConversationGroupRepository, ctx context.Context) {
 				m.EXPECT().CreateConversationGroup(ctx, characterID).Return(
-					&ent.ConversationGroup{ID: 1, CreatedAt: time.Now()},
+					&domain.ConversationGroup{ID: 1, CreatedAt: time.Now()},
 					nil,
 				)
 			},
@@ -97,7 +97,7 @@ func TestConversationGroupInteractor_GetConversationGroupByID(t *testing.T) {
 				m.EXPECT().GetConversationGroupByID(
 					ctx,
 					conversationGroupID,
-				).Return(&ent.ConversationGroup{ID: conversationGroupID, CreatedAt: time.Now()}, nil)
+				).Return(&domain.ConversationGroup{ID: conversationGroupID, CreatedAt: time.Now()}, nil)
 			},
 			wantErr: false,
 		},
@@ -150,7 +150,7 @@ func TestConversationGroupInteractor_GetConversationGroupByCharacterID(t *testin
 			name: "success",
 			mockSetup: func(m *mock.MockConversationGroupRepository, ctx context.Context) {
 				m.EXPECT().GetConversationGroupByCharacterID(ctx, characterID).Return(
-					&ent.ConversationGroup{ID: 1, CreatedAt: time.Now()},
+					&domain.ConversationGroup{ID: 1, CreatedAt: time.Now()},
 					nil,
 				)
 			},
@@ -202,7 +202,7 @@ func TestConversationGroupInteractor_ListConversationGroups(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockConversationGroupRepository, ctx context.Context) {
-				m.EXPECT().ListConversationGroups(ctx).Return([]*ent.ConversationGroup{{ID: 1, CreatedAt: time.Now()}}, nil)
+				m.EXPECT().ListConversationGroups(ctx).Return([]*domain.ConversationGroup{{ID: 1, CreatedAt: time.Now()}}, nil)
 			},
 			wantErr: false,
 		},

@@ -28,7 +28,7 @@ func (r *repositoryImpl) CreateDiscordGuild(
 		slog.String("guild_id", guild.Name),
 	)
 
-	return domain.ToDomainDiscordGuildFromDB(guild), nil
+	return domain.FromEntDiscordGuild(guild)
 }
 func (r *repositoryImpl) GetDiscordGuildByID(
 	ctx context.Context,
@@ -39,7 +39,7 @@ func (r *repositoryImpl) GetDiscordGuildByID(
 		return nil, fmt.Errorf("failed to get discord guild by id: %w", err)
 	}
 
-	return domain.ToDomainDiscordGuildFromDB(guild), nil
+	return domain.FromEntDiscordGuild(guild)
 }
 
 func (r *repositoryImpl) GetDiscordGuildByChannelID(
@@ -55,7 +55,7 @@ func (r *repositoryImpl) GetDiscordGuildByChannelID(
 		return nil, fmt.Errorf("failed to get discord channel: %w", err)
 	}
 
-	return domain.ToDomainDiscordGuildFromDB(guild), nil
+	return domain.FromEntDiscordGuild(guild)
 }
 
 func (r *repositoryImpl) ListDiscordGuilds(ctx context.Context) ([]*domain.DiscordGuild, error) {
@@ -64,9 +64,15 @@ func (r *repositoryImpl) ListDiscordGuilds(ctx context.Context) ([]*domain.Disco
 		return nil, fmt.Errorf("failed to list discord guilds: %w", err)
 	}
 
-	domainDiscordGuilds := make([]*domain.DiscordGuild, 0, len(guilds))
-	for _, domainDiscordGuild := range guilds {
-		domainDiscordGuilds = append(domainDiscordGuilds, domain.ToDomainDiscordGuildFromDB(domainDiscordGuild))
+	domainDiscordGuilds := make([]*domain.DiscordGuild, len(guilds))
+
+	for i, domainDiscordGuild := range guilds {
+		var err error
+
+		domainDiscordGuilds[i], err = domain.FromEntDiscordGuild(domainDiscordGuild)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert discord guild: %w", err)
+		}
 	}
 
 	return domainDiscordGuilds, nil

@@ -22,7 +22,7 @@ func (r *repositoryImpl) GetCharacterByID(
 		return nil, fmt.Errorf("failed to get character: %w", err)
 	}
 
-	return character, nil
+	return domain.FromEntCharacter(character)
 }
 
 func (r *repositoryImpl) ListCharacters(ctx context.Context) ([]*domain.Character, error) {
@@ -35,5 +35,16 @@ func (r *repositoryImpl) ListCharacters(ctx context.Context) ([]*domain.Characte
 		return nil, fmt.Errorf("failed to list characters: %w", err)
 	}
 
-	return characters, nil
+	domainCharacters := make([]*domain.Character, len(characters))
+
+	for i, character := range characters {
+		var err error
+
+		domainCharacters[i], err = domain.FromEntCharacter(character)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert character: %w", err)
+		}
+	}
+
+	return domainCharacters, nil
 }

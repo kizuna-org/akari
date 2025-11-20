@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kizuna-org/akari/gen/ent"
+	"github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/database/domain/mock"
 	"github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	"github.com/stretchr/testify/assert"
@@ -37,7 +37,7 @@ func TestAkariUserInteractor_CreateAkariUser(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockAkariUserRepository, ctx context.Context) {
-				m.EXPECT().CreateAkariUser(ctx).Return(&ent.AkariUser{ID: 1, CreatedAt: time.Now()}, nil)
+				m.EXPECT().CreateAkariUser(ctx).Return(&domain.AkariUser{ID: 1, CreatedAt: time.Now()}, nil)
 			},
 			wantErr: false,
 		},
@@ -89,7 +89,7 @@ func TestAkariUserInteractor_GetAkariUserByID(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockAkariUserRepository, ctx context.Context) {
-				m.EXPECT().GetAkariUserByID(ctx, userId).Return(&ent.AkariUser{ID: userId, CreatedAt: time.Now()}, nil)
+				m.EXPECT().GetAkariUserByID(ctx, userId).Return(&domain.AkariUser{ID: userId, CreatedAt: time.Now()}, nil)
 			},
 			wantErr: false,
 		},
@@ -142,7 +142,8 @@ func TestAkariUserInteractor_GetAkariUserByDiscordUserID(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockAkariUserRepository, ctx context.Context) {
-				m.EXPECT().GetAkariUserByDiscordUserID(ctx, discordUserId).Return(&ent.AkariUser{ID: 1, CreatedAt: time.Now()}, nil)
+				akariUser := &domain.AkariUser{ID: 1, CreatedAt: time.Now()}
+				m.EXPECT().GetAkariUserByDiscordUserID(ctx, discordUserId).Return(akariUser, nil)
 			},
 			wantErr: false,
 		},
@@ -192,7 +193,7 @@ func TestAkariUserInteractor_ListAkariUsers(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockAkariUserRepository, ctx context.Context) {
-				m.EXPECT().ListAkariUsers(ctx).Return([]*ent.AkariUser{{ID: 1, CreatedAt: time.Now()}}, nil)
+				m.EXPECT().ListAkariUsers(ctx).Return([]*domain.AkariUser{{ID: 1, CreatedAt: time.Now()}}, nil)
 			},
 			wantErr: false,
 		},

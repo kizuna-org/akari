@@ -27,12 +27,24 @@ func (r *repositoryImpl) CreateDiscordMessage(
 
 	r.logger.Info("Discord message created",
 		slog.String("message_id", message.ID),
-		slog.String("author_id", message.Edges.Author.ID),
-		slog.String("channel_id", message.Edges.Channel.ID),
+		slog.String("author_id", func() string {
+			if message != nil && message.Edges.Author != nil {
+				return message.Edges.Author.ID
+			}
+
+			return ""
+		}()),
+		slog.String("channel_id", func() string {
+			if message != nil && message.Edges.Channel != nil {
+				return message.Edges.Channel.ID
+			}
+
+			return ""
+		}()),
 		slog.String("timestamp", message.Timestamp.String()),
 	)
 
-	return domain.ToDomainDiscordMessageFromDB(message), nil
+	return domain.FromEntDiscordMessage(message)
 }
 
 func (r *repositoryImpl) GetDiscordMessageByID(
@@ -49,7 +61,7 @@ func (r *repositoryImpl) GetDiscordMessageByID(
 		return nil, fmt.Errorf("failed to get discord message by id: %w", err)
 	}
 
-	return domain.ToDomainDiscordMessageFromDB(message), nil
+	return domain.FromEntDiscordMessage(message)
 }
 
 func (r *repositoryImpl) DeleteDiscordMessage(ctx context.Context, messageID string) error {

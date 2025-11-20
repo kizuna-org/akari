@@ -13,5 +13,5 @@ func (r *repositoryImpl) GetSystemPromptByID(ctx context.Context, id int) (*doma
 		return nil, fmt.Errorf("failed to get system prompt by id: %w", err)
 	}
 
-	return systemPrompt, nil
+	return domain.FromEntSystemPrompt(systemPrompt), nil
 }
