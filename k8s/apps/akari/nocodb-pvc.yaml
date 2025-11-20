@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nocodb-data
+  namespace: akari
+  labels:
+    app.kubernetes.io/name: nocodb
+    app.kubernetes.io/component: nocodb
+    app.kubernetes.io/part-of: akari
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+

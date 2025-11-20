@@ -10,6 +10,10 @@ resources:
   - configmap.yaml
   - secret.yaml
   - deployment.yaml
+  - postgres.yaml
+  - nocodb-secret.yaml
+  - nocodb-pvc.yaml
+  - nocodb.yaml
 images:
   - name: ghcr.io/kizuna-org/akari
     newTag: v0.1.1
