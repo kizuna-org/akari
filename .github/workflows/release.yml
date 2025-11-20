@@ -32,16 +32,38 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.release-created }}
     environment: deploy
+    defaults:
+      run:
+        working-directory: ./akari
     steps:
-      - uses: actions/checkout@v4
-      - uses: shiron-dev/actions/setup-node@v1.1.0
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Run build
-        run: pnpm run build
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+      - uses: actions/checkout@v5
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ./build/client --project-name=polka
+          submodules: recursive
+      - uses: ./.github/actions/setup-golang
+      - uses: ko-build/setup-ko@v0.9
+      - name: Run go generate
+        run: make generate
+      - uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 #v3.6.0
+      - uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
+      - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push with ko
+        id: build
+        env:
+          KO_DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/akari
+          KOSCHEME: github.com
+        run: |
+          TAGS=""
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAGS="--tags=${{ github.ref_name }},latest"
+          elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            TAGS="--tags=main,${{ github.sha }}"
+          else
+            TAGS="--tags=${{ github.ref_name }},${{ github.sha }}"
+          fi
+          IMAGE=$(ko build --bare $TAGS ./cmd/akari)
+          echo "Built image: ${IMAGE}"
+          docker images | grep akari || true
