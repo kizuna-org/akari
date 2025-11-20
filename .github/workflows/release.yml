@@ -9,6 +9,7 @@ permissions:
   contents: write
   pull-requests: write
   id-token: write
+  packages: write
 
 jobs:
   release-please:
@@ -16,6 +17,7 @@ jobs:
     timeout-minutes: 10
     outputs:
       release-created: ${{ steps.release.outputs.release_created }}
+      release-tag-name: ${{ steps.release.outputs.tag_name }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -54,15 +56,8 @@ jobs:
         env:
           KO_DOCKER_REPO: ghcr.io/${{ github.repository }}
           KOSCHEME: github.com
+          TAGS: "${{ needs.release-please.outputs.release-tag-name }},latest"
         run: |
-          TAGS=""
-          if [[ "$GITHUB_REF" =~ ^refs/tags/ ]]; then
-            TAGS="--tags=$GITHUB_REF_NAME,latest"
-          elif [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
-            TAGS="--tags=main,$GITHUB_SHA"
-          else
-            TAGS="--tags=$GITHUB_REF_NAME,$GITHUB_SHA"
-          fi
-          IMAGE="$(ko build --bare "$TAGS" ./cmd/akari)"
+          IMAGE="$(ko build --bare --tags="$TAGS" ./cmd/akari)"
           echo "Built image: ${IMAGE}"
           docker images | grep akari || true
