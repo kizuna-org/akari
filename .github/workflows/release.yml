@@ -51,7 +51,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and push with ko
-        id: build
         env:
           KO_DOCKER_REPO: ghcr.io/${{ github.repository }}
           KOSCHEME: github.com
