@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/kizuna-org/akari/compare/v0.1.0...v0.1.1) (2025-11-20)
+
+
+### Bug Fixes
+
+* **ci:** update release workflow to use release tag name for image tagging ([#88](https://github.com/kizuna-org/akari/issues/88)) ([51fba90](https://github.com/kizuna-org/akari/commit/51fba90091ed92789d06403ef227a92162daddf3))
+
 ## 0.1.0 (2025-11-20)
 
 
