@@ -15,11 +15,15 @@ type HandleMessageInteractor interface {
 }
 
 type handleMessageInteractorImpl struct {
-	messageRepo    domain.MessageRepository
-	responseRepo   domain.ResponseRepository
-	llmRepo        domain.LLMRepository
-	discordRepo    domain.DiscordRepository
-	validationRepo domain.ValidationRepository
+	messageRepo        domain.MessageRepository
+	responseRepo       domain.ResponseRepository
+	llmRepo            domain.LLMRepository
+	discordRepo        domain.DiscordRepository
+	validationRepo     domain.ValidationRepository
+	characterRepo      domain.CharacterRepository
+	systemPromptRepo   domain.SystemPromptRepository
+	defaultCharacterID int
+	defaultPromptIndex int
 }
 
 func NewHandleMessageInteractor(
@@ -28,13 +32,21 @@ func NewHandleMessageInteractor(
 	llmRepo domain.LLMRepository,
 	discordRepo domain.DiscordRepository,
 	validationRepo domain.ValidationRepository,
+	characterRepo domain.CharacterRepository,
+	systemPromptRepo domain.SystemPromptRepository,
+	defaultCharacterID int,
+	defaultPromptIndex int,
 ) HandleMessageInteractor {
 	return &handleMessageInteractorImpl{
-		messageRepo:    messageRepo,
-		responseRepo:   responseRepo,
-		llmRepo:        llmRepo,
-		discordRepo:    discordRepo,
-		validationRepo: validationRepo,
+		messageRepo:        messageRepo,
+		responseRepo:       responseRepo,
+		llmRepo:            llmRepo,
+		discordRepo:        discordRepo,
+		validationRepo:     validationRepo,
+		characterRepo:      characterRepo,
+		systemPromptRepo:   systemPromptRepo,
+		defaultCharacterID: defaultCharacterID,
+		defaultPromptIndex: defaultPromptIndex,
 	}
 }
 
@@ -47,7 +59,23 @@ func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domai
 		return fmt.Errorf("failed to save message: %w", err)
 	}
 
-	responseContent, err := i.llmRepo.GenerateResponse(ctx, "You are a helpful Discord bot assistant.", message.Content)
+	character, err := i.characterRepo.GetCharacterByID(ctx, i.defaultCharacterID)
+	if err != nil {
+		return fmt.Errorf("failed to get character: %w", err)
+	}
+
+	systemPromptContent := ""
+
+	if len(character.SystemPromptIDs) > i.defaultPromptIndex {
+		systemPrompt, err := i.systemPromptRepo.GetSystemPromptByID(ctx, character.SystemPromptIDs[i.defaultPromptIndex])
+		if err != nil {
+			return fmt.Errorf("failed to get system prompt: %w", err)
+		}
+
+		systemPromptContent = systemPrompt.Prompt
+	}
+
+	responseContent, err := i.llmRepo.GenerateResponse(ctx, systemPromptContent, message.Content)
 	if err != nil {
 		return fmt.Errorf("failed to generate response: %w", err)
 	}

@@ -13,6 +13,20 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+func newTestInteractor(
+	msgRepo domain.MessageRepository,
+	respRepo domain.ResponseRepository,
+	llmRepo domain.LLMRepository,
+	discordRepo domain.DiscordRepository,
+	validationRepo domain.ValidationRepository,
+	characterRepo domain.CharacterRepository,
+	systemPromptRepo domain.SystemPromptRepository,
+) usecase.HandleMessageInteractor {
+	return usecase.NewHandleMessageInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo, 1, 0,
+	)
+}
+
 func TestNewHandleMessageInteractor(t *testing.T) {
 	t.Parallel()
 
@@ -24,8 +38,12 @@ func TestNewHandleMessageInteractor(t *testing.T) {
 	llmRepo := mock.NewMockLLMRepository(ctrl)
 	discordRepo := mock.NewMockDiscordRepository(ctrl)
 	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
 
-	interactor := usecase.NewHandleMessageInteractor(msgRepo, respRepo, llmRepo, discordRepo, validationRepo)
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
 	assert.NotNil(t, interactor)
 }
 
@@ -40,6 +58,8 @@ func TestHandleMessageInteractor_Handle_Success(t *testing.T) {
 	llmRepo := mock.NewMockLLMRepository(ctrl)
 	discordRepo := mock.NewMockDiscordRepository(ctrl)
 	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
 
 	msg := &domain.Message{
 		ID:        "msg-001",
@@ -50,15 +70,30 @@ func TestHandleMessageInteractor_Handle_Success(t *testing.T) {
 		Timestamp: time.Now(),
 	}
 
+	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
+		ID:              1,
+		Name:            "TestBot",
+		SystemPromptIDs: []int{1},
+	}, nil)
+
+	systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
+		ID:     1,
+		Prompt: "You are a helpful Discord bot assistant.",
+	}, nil)
+
 	gomock.InOrder(
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
-		llmRepo.EXPECT().GenerateResponse(gomock.Any(), gomock.Any(), "Hello bot").Return("Hi there!", nil),
+		llmRepo.EXPECT().GenerateResponse(
+			gomock.Any(), "You are a helpful Discord bot assistant.", "Hello bot",
+		).Return("Hi there!", nil),
 		discordRepo.EXPECT().SendMessage(gomock.Any(), "ch-001", "Hi there!").Return(nil),
 		respRepo.EXPECT().SaveResponse(gomock.Any(), gomock.Any()).Return(nil),
 	)
 
-	interactor := usecase.NewHandleMessageInteractor(msgRepo, respRepo, llmRepo, discordRepo, validationRepo)
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
 	err := interactor.Handle(t.Context(), msg)
 
 	assert.NoError(t, err)
@@ -75,6 +110,8 @@ func TestHandleMessageInteractor_Handle_ValidationFails(t *testing.T) {
 	llmRepo := mock.NewMockLLMRepository(ctrl)
 	discordRepo := mock.NewMockDiscordRepository(ctrl)
 	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
 
 	msg := &domain.Message{
 		ID:      "msg-001",
@@ -83,7 +120,9 @@ func TestHandleMessageInteractor_Handle_ValidationFails(t *testing.T) {
 
 	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(false)
 
-	interactor := usecase.NewHandleMessageInteractor(msgRepo, respRepo, llmRepo, discordRepo, validationRepo)
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
 	err := interactor.Handle(t.Context(), msg)
 
 	assert.NoError(t, err)
@@ -100,6 +139,8 @@ func TestHandleMessageInteractor_Handle_SaveMessageError(t *testing.T) {
 	llmRepo := mock.NewMockLLMRepository(ctrl)
 	discordRepo := mock.NewMockDiscordRepository(ctrl)
 	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
 
 	msg := &domain.Message{
 		ID:      "msg-001",
@@ -109,11 +150,84 @@ func TestHandleMessageInteractor_Handle_SaveMessageError(t *testing.T) {
 	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
 	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(errors.New("db error"))
 
-	interactor := usecase.NewHandleMessageInteractor(msgRepo, respRepo, llmRepo, discordRepo, validationRepo)
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
 	err := interactor.Handle(t.Context(), msg)
 
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to save message")
+}
+
+func TestHandleMessageInteractor_Handle_GetCharacterError(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
+	msgRepo := mock.NewMockMessageRepository(ctrl)
+	respRepo := mock.NewMockResponseRepository(ctrl)
+	llmRepo := mock.NewMockLLMRepository(ctrl)
+	discordRepo := mock.NewMockDiscordRepository(ctrl)
+	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
+
+	msg := &domain.Message{
+		ID:      "msg-001",
+		Content: "Hello",
+	}
+
+	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
+	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil)
+	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(nil, errors.New("character not found"))
+
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
+	err := interactor.Handle(t.Context(), msg)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to get character")
+}
+
+func TestHandleMessageInteractor_Handle_GetSystemPromptError(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
+	msgRepo := mock.NewMockMessageRepository(ctrl)
+	respRepo := mock.NewMockResponseRepository(ctrl)
+	llmRepo := mock.NewMockLLMRepository(ctrl)
+	discordRepo := mock.NewMockDiscordRepository(ctrl)
+	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
+
+	msg := &domain.Message{
+		ID:      "msg-001",
+		Content: "Hello",
+	}
+
+	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
+	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil)
+	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
+		ID:              1,
+		Name:            "TestBot",
+		SystemPromptIDs: []int{1},
+	}, nil)
+	systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(
+		nil, errors.New("prompt not found"),
+	)
+
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
+	err := interactor.Handle(t.Context(), msg)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "failed to get system prompt")
 }
 
 func TestHandleMessageInteractor_Handle_LLMError(t *testing.T) {
@@ -127,6 +241,8 @@ func TestHandleMessageInteractor_Handle_LLMError(t *testing.T) {
 	llmRepo := mock.NewMockLLMRepository(ctrl)
 	discordRepo := mock.NewMockDiscordRepository(ctrl)
 	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
 
 	msg := &domain.Message{
 		ID:      "msg-001",
@@ -135,9 +251,22 @@ func TestHandleMessageInteractor_Handle_LLMError(t *testing.T) {
 
 	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
 	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil)
-	llmRepo.EXPECT().GenerateResponse(gomock.Any(), gomock.Any(), "Hello").Return("", errors.New("llm error"))
+	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
+		ID:              1,
+		Name:            "TestBot",
+		SystemPromptIDs: []int{1},
+	}, nil)
+	systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
+		ID:     1,
+		Prompt: "You are a helpful Discord bot assistant.",
+	}, nil)
+	llmRepo.EXPECT().GenerateResponse(
+		gomock.Any(), "You are a helpful Discord bot assistant.", "Hello",
+	).Return("", errors.New("llm error"))
 
-	interactor := usecase.NewHandleMessageInteractor(msgRepo, respRepo, llmRepo, discordRepo, validationRepo)
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
 	err := interactor.Handle(t.Context(), msg)
 
 	require.Error(t, err)
@@ -155,6 +284,8 @@ func TestHandleMessageInteractor_Handle_SendMessageError(t *testing.T) {
 	llmRepo := mock.NewMockLLMRepository(ctrl)
 	discordRepo := mock.NewMockDiscordRepository(ctrl)
 	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
 
 	msg := &domain.Message{
 		ID:        "msg-001",
@@ -164,10 +295,25 @@ func TestHandleMessageInteractor_Handle_SendMessageError(t *testing.T) {
 
 	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
 	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil)
-	llmRepo.EXPECT().GenerateResponse(gomock.Any(), gomock.Any(), "Hello").Return("Hi", nil)
-	discordRepo.EXPECT().SendMessage(gomock.Any(), "ch-001", "Hi").Return(errors.New("discord error"))
+	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
+		ID:              1,
+		Name:            "TestBot",
+		SystemPromptIDs: []int{1},
+	}, nil)
+	systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
+		ID:     1,
+		Prompt: "You are a helpful Discord bot assistant.",
+	}, nil)
+	llmRepo.EXPECT().GenerateResponse(
+		gomock.Any(), "You are a helpful Discord bot assistant.", "Hello",
+	).Return("Hi", nil)
+	discordRepo.EXPECT().SendMessage(gomock.Any(), "ch-001", "Hi").Return(
+		errors.New("discord error"),
+	)
 
-	interactor := usecase.NewHandleMessageInteractor(msgRepo, respRepo, llmRepo, discordRepo, validationRepo)
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
 	err := interactor.Handle(t.Context(), msg)
 
 	require.Error(t, err)
@@ -185,6 +331,8 @@ func TestHandleMessageInteractor_Handle_SaveResponseError(t *testing.T) {
 	llmRepo := mock.NewMockLLMRepository(ctrl)
 	discordRepo := mock.NewMockDiscordRepository(ctrl)
 	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
 
 	msg := &domain.Message{
 		ID:        "msg-001",
@@ -194,11 +342,26 @@ func TestHandleMessageInteractor_Handle_SaveResponseError(t *testing.T) {
 
 	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
 	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil)
-	llmRepo.EXPECT().GenerateResponse(gomock.Any(), gomock.Any(), "Hello").Return("Hi", nil)
+	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
+		ID:              1,
+		Name:            "TestBot",
+		SystemPromptIDs: []int{1},
+	}, nil)
+	systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
+		ID:     1,
+		Prompt: "You are a helpful Discord bot assistant.",
+	}, nil)
+	llmRepo.EXPECT().GenerateResponse(
+		gomock.Any(), "You are a helpful Discord bot assistant.", "Hello",
+	).Return("Hi", nil)
 	discordRepo.EXPECT().SendMessage(gomock.Any(), "ch-001", "Hi").Return(nil)
-	respRepo.EXPECT().SaveResponse(gomock.Any(), gomock.Any()).Return(errors.New("db error"))
+	respRepo.EXPECT().SaveResponse(gomock.Any(), gomock.Any()).Return(
+		errors.New("db error"),
+	)
 
-	interactor := usecase.NewHandleMessageInteractor(msgRepo, respRepo, llmRepo, discordRepo, validationRepo)
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
 	err := interactor.Handle(t.Context(), msg)
 
 	require.Error(t, err)

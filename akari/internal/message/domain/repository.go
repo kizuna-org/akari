@@ -4,6 +4,17 @@ package domain
 
 import "context"
 
+type Character struct {
+	ID              int
+	Name            string
+	SystemPromptIDs []int
+}
+
+type SystemPrompt struct {
+	ID     int
+	Prompt string
+}
+
 type MessageRepository interface {
 	SaveMessage(ctx context.Context, message *Message) error
 }
@@ -22,4 +33,12 @@ type DiscordRepository interface {
 
 type ValidationRepository interface {
 	ShouldProcessMessage(message *Message) bool
+}
+
+type CharacterRepository interface {
+	GetCharacterByID(ctx context.Context, characterID int) (*Character, error)
+}
+
+type SystemPromptRepository interface {
+	GetSystemPromptByID(ctx context.Context, id int) (*SystemPrompt, error)
 }

@@ -25,6 +25,60 @@ import (
 	"go.uber.org/fx"
 )
 
+const (
+	defaultCharacterID = 1
+	defaultPromptIndex = 0
+)
+
+func newInfrastructureProviders() fx.Option {
+	return fx.Provide(
+		newEntClient,
+		gemini.NewRepository,
+		newDatabaseClient,
+		databaseRepo.NewRepository,
+		newDatabaseRepository,
+		newSystemPromptRepository,
+		newCharacterRepository,
+		newDiscordMessageRepository,
+		newDiscordClient,
+	)
+}
+
+func newUsecaseProviders() fx.Option {
+	return fx.Provide(
+		llmInteractor.NewLLMInteractor,
+		databaseInteractor.NewDatabaseInteractor,
+		databaseInteractor.NewSystemPromptInteractor,
+		databaseInteractor.NewCharacterInteractor,
+		discordRepository.NewDiscordRepository,
+	)
+}
+
+func newMessagePackageProviders() fx.Option {
+	return fx.Provide(
+		messageAdapter.NewMessageRepository,
+		messageAdapter.NewResponseRepository,
+		messageAdapter.NewLLMRepository,
+		messageAdapter.NewDiscordRepository,
+		messageAdapter.NewValidationRepository,
+		messageAdapter.NewCharacterRepository,
+		messageAdapter.NewSystemPromptRepository,
+		defaultCharacterID,
+		defaultPromptIndex,
+		messageUsecase.NewHandleMessageInteractor,
+	)
+}
+
+func newServiceAndInteractorProviders() fx.Option {
+	return fx.Provide(
+		discordService.NewDiscordService,
+		discordInteractor.NewDiscordInteractor,
+		handler.NewMessageHandler,
+		discordAdapter.NewBotRunner,
+		slog.Default,
+	)
+}
+
 func NewModule() fx.Option {
 	return fx.Module("akari",
 		// Configuration
@@ -33,63 +87,16 @@ func NewModule() fx.Option {
 		),
 
 		// Infrastructure
-		fx.Provide(
-			newEntClient,
-			gemini.NewRepository,
-			newDatabaseClient,
-			databaseRepo.NewRepository,
-			newDatabaseRepository,
-			newSystemPromptRepository,
-			newCharacterRepository,
-			newDiscordMessageRepository,
-			newDiscordClient,
-		),
+		newInfrastructureProviders(),
 
 		// Usecase
-		fx.Provide(
-			llmInteractor.NewLLMInteractor,
-			databaseInteractor.NewDatabaseInteractor,
-			databaseInteractor.NewSystemPromptInteractor,
-			databaseInteractor.NewCharacterInteractor,
-			discordRepository.NewDiscordRepository,
-		),
+		newUsecaseProviders(),
 
-		// Message Package Adapters
-		fx.Provide(
-			messageAdapter.NewMessageRepository,
-			messageAdapter.NewResponseRepository,
-			messageAdapter.NewLLMRepository,
-			messageAdapter.NewDiscordRepository,
-			messageAdapter.NewValidationRepository,
-		),
+		// Message Package
+		newMessagePackageProviders(),
 
-		// Message Package Usecase
-		fx.Provide(
-			messageUsecase.NewHandleMessageInteractor,
-		),
-
-		// Service
-		fx.Provide(
-			discordService.NewDiscordService,
-		),
-
-		// Interactor
-		fx.Provide(
-			discordInteractor.NewDiscordInteractor,
-		),
-
-		fx.Provide(
-			handler.NewMessageHandler,
-		),
-
-		// Adapter
-		fx.Provide(
-			discordAdapter.NewBotRunner,
-		),
-
-		fx.Provide(
-			slog.Default,
-		),
+		// Service and Interactor
+		newServiceAndInteractorProviders(),
 
 		// Lifecycle hooks
 		fx.Invoke(registerDatabaseHooks),

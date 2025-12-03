@@ -207,3 +207,81 @@ func (mr *MockValidationRepositoryMockRecorder) ShouldProcessMessage(message any
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShouldProcessMessage", reflect.TypeOf((*MockValidationRepository)(nil).ShouldProcessMessage), message)
 }
+
+// MockCharacterRepository is a mock of CharacterRepository interface.
+type MockCharacterRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockCharacterRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockCharacterRepositoryMockRecorder is the mock recorder for MockCharacterRepository.
+type MockCharacterRepositoryMockRecorder struct {
+	mock *MockCharacterRepository
+}
+
+// NewMockCharacterRepository creates a new mock instance.
+func NewMockCharacterRepository(ctrl *gomock.Controller) *MockCharacterRepository {
+	mock := &MockCharacterRepository{ctrl: ctrl}
+	mock.recorder = &MockCharacterRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCharacterRepository) EXPECT() *MockCharacterRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetCharacterByID mocks base method.
+func (m *MockCharacterRepository) GetCharacterByID(ctx context.Context, characterID int) (*domain.Character, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCharacterByID", ctx, characterID)
+	ret0, _ := ret[0].(*domain.Character)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCharacterByID indicates an expected call of GetCharacterByID.
+func (mr *MockCharacterRepositoryMockRecorder) GetCharacterByID(ctx, characterID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCharacterByID", reflect.TypeOf((*MockCharacterRepository)(nil).GetCharacterByID), ctx, characterID)
+}
+
+// MockSystemPromptRepository is a mock of SystemPromptRepository interface.
+type MockSystemPromptRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockSystemPromptRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockSystemPromptRepositoryMockRecorder is the mock recorder for MockSystemPromptRepository.
+type MockSystemPromptRepositoryMockRecorder struct {
+	mock *MockSystemPromptRepository
+}
+
+// NewMockSystemPromptRepository creates a new mock instance.
+func NewMockSystemPromptRepository(ctrl *gomock.Controller) *MockSystemPromptRepository {
+	mock := &MockSystemPromptRepository{ctrl: ctrl}
+	mock.recorder = &MockSystemPromptRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockSystemPromptRepository) EXPECT() *MockSystemPromptRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetSystemPromptByID mocks base method.
+func (m *MockSystemPromptRepository) GetSystemPromptByID(ctx context.Context, id int) (*domain.SystemPrompt, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSystemPromptByID", ctx, id)
+	ret0, _ := ret[0].(*domain.SystemPrompt)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSystemPromptByID indicates an expected call of GetSystemPromptByID.
+func (mr *MockSystemPromptRepositoryMockRecorder) GetSystemPromptByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSystemPromptByID", reflect.TypeOf((*MockSystemPromptRepository)(nil).GetSystemPromptByID), ctx, id)
+}
