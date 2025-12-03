@@ -30,6 +30,7 @@ func TestConversationInteractor_CreateConversation(t *testing.T) {
 	t.Parallel()
 
 	messageID := "message123"
+	userID := 1
 	groupID := 1
 
 	tests := []struct {
@@ -40,7 +41,7 @@ func TestConversationInteractor_CreateConversation(t *testing.T) {
 		{
 			name: "success",
 			mockSetup: func(m *mock.MockConversationRepository, ctx context.Context) {
-				m.EXPECT().CreateConversation(ctx, messageID, &groupID).Return(&domain.Conversation{
+				m.EXPECT().CreateConversation(ctx, messageID, userID, &groupID).Return(&domain.Conversation{
 					ID:        1,
 					CreatedAt: time.Now(),
 				}, nil)
@@ -50,7 +51,7 @@ func TestConversationInteractor_CreateConversation(t *testing.T) {
 		{
 			name: "failure",
 			mockSetup: func(m *mock.MockConversationRepository, ctx context.Context) {
-				m.EXPECT().CreateConversation(ctx, messageID, &groupID).Return(nil, errors.New("db error"))
+				m.EXPECT().CreateConversation(ctx, messageID, userID, &groupID).Return(nil, errors.New("db error"))
 			},
 			wantErr: true,
 		},
@@ -69,7 +70,7 @@ func TestConversationInteractor_CreateConversation(t *testing.T) {
 			ctx := t.Context()
 			testCase.mockSetup(m, ctx)
 
-			res, err := i.CreateConversation(ctx, messageID, &groupID)
+			res, err := i.CreateConversation(ctx, messageID, userID, &groupID)
 
 			if testCase.wantErr {
 				require.Error(t, err)
