@@ -10,6 +10,7 @@ type Message struct {
 	Content   string
 	Timestamp time.Time
 	IsBot     bool
+	Mentions  []string
 }
 
 type Response struct {

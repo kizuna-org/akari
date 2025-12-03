@@ -23,7 +23,7 @@ func newTestInteractor(
 	systemPromptRepo domain.SystemPromptRepository,
 ) usecase.HandleMessageInteractor {
 	return usecase.NewHandleMessageInteractor(
-		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo, 1, 0,
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo, 1, 0, "bot-001",
 	)
 }
 
@@ -68,6 +68,7 @@ func TestHandleMessageInteractor_Handle_Success(t *testing.T) {
 		AuthorID:  "user-001",
 		Content:   "Hello bot",
 		Timestamp: time.Now(),
+		Mentions:  []string{"bot-001"},
 	}
 
 	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
@@ -84,6 +85,7 @@ func TestHandleMessageInteractor_Handle_Success(t *testing.T) {
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
 		llmRepo.EXPECT().GenerateResponse(
 			gomock.Any(), "You are a helpful Discord bot assistant.", "Hello bot",
 		).Return("Hi there!", nil),
@@ -121,6 +123,40 @@ func TestHandleMessageInteractor_Handle_ValidationFails(t *testing.T) {
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(false),
+	)
+
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
+	err := interactor.Handle(t.Context(), msg)
+
+	assert.NoError(t, err)
+}
+
+func TestHandleMessageInteractor_Handle_BotNotMentioned(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
+	msgRepo := mock.NewMockMessageRepository(ctrl)
+	respRepo := mock.NewMockResponseRepository(ctrl)
+	llmRepo := mock.NewMockLLMRepository(ctrl)
+	discordRepo := mock.NewMockDiscordRepository(ctrl)
+	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
+
+	msg := &domain.Message{
+		ID:       "msg-001",
+		Content:  "Hello",
+		Mentions: []string{"user-002"},
+	}
+
+	gomock.InOrder(
+		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
+		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(false),
 	)
 
 	interactor := newTestInteractor(
@@ -183,6 +219,7 @@ func TestHandleMessageInteractor_Handle_GetCharacterError(t *testing.T) {
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
 		characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(nil, errors.New("character not found")),
 	)
 
@@ -217,6 +254,7 @@ func TestHandleMessageInteractor_Handle_GetSystemPromptError(t *testing.T) {
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
 		characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
 			ID:              1,
 			Name:            "TestBot",
@@ -258,6 +296,7 @@ func TestHandleMessageInteractor_Handle_LLMError(t *testing.T) {
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
 		characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
 			ID:              1,
 			Name:            "TestBot",
@@ -304,6 +343,7 @@ func TestHandleMessageInteractor_Handle_SendMessageError(t *testing.T) {
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
 		characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
 			ID:              1,
 			Name:            "TestBot",
@@ -353,6 +393,7 @@ func TestHandleMessageInteractor_Handle_SaveResponseError(t *testing.T) {
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
 		characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
 			ID:              1,
 			Name:            "TestBot",

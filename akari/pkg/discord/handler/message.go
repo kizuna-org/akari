@@ -39,6 +39,11 @@ func (h *MessageHandler) HandleMessageCreate(s *discordgo.Session, message *disc
 
 	ctx := context.Background()
 
+	mentions := make([]string, len(message.Mentions))
+	for i, mention := range message.Mentions {
+		mentions[i] = mention.ID
+	}
+
 	msg := &domain.Message{
 		ID:        message.ID,
 		ChannelID: message.ChannelID,
@@ -47,6 +52,7 @@ func (h *MessageHandler) HandleMessageCreate(s *discordgo.Session, message *disc
 		Content:   message.Content,
 		Timestamp: message.Timestamp,
 		IsBot:     message.Author.Bot,
+		Mentions:  mentions,
 	}
 
 	if err := h.handleMessageInteractor.Handle(ctx, msg); err != nil {

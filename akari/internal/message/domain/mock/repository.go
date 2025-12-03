@@ -194,6 +194,20 @@ func (m *MockValidationRepository) EXPECT() *MockValidationRepositoryMockRecorde
 	return m.recorder
 }
 
+// IsBotMentioned mocks base method.
+func (m *MockValidationRepository) IsBotMentioned(message *domain.Message, botUserID string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsBotMentioned", message, botUserID)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsBotMentioned indicates an expected call of IsBotMentioned.
+func (mr *MockValidationRepositoryMockRecorder) IsBotMentioned(message, botUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBotMentioned", reflect.TypeOf((*MockValidationRepository)(nil).IsBotMentioned), message, botUserID)
+}
+
 // ShouldProcessMessage mocks base method.
 func (m *MockValidationRepository) ShouldProcessMessage(message *domain.Message) bool {
 	m.ctrl.T.Helper()

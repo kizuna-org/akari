@@ -8,6 +8,7 @@ import (
 	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
 	messageAdapter "github.com/kizuna-org/akari/internal/message/adapter"
+	messageDomain "github.com/kizuna-org/akari/internal/message/domain"
 	messageUsecase "github.com/kizuna-org/akari/internal/message/usecase"
 	"github.com/kizuna-org/akari/pkg/config"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
@@ -65,7 +66,25 @@ func newMessagePackageProviders() fx.Option {
 		messageAdapter.NewSystemPromptRepository,
 		defaultCharacterID,
 		defaultPromptIndex,
-		messageUsecase.NewHandleMessageInteractor,
+		newHandleMessageInteractor,
+	)
+}
+
+func newHandleMessageInteractor(
+	messageRepo messageDomain.MessageRepository,
+	responseRepo messageDomain.ResponseRepository,
+	llmRepo messageDomain.LLMRepository,
+	discordRepo messageDomain.DiscordRepository,
+	validationRepo messageDomain.ValidationRepository,
+	characterRepo messageDomain.CharacterRepository,
+	systemPromptRepo messageDomain.SystemPromptRepository,
+	defaultCharacterID int,
+	defaultPromptIndex int,
+	client *discordInfra.DiscordClient,
+) messageUsecase.HandleMessageInteractor {
+	return messageUsecase.NewHandleMessageInteractor(
+		messageRepo, responseRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+		defaultCharacterID, defaultPromptIndex, client.Session.State.User.ID,
 	)
 }
 

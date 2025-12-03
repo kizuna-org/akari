@@ -24,6 +24,7 @@ type handleMessageInteractorImpl struct {
 	systemPromptRepo   domain.SystemPromptRepository
 	defaultCharacterID int
 	defaultPromptIndex int
+	botUserID          string
 }
 
 func NewHandleMessageInteractor(
@@ -36,6 +37,7 @@ func NewHandleMessageInteractor(
 	systemPromptRepo domain.SystemPromptRepository,
 	defaultCharacterID int,
 	defaultPromptIndex int,
+	botUserID string,
 ) HandleMessageInteractor {
 	return &handleMessageInteractorImpl{
 		messageRepo:        messageRepo,
@@ -47,6 +49,7 @@ func NewHandleMessageInteractor(
 		systemPromptRepo:   systemPromptRepo,
 		defaultCharacterID: defaultCharacterID,
 		defaultPromptIndex: defaultPromptIndex,
+		botUserID:          botUserID,
 	}
 }
 
@@ -56,6 +59,10 @@ func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domai
 	}
 
 	if !i.validationRepo.ShouldProcessMessage(message) {
+		return nil
+	}
+
+	if !i.validationRepo.IsBotMentioned(message, i.botUserID) {
 		return nil
 	}
 

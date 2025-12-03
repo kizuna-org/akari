@@ -1,6 +1,10 @@
 package adapter
 
-import "github.com/kizuna-org/akari/internal/message/domain"
+import (
+	"slices"
+
+	"github.com/kizuna-org/akari/internal/message/domain"
+)
 
 type validationRepository struct{}
 
@@ -18,4 +22,8 @@ func (r *validationRepository) ShouldProcessMessage(message *domain.Message) boo
 	}
 
 	return true
+}
+
+func (r *validationRepository) IsBotMentioned(message *domain.Message, botUserID string) bool {
+	return slices.Contains(message.Mentions, botUserID)
 }
