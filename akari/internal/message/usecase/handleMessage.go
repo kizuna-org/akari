@@ -14,6 +14,23 @@ type HandleMessageInteractor interface {
 	Handle(ctx context.Context, message *domain.Message) error
 }
 
+type HandleMessageConfig struct {
+	MessageRepo           domain.MessageRepository
+	ResponseRepo          domain.ResponseRepository
+	LLMRepo               domain.LLMRepository
+	DiscordRepo           domain.DiscordRepository
+	ValidationRepo        domain.ValidationRepository
+	CharacterRepo         domain.CharacterRepository
+	SystemPromptRepo      domain.SystemPromptRepository
+	ConversationRepo      domain.ConversationRepository
+	ConversationGroupRepo domain.ConversationGroupRepository
+	DiscordUserRepo       domain.DiscordUserRepository
+	DefaultCharacterID    int
+	DefaultPromptIndex    int
+	BotUserID             string
+	BotNamePattern        string
+}
+
 type handleMessageInteractorImpl struct {
 	messageRepo           domain.MessageRepository
 	responseRepo          domain.ResponseRepository
@@ -31,37 +48,22 @@ type handleMessageInteractorImpl struct {
 	botNamePattern        string
 }
 
-func NewHandleMessageInteractor(
-	messageRepo domain.MessageRepository,
-	responseRepo domain.ResponseRepository,
-	llmRepo domain.LLMRepository,
-	discordRepo domain.DiscordRepository,
-	validationRepo domain.ValidationRepository,
-	characterRepo domain.CharacterRepository,
-	systemPromptRepo domain.SystemPromptRepository,
-	conversationRepo domain.ConversationRepository,
-	conversationGroupRepo domain.ConversationGroupRepository,
-	discordUserRepo domain.DiscordUserRepository,
-	defaultCharacterID int,
-	defaultPromptIndex int,
-	botUserID string,
-	botNamePattern string,
-) HandleMessageInteractor {
+func NewHandleMessageInteractor(config HandleMessageConfig) HandleMessageInteractor {
 	return &handleMessageInteractorImpl{
-		messageRepo:           messageRepo,
-		responseRepo:          responseRepo,
-		llmRepo:               llmRepo,
-		discordRepo:           discordRepo,
-		validationRepo:        validationRepo,
-		characterRepo:         characterRepo,
-		systemPromptRepo:      systemPromptRepo,
-		conversationRepo:      conversationRepo,
-		conversationGroupRepo: conversationGroupRepo,
-		discordUserRepo:       discordUserRepo,
-		defaultCharacterID:    defaultCharacterID,
-		defaultPromptIndex:    defaultPromptIndex,
-		botUserID:             botUserID,
-		botNamePattern:        botNamePattern,
+		messageRepo:           config.MessageRepo,
+		responseRepo:          config.ResponseRepo,
+		llmRepo:               config.LLMRepo,
+		discordRepo:           config.DiscordRepo,
+		validationRepo:        config.ValidationRepo,
+		characterRepo:         config.CharacterRepo,
+		systemPromptRepo:      config.SystemPromptRepo,
+		conversationRepo:      config.ConversationRepo,
+		conversationGroupRepo: config.ConversationGroupRepo,
+		discordUserRepo:       config.DiscordUserRepo,
+		defaultCharacterID:    config.DefaultCharacterID,
+		defaultPromptIndex:    config.DefaultPromptIndex,
+		botUserID:             config.BotUserID,
+		botNamePattern:        config.BotNamePattern,
 	}
 }
 

@@ -26,20 +26,22 @@ func newTestInteractor(
 	discordUserRepo domain.DiscordUserRepository,
 ) usecase.HandleMessageInteractor {
 	return usecase.NewHandleMessageInteractor(
-		msgRepo,
-		respRepo,
-		llmRepo,
-		discordRepo,
-		validationRepo,
-		characterRepo,
-		systemPromptRepo,
-		conversationRepo,
-		conversationGroupRepo,
-		discordUserRepo,
-		1,
-		0,
-		"bot-001",
-		"(?i)bot",
+		usecase.HandleMessageConfig{
+			MessageRepo:           msgRepo,
+			ResponseRepo:          respRepo,
+			LLMRepo:               llmRepo,
+			DiscordRepo:           discordRepo,
+			ValidationRepo:        validationRepo,
+			CharacterRepo:         characterRepo,
+			SystemPromptRepo:      systemPromptRepo,
+			ConversationRepo:      conversationRepo,
+			ConversationGroupRepo: conversationGroupRepo,
+			DiscordUserRepo:       discordUserRepo,
+			DefaultCharacterID:    1,
+			DefaultPromptIndex:    0,
+			BotUserID:             "bot-001",
+			BotNamePattern:        "(?i)bot",
+		},
 	)
 }
 

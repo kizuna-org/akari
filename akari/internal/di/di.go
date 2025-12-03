@@ -101,20 +101,22 @@ func newHandleMessageInteractor(
 	cfg := configRepo.GetConfig()
 
 	return messageUsecase.NewHandleMessageInteractor(
-		messageRepo,
-		responseRepo,
-		llmRepo,
-		discordRepo,
-		validationRepo,
-		characterRepo,
-		systemPromptRepo,
-		conversationRepo,
-		conversationGroupRepo,
-		discordUserRepo,
-		defaultCharacterID,
-		defaultPromptIndex,
-		client.Session.State.User.ID,
-		cfg.Discord.BotNameRegExp,
+		messageUsecase.HandleMessageConfig{
+			MessageRepo:           messageRepo,
+			ResponseRepo:          responseRepo,
+			LLMRepo:               llmRepo,
+			DiscordRepo:           discordRepo,
+			ValidationRepo:        validationRepo,
+			CharacterRepo:         characterRepo,
+			SystemPromptRepo:      systemPromptRepo,
+			ConversationRepo:      conversationRepo,
+			ConversationGroupRepo: conversationGroupRepo,
+			DiscordUserRepo:       discordUserRepo,
+			DefaultCharacterID:    defaultCharacterID,
+			DefaultPromptIndex:    defaultPromptIndex,
+			BotUserID:             client.Session.State.User.ID,
+			BotNamePattern:        cfg.Discord.BotNameRegExp,
+		},
 	)
 }
 
