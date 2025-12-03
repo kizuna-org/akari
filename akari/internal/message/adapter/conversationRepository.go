@@ -21,9 +21,15 @@ func NewConversationRepository(interactor databaseInteractor.ConversationInterac
 func (r *conversationRepository) CreateConversation(
 	ctx context.Context,
 	messageID string,
+	userID int,
 	conversationGroupID *int,
 ) error {
-	if _, err := r.interactor.CreateConversation(ctx, messageID, conversationGroupID); err != nil {
+	if _, err := r.interactor.CreateConversation(
+		ctx,
+		messageID,
+		userID,
+		conversationGroupID,
+	); err != nil {
 		return fmt.Errorf("failed to create conversation: %w", err)
 	}
 

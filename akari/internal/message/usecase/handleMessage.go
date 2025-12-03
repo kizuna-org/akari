@@ -15,18 +15,20 @@ type HandleMessageInteractor interface {
 }
 
 type handleMessageInteractorImpl struct {
-	messageRepo        domain.MessageRepository
-	responseRepo       domain.ResponseRepository
-	llmRepo            domain.LLMRepository
-	discordRepo        domain.DiscordRepository
-	validationRepo     domain.ValidationRepository
-	characterRepo      domain.CharacterRepository
-	systemPromptRepo   domain.SystemPromptRepository
-	conversationRepo   domain.ConversationRepository
-	defaultCharacterID int
-	defaultPromptIndex int
-	botUserID          string
-	botNamePattern     string
+	messageRepo           domain.MessageRepository
+	responseRepo          domain.ResponseRepository
+	llmRepo               domain.LLMRepository
+	discordRepo           domain.DiscordRepository
+	validationRepo        domain.ValidationRepository
+	characterRepo         domain.CharacterRepository
+	systemPromptRepo      domain.SystemPromptRepository
+	conversationRepo      domain.ConversationRepository
+	conversationGroupRepo domain.ConversationGroupRepository
+	discordUserRepo       domain.DiscordUserRepository
+	defaultCharacterID    int
+	defaultPromptIndex    int
+	botUserID             string
+	botNamePattern        string
 }
 
 func NewHandleMessageInteractor(
@@ -38,24 +40,28 @@ func NewHandleMessageInteractor(
 	characterRepo domain.CharacterRepository,
 	systemPromptRepo domain.SystemPromptRepository,
 	conversationRepo domain.ConversationRepository,
+	conversationGroupRepo domain.ConversationGroupRepository,
+	discordUserRepo domain.DiscordUserRepository,
 	defaultCharacterID int,
 	defaultPromptIndex int,
 	botUserID string,
 	botNamePattern string,
 ) HandleMessageInteractor {
 	return &handleMessageInteractorImpl{
-		messageRepo:        messageRepo,
-		responseRepo:       responseRepo,
-		llmRepo:            llmRepo,
-		discordRepo:        discordRepo,
-		validationRepo:     validationRepo,
-		characterRepo:      characterRepo,
-		systemPromptRepo:   systemPromptRepo,
-		conversationRepo:   conversationRepo,
-		defaultCharacterID: defaultCharacterID,
-		defaultPromptIndex: defaultPromptIndex,
-		botUserID:          botUserID,
-		botNamePattern:     botNamePattern,
+		messageRepo:           messageRepo,
+		responseRepo:          responseRepo,
+		llmRepo:               llmRepo,
+		discordRepo:           discordRepo,
+		validationRepo:        validationRepo,
+		characterRepo:         characterRepo,
+		systemPromptRepo:      systemPromptRepo,
+		conversationRepo:      conversationRepo,
+		conversationGroupRepo: conversationGroupRepo,
+		discordUserRepo:       discordUserRepo,
+		defaultCharacterID:    defaultCharacterID,
+		defaultPromptIndex:    defaultPromptIndex,
+		botUserID:             botUserID,
+		botNamePattern:        botNamePattern,
 	}
 }
 
@@ -72,7 +78,30 @@ func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domai
 		return nil
 	}
 
-	if err := i.conversationRepo.CreateConversation(ctx, message.ID, nil); err != nil {
+	userID, err := i.discordUserRepo.GetOrCreateDiscordUser(
+		ctx,
+		message.AuthorID,
+		"",
+		message.IsBot,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to get or create discord user: %w", err)
+	}
+
+	conversationGroup, err := i.conversationGroupRepo.GetConversationGroupByCharacterID(ctx, i.defaultCharacterID)
+	if err != nil {
+		conversationGroup, err = i.conversationGroupRepo.CreateConversationGroup(ctx, i.defaultCharacterID)
+		if err != nil {
+			return fmt.Errorf("failed to create conversation group: %w", err)
+		}
+	}
+
+	if err := i.conversationRepo.CreateConversation(
+		ctx,
+		message.ID,
+		userID,
+		&conversationGroup.ID,
+	); err != nil {
 		return fmt.Errorf("failed to create conversation: %w", err)
 	}
 

@@ -15,6 +15,11 @@ type SystemPrompt struct {
 	Prompt string
 }
 
+type ConversationGroup struct {
+	ID          int
+	CharacterID int
+}
+
 type MessageRepository interface {
 	SaveMessage(ctx context.Context, message *Message) error
 }
@@ -46,5 +51,29 @@ type SystemPromptRepository interface {
 }
 
 type ConversationRepository interface {
-	CreateConversation(ctx context.Context, messageID string, conversationGroupID *int) error
+	CreateConversation(
+		ctx context.Context,
+		messageID string,
+		userID int,
+		conversationGroupID *int,
+	) error
+}
+
+type ConversationGroupRepository interface {
+	GetConversationGroupByCharacterID(ctx context.Context, characterID int) (*ConversationGroup, error)
+	CreateConversationGroup(ctx context.Context, characterID int) (*ConversationGroup, error)
+}
+
+type DiscordUserRepository interface {
+	GetDiscordUserByID(ctx context.Context, discordUserID string) (int, error)
+	GetOrCreateDiscordUser(
+		ctx context.Context,
+		discordUserID string,
+		username string,
+		isBot bool,
+	) (int, error)
+}
+
+type AkariUserRepository interface {
+	GetOrCreateAkariUserByDiscordUserID(ctx context.Context, discordUserID string) (int, error)
 }

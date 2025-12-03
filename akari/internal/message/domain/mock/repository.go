@@ -339,15 +339,162 @@ func (m *MockConversationRepository) EXPECT() *MockConversationRepositoryMockRec
 }
 
 // CreateConversation mocks base method.
-func (m *MockConversationRepository) CreateConversation(ctx context.Context, messageID string, conversationGroupID *int) error {
+func (m *MockConversationRepository) CreateConversation(ctx context.Context, messageID string, userID int, conversationGroupID *int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateConversation", ctx, messageID, conversationGroupID)
+	ret := m.ctrl.Call(m, "CreateConversation", ctx, messageID, userID, conversationGroupID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateConversation indicates an expected call of CreateConversation.
-func (mr *MockConversationRepositoryMockRecorder) CreateConversation(ctx, messageID, conversationGroupID any) *gomock.Call {
+func (mr *MockConversationRepositoryMockRecorder) CreateConversation(ctx, messageID, userID, conversationGroupID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConversation", reflect.TypeOf((*MockConversationRepository)(nil).CreateConversation), ctx, messageID, conversationGroupID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConversation", reflect.TypeOf((*MockConversationRepository)(nil).CreateConversation), ctx, messageID, userID, conversationGroupID)
+}
+
+// MockConversationGroupRepository is a mock of ConversationGroupRepository interface.
+type MockConversationGroupRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockConversationGroupRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockConversationGroupRepositoryMockRecorder is the mock recorder for MockConversationGroupRepository.
+type MockConversationGroupRepositoryMockRecorder struct {
+	mock *MockConversationGroupRepository
+}
+
+// NewMockConversationGroupRepository creates a new mock instance.
+func NewMockConversationGroupRepository(ctrl *gomock.Controller) *MockConversationGroupRepository {
+	mock := &MockConversationGroupRepository{ctrl: ctrl}
+	mock.recorder = &MockConversationGroupRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConversationGroupRepository) EXPECT() *MockConversationGroupRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateConversationGroup mocks base method.
+func (m *MockConversationGroupRepository) CreateConversationGroup(ctx context.Context, characterID int) (*domain.ConversationGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateConversationGroup", ctx, characterID)
+	ret0, _ := ret[0].(*domain.ConversationGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateConversationGroup indicates an expected call of CreateConversationGroup.
+func (mr *MockConversationGroupRepositoryMockRecorder) CreateConversationGroup(ctx, characterID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConversationGroup", reflect.TypeOf((*MockConversationGroupRepository)(nil).CreateConversationGroup), ctx, characterID)
+}
+
+// GetConversationGroupByCharacterID mocks base method.
+func (m *MockConversationGroupRepository) GetConversationGroupByCharacterID(ctx context.Context, characterID int) (*domain.ConversationGroup, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConversationGroupByCharacterID", ctx, characterID)
+	ret0, _ := ret[0].(*domain.ConversationGroup)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConversationGroupByCharacterID indicates an expected call of GetConversationGroupByCharacterID.
+func (mr *MockConversationGroupRepositoryMockRecorder) GetConversationGroupByCharacterID(ctx, characterID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConversationGroupByCharacterID", reflect.TypeOf((*MockConversationGroupRepository)(nil).GetConversationGroupByCharacterID), ctx, characterID)
+}
+
+// MockDiscordUserRepository is a mock of DiscordUserRepository interface.
+type MockDiscordUserRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockDiscordUserRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockDiscordUserRepositoryMockRecorder is the mock recorder for MockDiscordUserRepository.
+type MockDiscordUserRepositoryMockRecorder struct {
+	mock *MockDiscordUserRepository
+}
+
+// NewMockDiscordUserRepository creates a new mock instance.
+func NewMockDiscordUserRepository(ctrl *gomock.Controller) *MockDiscordUserRepository {
+	mock := &MockDiscordUserRepository{ctrl: ctrl}
+	mock.recorder = &MockDiscordUserRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDiscordUserRepository) EXPECT() *MockDiscordUserRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetDiscordUserByID mocks base method.
+func (m *MockDiscordUserRepository) GetDiscordUserByID(ctx context.Context, discordUserID string) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDiscordUserByID", ctx, discordUserID)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDiscordUserByID indicates an expected call of GetDiscordUserByID.
+func (mr *MockDiscordUserRepositoryMockRecorder) GetDiscordUserByID(ctx, discordUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDiscordUserByID", reflect.TypeOf((*MockDiscordUserRepository)(nil).GetDiscordUserByID), ctx, discordUserID)
+}
+
+// GetOrCreateDiscordUser mocks base method.
+func (m *MockDiscordUserRepository) GetOrCreateDiscordUser(ctx context.Context, discordUserID, username string, isBot bool) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrCreateDiscordUser", ctx, discordUserID, username, isBot)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrCreateDiscordUser indicates an expected call of GetOrCreateDiscordUser.
+func (mr *MockDiscordUserRepositoryMockRecorder) GetOrCreateDiscordUser(ctx, discordUserID, username, isBot any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrCreateDiscordUser", reflect.TypeOf((*MockDiscordUserRepository)(nil).GetOrCreateDiscordUser), ctx, discordUserID, username, isBot)
+}
+
+// MockAkariUserRepository is a mock of AkariUserRepository interface.
+type MockAkariUserRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockAkariUserRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockAkariUserRepositoryMockRecorder is the mock recorder for MockAkariUserRepository.
+type MockAkariUserRepositoryMockRecorder struct {
+	mock *MockAkariUserRepository
+}
+
+// NewMockAkariUserRepository creates a new mock instance.
+func NewMockAkariUserRepository(ctrl *gomock.Controller) *MockAkariUserRepository {
+	mock := &MockAkariUserRepository{ctrl: ctrl}
+	mock.recorder = &MockAkariUserRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockAkariUserRepository) EXPECT() *MockAkariUserRepositoryMockRecorder {
+	return m.recorder
+}
+
+// GetOrCreateAkariUserByDiscordUserID mocks base method.
+func (m *MockAkariUserRepository) GetOrCreateAkariUserByDiscordUserID(ctx context.Context, discordUserID string) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrCreateAkariUserByDiscordUserID", ctx, discordUserID)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrCreateAkariUserByDiscordUserID indicates an expected call of GetOrCreateAkariUserByDiscordUserID.
+func (mr *MockAkariUserRepositoryMockRecorder) GetOrCreateAkariUserByDiscordUserID(ctx, discordUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrCreateAkariUserByDiscordUserID", reflect.TypeOf((*MockAkariUserRepository)(nil).GetOrCreateAkariUserByDiscordUserID), ctx, discordUserID)
 }
