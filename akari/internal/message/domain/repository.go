@@ -44,3 +44,7 @@ type CharacterRepository interface {
 type SystemPromptRepository interface {
 	GetSystemPromptByID(ctx context.Context, id int) (*SystemPrompt, error)
 }
+
+type ConversationRepository interface {
+	CreateConversation(ctx context.Context, messageID string, conversationGroupID *int) error
+}

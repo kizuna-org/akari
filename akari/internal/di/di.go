@@ -51,6 +51,7 @@ func newUsecaseProviders() fx.Option {
 		databaseInteractor.NewDatabaseInteractor,
 		databaseInteractor.NewSystemPromptInteractor,
 		databaseInteractor.NewCharacterInteractor,
+		databaseInteractor.NewConversationInteractor,
 		discordRepository.NewDiscordRepository,
 	)
 }
@@ -64,6 +65,7 @@ func newMessagePackageProviders() fx.Option {
 		messageAdapter.NewValidationRepository,
 		messageAdapter.NewCharacterRepository,
 		messageAdapter.NewSystemPromptRepository,
+		messageAdapter.NewConversationRepository,
 		defaultCharacterID,
 		defaultPromptIndex,
 		newHandleMessageInteractor,
@@ -78,6 +80,7 @@ func newHandleMessageInteractor(
 	validationRepo messageDomain.ValidationRepository,
 	characterRepo messageDomain.CharacterRepository,
 	systemPromptRepo messageDomain.SystemPromptRepository,
+	conversationRepo messageDomain.ConversationRepository,
 	defaultCharacterID int,
 	defaultPromptIndex int,
 	client *discordInfra.DiscordClient,
@@ -86,7 +89,7 @@ func newHandleMessageInteractor(
 	cfg := configRepo.GetConfig()
 
 	return messageUsecase.NewHandleMessageInteractor(
-		messageRepo, responseRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+		messageRepo, responseRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo, conversationRepo,
 		defaultCharacterID, defaultPromptIndex, client.Session.State.User.ID, cfg.Discord.BotNameRegExp,
 	)
 }

@@ -313,3 +313,41 @@ func (mr *MockSystemPromptRepositoryMockRecorder) GetSystemPromptByID(ctx, id an
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSystemPromptByID", reflect.TypeOf((*MockSystemPromptRepository)(nil).GetSystemPromptByID), ctx, id)
 }
+
+// MockConversationRepository is a mock of ConversationRepository interface.
+type MockConversationRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockConversationRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockConversationRepositoryMockRecorder is the mock recorder for MockConversationRepository.
+type MockConversationRepositoryMockRecorder struct {
+	mock *MockConversationRepository
+}
+
+// NewMockConversationRepository creates a new mock instance.
+func NewMockConversationRepository(ctrl *gomock.Controller) *MockConversationRepository {
+	mock := &MockConversationRepository{ctrl: ctrl}
+	mock.recorder = &MockConversationRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConversationRepository) EXPECT() *MockConversationRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateConversation mocks base method.
+func (m *MockConversationRepository) CreateConversation(ctx context.Context, messageID string, conversationGroupID *int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateConversation", ctx, messageID, conversationGroupID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateConversation indicates an expected call of CreateConversation.
+func (mr *MockConversationRepositoryMockRecorder) CreateConversation(ctx, messageID, conversationGroupID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConversation", reflect.TypeOf((*MockConversationRepository)(nil).CreateConversation), ctx, messageID, conversationGroupID)
+}

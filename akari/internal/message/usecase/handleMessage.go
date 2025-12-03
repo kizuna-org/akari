@@ -22,6 +22,7 @@ type handleMessageInteractorImpl struct {
 	validationRepo     domain.ValidationRepository
 	characterRepo      domain.CharacterRepository
 	systemPromptRepo   domain.SystemPromptRepository
+	conversationRepo   domain.ConversationRepository
 	defaultCharacterID int
 	defaultPromptIndex int
 	botUserID          string
@@ -36,6 +37,7 @@ func NewHandleMessageInteractor(
 	validationRepo domain.ValidationRepository,
 	characterRepo domain.CharacterRepository,
 	systemPromptRepo domain.SystemPromptRepository,
+	conversationRepo domain.ConversationRepository,
 	defaultCharacterID int,
 	defaultPromptIndex int,
 	botUserID string,
@@ -49,6 +51,7 @@ func NewHandleMessageInteractor(
 		validationRepo:     validationRepo,
 		characterRepo:      characterRepo,
 		systemPromptRepo:   systemPromptRepo,
+		conversationRepo:   conversationRepo,
 		defaultCharacterID: defaultCharacterID,
 		defaultPromptIndex: defaultPromptIndex,
 		botUserID:          botUserID,
@@ -69,20 +72,22 @@ func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domai
 		return nil
 	}
 
+	if err := i.conversationRepo.CreateConversation(ctx, message.ID, nil); err != nil {
+		return fmt.Errorf("failed to create conversation: %w", err)
+	}
+
+	return i.generateAndSendResponse(ctx, message)
+}
+
+func (i *handleMessageInteractorImpl) generateAndSendResponse(ctx context.Context, message *domain.Message) error {
 	character, err := i.characterRepo.GetCharacterByID(ctx, i.defaultCharacterID)
 	if err != nil {
 		return fmt.Errorf("failed to get character: %w", err)
 	}
 
-	systemPromptContent := ""
-
-	if len(character.SystemPromptIDs) > i.defaultPromptIndex {
-		systemPrompt, err := i.systemPromptRepo.GetSystemPromptByID(ctx, character.SystemPromptIDs[i.defaultPromptIndex])
-		if err != nil {
-			return fmt.Errorf("failed to get system prompt: %w", err)
-		}
-
-		systemPromptContent = systemPrompt.Prompt
+	systemPromptContent, err := i.getSystemPromptContent(ctx, character)
+	if err != nil {
+		return err
 	}
 
 	responseContent, err := i.llmRepo.GenerateResponse(ctx, systemPromptContent, message.Content)
@@ -107,6 +112,25 @@ func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domai
 	}
 
 	return nil
+}
+
+func (i *handleMessageInteractorImpl) getSystemPromptContent(
+	ctx context.Context,
+	character *domain.Character,
+) (string, error) {
+	if len(character.SystemPromptIDs) <= i.defaultPromptIndex {
+		return "", nil
+	}
+
+	systemPrompt, err := i.systemPromptRepo.GetSystemPromptByID(
+		ctx,
+		character.SystemPromptIDs[i.defaultPromptIndex],
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to get system prompt: %w", err)
+	}
+
+	return systemPrompt.Prompt, nil
 }
 
 func (i *handleMessageInteractorImpl) isMentioned(message *domain.Message) bool {
