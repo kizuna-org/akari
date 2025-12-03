@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/internal/message/domain"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
@@ -39,6 +40,15 @@ func (r *discordUserRepository) GetDiscordUserByID(
 
 	akariUser, err := r.akariUserInteractor.GetAkariUserByDiscordUserID(ctx, user.ID)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			akariUser, err = r.akariUserInteractor.CreateAkariUser(ctx)
+			if err != nil {
+				return 0, fmt.Errorf("failed to create akari user: %w", err)
+			}
+
+			return akariUser.ID, nil
+		}
+
 		return 0, fmt.Errorf(
 			"failed to get akari user by discord user id: %w",
 			err,
@@ -63,16 +73,34 @@ func (r *discordUserRepository) GetOrCreateDiscordUser(
 		if err == nil {
 			return akariUser.ID, nil
 		}
+
+		if !ent.IsNotFound(err) {
+			return 0, fmt.Errorf(
+				"failed to get akari user by discord user id: %w",
+				err,
+			)
+		}
+
+		akariUser, err = r.akariUserInteractor.CreateAkariUser(ctx)
+		if err != nil {
+			return 0, fmt.Errorf("failed to create akari user: %w", err)
+		}
+
+		return akariUser.ID, nil
 	}
 
-	_, err = r.interactor.CreateDiscordUser(ctx, databaseDomain.DiscordUser{
+	if !ent.IsNotFound(err) {
+		return 0, fmt.Errorf("failed to get discord user by id: %w", err)
+	}
+
+	now := time.Now()
+	if _, err := r.interactor.CreateDiscordUser(ctx, databaseDomain.DiscordUser{
 		ID:        discordUserID,
 		Username:  username,
 		Bot:       isBot,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	})
-	if err != nil {
+		CreatedAt: now,
+		UpdatedAt: now,
+	}); err != nil {
 		return 0, fmt.Errorf("failed to create discord user: %w", err)
 	}
 
