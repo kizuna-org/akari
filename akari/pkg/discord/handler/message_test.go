@@ -67,6 +67,7 @@ func TestMessageHandler_HandleMessageCreate(t *testing.T) {
 			name: "ping command",
 			msg:  createMessage("user-001", "!ping", false),
 			mockSetup: func(m *interactormock.MockDiscordInteractor) {
+				m.EXPECT().SaveMessage(gomock.Any(), gomock.Any()).Return(nil)
 				m.EXPECT().SendMessage(gomock.Any(), "channel-001", "Pong!").
 					Return(&entity.Message{
 						ID:        "msg-002",
@@ -76,15 +77,25 @@ func TestMessageHandler_HandleMessageCreate(t *testing.T) {
 			},
 		},
 		{
-			name:      "non-ping message",
-			msg:       createMessage("user-001", "Hello", false),
-			mockSetup: nil,
+			name: "non-ping message",
+			msg:  createMessage("user-001", "Hello", false),
+			mockSetup: func(m *interactormock.MockDiscordInteractor) {
+				m.EXPECT().SaveMessage(gomock.Any(), gomock.Any()).Return(nil)
+			},
 		},
 		{
 			name: "send message error",
 			msg:  createMessage("user-001", "!ping", false),
 			mockSetup: func(m *interactormock.MockDiscordInteractor) {
+				m.EXPECT().SaveMessage(gomock.Any(), gomock.Any()).Return(nil)
 				m.EXPECT().SendMessage(gomock.Any(), "channel-001", "Pong!").Return(nil, assert.AnError)
+			},
+		},
+		{
+			name: "save message error",
+			msg:  createMessage("user-001", "Hello", false),
+			mockSetup: func(m *interactormock.MockDiscordInteractor) {
+				m.EXPECT().SaveMessage(gomock.Any(), gomock.Any()).Return(assert.AnError)
 			},
 		},
 	}

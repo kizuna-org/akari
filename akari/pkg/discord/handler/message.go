@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
 	"github.com/kizuna-org/akari/pkg/discord/infrastructure"
 	"github.com/kizuna-org/akari/pkg/discord/usecase/interactor"
 )
@@ -40,6 +41,17 @@ func (h *MessageHandler) HandleMessageCreate(s *discordgo.Session, message *disc
 	)
 
 	ctx := context.Background()
+
+	if err := h.interactor.SaveMessage(ctx, &entity.Message{
+		ID:        message.ID,
+		ChannelID: message.ChannelID,
+		GuildID:   message.GuildID,
+		AuthorID:  message.Author.ID,
+		Content:   message.Content,
+		Timestamp: message.Timestamp,
+	}); err != nil {
+		h.logger.Error("Failed to save received message", "error", err)
+	}
 
 	if message.Content == "!ping" {
 		_, err := h.interactor.SendMessage(ctx, message.ChannelID, "Pong!")

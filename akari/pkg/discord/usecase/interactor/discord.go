@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
 	"github.com/kizuna-org/akari/pkg/discord/domain/service"
 )
@@ -13,15 +14,21 @@ import (
 type DiscordInteractor interface {
 	SendMessage(ctx context.Context, channelID string, content string) (*entity.Message, error)
 	GetMessage(ctx context.Context, channelID string, messageID string) (*entity.Message, error)
+	SaveMessage(ctx context.Context, message *entity.Message) error
 }
 
 type discordInteractorImpl struct {
-	service service.DiscordService
+	service           service.DiscordService
+	messageRepository databaseDomain.DiscordMessageRepository
 }
 
-func NewDiscordInteractor(service service.DiscordService) DiscordInteractor {
+func NewDiscordInteractor(
+	service service.DiscordService,
+	messageRepository databaseDomain.DiscordMessageRepository,
+) DiscordInteractor {
 	return &discordInteractorImpl{
-		service: service,
+		service:           service,
+		messageRepository: messageRepository,
 	}
 }
 
@@ -33,6 +40,10 @@ func (i *discordInteractorImpl) SendMessage(
 	msg, err := i.service.SendMessage(ctx, channelID, content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send message in interactor: %w", err)
+	}
+
+	if err := i.SaveMessage(ctx, msg); err != nil {
+		return nil, err
 	}
 
 	return msg, nil
@@ -49,4 +60,19 @@ func (i *discordInteractorImpl) GetMessage(
 	}
 
 	return msg, nil
+}
+
+func (i *discordInteractorImpl) SaveMessage(ctx context.Context, message *entity.Message) error {
+	if _, err := i.messageRepository.CreateDiscordMessage(ctx, databaseDomain.DiscordMessage{
+		ID:        message.ID,
+		ChannelID: message.ChannelID,
+		AuthorID:  message.AuthorID,
+		Content:   message.Content,
+		Timestamp: message.Timestamp,
+		CreatedAt: message.Timestamp,
+	}); err != nil {
+		return fmt.Errorf("failed to save message to database: %w", err)
+	}
+
+	return nil
 }

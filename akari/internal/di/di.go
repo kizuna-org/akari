@@ -7,12 +7,12 @@ import (
 
 	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
-	internalDiscordUsecase "github.com/kizuna-org/akari/internal/app/usecase/discord"
 	"github.com/kizuna-org/akari/pkg/config"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	databaseInfra "github.com/kizuna-org/akari/pkg/database/infrastructure"
 	databaseRepo "github.com/kizuna-org/akari/pkg/database/infrastructure/repository"
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
+	discordAdapter "github.com/kizuna-org/akari/pkg/discord/adapter"
 	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
 	discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
 	"github.com/kizuna-org/akari/pkg/discord/handler"
@@ -39,6 +39,7 @@ func NewModule() fx.Option {
 			newDatabaseRepository,
 			newSystemPromptRepository,
 			newCharacterRepository,
+			newDiscordMessageRepository,
 			newDiscordClient,
 		),
 
@@ -49,7 +50,6 @@ func NewModule() fx.Option {
 			databaseInteractor.NewSystemPromptInteractor,
 			databaseInteractor.NewCharacterInteractor,
 			discordRepository.NewDiscordRepository,
-			internalDiscordUsecase.NewDiscordMessageUsecase,
 		),
 
 		// Service
@@ -64,6 +64,11 @@ func NewModule() fx.Option {
 
 		fx.Provide(
 			handler.NewMessageHandler,
+		),
+
+		// Adapter
+		fx.Provide(
+			discordAdapter.NewBotRunner,
 		),
 
 		fx.Provide(
@@ -135,6 +140,10 @@ func newSystemPromptRepository(repo databaseRepo.Repository) databaseDomain.Syst
 }
 
 func newCharacterRepository(repo databaseRepo.Repository) databaseDomain.CharacterRepository {
+	return repo
+}
+
+func newDiscordMessageRepository(repo databaseRepo.Repository) databaseDomain.DiscordMessageRepository {
 	return repo
 }
 
