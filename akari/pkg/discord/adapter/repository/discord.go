@@ -60,9 +60,13 @@ func (r *discordRepositoryImpl) GetMessage(
 }
 
 func (r *discordRepositoryImpl) Start() error {
+	r.client.RegisterReadyHandler()
+
 	if err := r.client.Session.Open(); err != nil {
 		return fmt.Errorf("failed to open discord session: %w", err)
 	}
+
+	r.client.WaitReady()
 
 	return nil
 }

@@ -46,3 +46,13 @@ func TestNewDiscordClient(t *testing.T) {
 		})
 	}
 }
+
+func TestDiscordClient_RegisterReadyHandler(t *testing.T) {
+	t.Parallel()
+
+	client, err := infrastructure.NewDiscordClient("test-token")
+	require.NoError(t, err)
+
+	client.RegisterReadyHandler()
+	require.NotNil(t, client.Session)
+}
