@@ -19,6 +19,10 @@ func NewResponseRepository(discordMsgRepo databaseDomain.DiscordMessageRepositor
 }
 
 func (r *responseRepository) SaveResponse(ctx context.Context, response *domain.Response) error {
+	if response == nil {
+		return fmt.Errorf("response is nil")
+	}
+
 	if _, err := r.discordMsgRepo.CreateDiscordMessage(ctx, databaseDomain.DiscordMessage{
 		ID:        response.ID,
 		ChannelID: response.ChannelID,

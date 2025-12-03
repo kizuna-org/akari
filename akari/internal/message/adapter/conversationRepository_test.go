@@ -13,6 +13,8 @@ import (
 func TestConversationRepository_CreateConversation(t *testing.T) {
 	t.Parallel()
 
+	groupID := intPtr(1)
+
 	tests := []struct {
 		name                string
 		messageID           string
@@ -26,7 +28,7 @@ func TestConversationRepository_CreateConversation(t *testing.T) {
 			name:                "success - with conversation group",
 			messageID:           "msg-001",
 			userID:              1,
-			conversationGroupID: intPtr(1),
+			conversationGroupID: groupID,
 			setupMock: func(m *interactorMock.MockConversationInteractor) {
 				m.EXPECT().CreateConversation(gomock.Any(), "msg-001", 1, intPtr(1)).Return(nil, nil)
 			},
@@ -46,7 +48,7 @@ func TestConversationRepository_CreateConversation(t *testing.T) {
 			name:                "error - create failed",
 			messageID:           "msg-003",
 			userID:              3,
-			conversationGroupID: intPtr(1),
+			conversationGroupID: groupID,
 			setupMock: func(m *interactorMock.MockConversationInteractor) {
 				m.EXPECT().CreateConversation(gomock.Any(), "msg-003", 3, intPtr(1)).Return(nil, errors.New("db error"))
 			},

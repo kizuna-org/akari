@@ -43,7 +43,7 @@ func (i *discordInteractorImpl) SendMessage(
 	}
 
 	if err := i.SaveMessage(ctx, msg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to save message in interactor: %w", err)
 	}
 
 	return msg, nil

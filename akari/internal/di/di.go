@@ -60,21 +60,25 @@ func newUsecaseProviders() fx.Option {
 }
 
 func newMessagePackageProviders() fx.Option {
-	return fx.Provide(
-		messageAdapter.NewMessageRepository,
-		messageAdapter.NewResponseRepository,
-		messageAdapter.NewLLMRepository,
-		messageAdapter.NewDiscordRepository,
-		messageAdapter.NewValidationRepository,
-		messageAdapter.NewCharacterRepository,
-		messageAdapter.NewSystemPromptRepository,
-		messageAdapter.NewConversationRepository,
-		messageAdapter.NewConversationGroupRepository,
-		messageAdapter.NewDiscordUserRepository,
-		messageAdapter.NewAkariUserRepository,
-		defaultCharacterID,
-		defaultPromptIndex,
-		newHandleMessageInteractor,
+	return fx.Options(
+		fx.Provide(
+			messageAdapter.NewMessageRepository,
+			messageAdapter.NewResponseRepository,
+			messageAdapter.NewLLMRepository,
+			messageAdapter.NewDiscordRepository,
+			messageAdapter.NewValidationRepository,
+			messageAdapter.NewCharacterRepository,
+			messageAdapter.NewSystemPromptRepository,
+			messageAdapter.NewConversationRepository,
+			messageAdapter.NewConversationGroupRepository,
+			messageAdapter.NewDiscordUserRepository,
+			messageAdapter.NewAkariUserRepository,
+			newHandleMessageInteractor,
+		),
+		fx.Supply(
+			defaultCharacterID,
+			defaultPromptIndex,
+		),
 	)
 }
 
