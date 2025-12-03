@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/kizuna-org/akari/internal/message/usecase/mock"
 	"github.com/kizuna-org/akari/pkg/discord/adapter"
 	repomock "github.com/kizuna-org/akari/pkg/discord/domain/repository/mock"
 	"github.com/kizuna-org/akari/pkg/discord/handler"
 	"github.com/kizuna-org/akari/pkg/discord/infrastructure"
-	interactormock "github.com/kizuna-org/akari/pkg/discord/usecase/interactor/mock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
@@ -20,7 +20,7 @@ func TestNewBotRunner(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockInteractor := interactormock.NewMockDiscordInteractor(ctrl)
+	mockInteractor := mock.NewMockHandleMessageInteractor(ctrl)
 	mockRepo := repomock.NewMockDiscordRepository(ctrl)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
@@ -39,7 +39,7 @@ func TestBotRunner_RegisterLifecycle(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockInteractor := interactormock.NewMockDiscordInteractor(ctrl)
+	mockInteractor := mock.NewMockHandleMessageInteractor(ctrl)
 	mockRepo := repomock.NewMockDiscordRepository(ctrl)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
@@ -68,7 +68,7 @@ func TestBotRunner_RegisterLifecycle_StartError(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
-	mockInteractor := interactormock.NewMockDiscordInteractor(ctrl)
+	mockInteractor := mock.NewMockHandleMessageInteractor(ctrl)
 	mockRepo := repomock.NewMockDiscordRepository(ctrl)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 

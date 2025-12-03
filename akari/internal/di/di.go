@@ -7,6 +7,8 @@ import (
 
 	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
+	messageAdapter "github.com/kizuna-org/akari/internal/message/adapter"
+	messageUsecase "github.com/kizuna-org/akari/internal/message/usecase"
 	"github.com/kizuna-org/akari/pkg/config"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	databaseInfra "github.com/kizuna-org/akari/pkg/database/infrastructure"
@@ -50,6 +52,20 @@ func NewModule() fx.Option {
 			databaseInteractor.NewSystemPromptInteractor,
 			databaseInteractor.NewCharacterInteractor,
 			discordRepository.NewDiscordRepository,
+		),
+
+		// Message Package Adapters
+		fx.Provide(
+			messageAdapter.NewMessageRepository,
+			messageAdapter.NewResponseRepository,
+			messageAdapter.NewLLMRepository,
+			messageAdapter.NewDiscordRepository,
+			messageAdapter.NewValidationRepository,
+		),
+
+		// Message Package Usecase
+		fx.Provide(
+			messageUsecase.NewHandleMessageInteractor,
 		),
 
 		// Service

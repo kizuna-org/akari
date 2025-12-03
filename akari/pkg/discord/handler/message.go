@@ -5,26 +5,26 @@ import (
 	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	"github.com/kizuna-org/akari/internal/message/domain"
+	"github.com/kizuna-org/akari/internal/message/usecase"
 	"github.com/kizuna-org/akari/pkg/discord/infrastructure"
-	"github.com/kizuna-org/akari/pkg/discord/usecase/interactor"
 )
 
 type MessageHandler struct {
-	interactor interactor.DiscordInteractor
-	logger     *slog.Logger
-	client     *infrastructure.DiscordClient
+	handleMessageInteractor usecase.HandleMessageInteractor
+	logger                  *slog.Logger
+	client                  *infrastructure.DiscordClient
 }
 
 func NewMessageHandler(
-	interactor interactor.DiscordInteractor,
+	handleMessageInteractor usecase.HandleMessageInteractor,
 	logger *slog.Logger,
 	client *infrastructure.DiscordClient,
 ) *MessageHandler {
 	return &MessageHandler{
-		interactor: interactor,
-		logger:     logger,
-		client:     client,
+		handleMessageInteractor: handleMessageInteractor,
+		logger:                  logger,
+		client:                  client,
 	}
 }
 
@@ -42,22 +42,17 @@ func (h *MessageHandler) HandleMessageCreate(s *discordgo.Session, message *disc
 
 	ctx := context.Background()
 
-	if err := h.interactor.SaveMessage(ctx, &entity.Message{
+	msg := &domain.Message{
 		ID:        message.ID,
 		ChannelID: message.ChannelID,
 		GuildID:   message.GuildID,
 		AuthorID:  message.Author.ID,
 		Content:   message.Content,
 		Timestamp: message.Timestamp,
-	}); err != nil {
-		h.logger.Error("Failed to save received message", "error", err)
 	}
 
-	if message.Content == "!ping" {
-		_, err := h.interactor.SendMessage(ctx, message.ChannelID, "Pong!")
-		if err != nil {
-			h.logger.Error("Failed to send response", "error", err)
-		}
+	if err := h.handleMessageInteractor.Handle(ctx, msg); err != nil {
+		h.logger.Error("Failed to handle message", "error", err)
 	}
 }
 
