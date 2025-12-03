@@ -9,6 +9,7 @@ type Message struct {
 	AuthorID  string
 	Content   string
 	Timestamp time.Time
+	IsBot     bool
 }
 
 type Response struct {

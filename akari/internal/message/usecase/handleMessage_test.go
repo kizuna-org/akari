@@ -82,8 +82,8 @@ func TestHandleMessageInteractor_Handle_Success(t *testing.T) {
 	}, nil)
 
 	gomock.InOrder(
-		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
+		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
 		llmRepo.EXPECT().GenerateResponse(
 			gomock.Any(), "You are a helpful Discord bot assistant.", "Hello bot",
 		).Return("Hi there!", nil),
@@ -118,7 +118,10 @@ func TestHandleMessageInteractor_Handle_ValidationFails(t *testing.T) {
 		Content: "",
 	}
 
-	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(false)
+	gomock.InOrder(
+		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
+		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(false),
+	)
 
 	interactor := newTestInteractor(
 		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
@@ -147,7 +150,6 @@ func TestHandleMessageInteractor_Handle_SaveMessageError(t *testing.T) {
 		Content: "Hello",
 	}
 
-	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
 	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(errors.New("db error"))
 
 	interactor := newTestInteractor(
@@ -178,9 +180,11 @@ func TestHandleMessageInteractor_Handle_GetCharacterError(t *testing.T) {
 		Content: "Hello",
 	}
 
-	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
-	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil)
-	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(nil, errors.New("character not found"))
+	gomock.InOrder(
+		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
+		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(nil, errors.New("character not found")),
+	)
 
 	interactor := newTestInteractor(
 		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
@@ -210,15 +214,17 @@ func TestHandleMessageInteractor_Handle_GetSystemPromptError(t *testing.T) {
 		Content: "Hello",
 	}
 
-	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
-	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil)
-	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
-		ID:              1,
-		Name:            "TestBot",
-		SystemPromptIDs: []int{1},
-	}, nil)
-	systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(
-		nil, errors.New("prompt not found"),
+	gomock.InOrder(
+		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
+		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
+			ID:              1,
+			Name:            "TestBot",
+			SystemPromptIDs: []int{1},
+		}, nil),
+		systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(
+			nil, errors.New("prompt not found"),
+		),
 	)
 
 	interactor := newTestInteractor(
@@ -249,20 +255,22 @@ func TestHandleMessageInteractor_Handle_LLMError(t *testing.T) {
 		Content: "Hello",
 	}
 
-	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
-	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil)
-	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
-		ID:              1,
-		Name:            "TestBot",
-		SystemPromptIDs: []int{1},
-	}, nil)
-	systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
-		ID:     1,
-		Prompt: "You are a helpful Discord bot assistant.",
-	}, nil)
-	llmRepo.EXPECT().GenerateResponse(
-		gomock.Any(), "You are a helpful Discord bot assistant.", "Hello",
-	).Return("", errors.New("llm error"))
+	gomock.InOrder(
+		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
+		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
+			ID:              1,
+			Name:            "TestBot",
+			SystemPromptIDs: []int{1},
+		}, nil),
+		systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
+			ID:     1,
+			Prompt: "You are a helpful Discord bot assistant.",
+		}, nil),
+		llmRepo.EXPECT().GenerateResponse(
+			gomock.Any(), "You are a helpful Discord bot assistant.", "Hello",
+		).Return("", errors.New("llm error")),
+	)
 
 	interactor := newTestInteractor(
 		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
@@ -293,22 +301,24 @@ func TestHandleMessageInteractor_Handle_SendMessageError(t *testing.T) {
 		Content:   "Hello",
 	}
 
-	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
-	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil)
-	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
-		ID:              1,
-		Name:            "TestBot",
-		SystemPromptIDs: []int{1},
-	}, nil)
-	systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
-		ID:     1,
-		Prompt: "You are a helpful Discord bot assistant.",
-	}, nil)
-	llmRepo.EXPECT().GenerateResponse(
-		gomock.Any(), "You are a helpful Discord bot assistant.", "Hello",
-	).Return("Hi", nil)
-	discordRepo.EXPECT().SendMessage(gomock.Any(), "ch-001", "Hi").Return(
-		errors.New("discord error"),
+	gomock.InOrder(
+		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
+		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
+			ID:              1,
+			Name:            "TestBot",
+			SystemPromptIDs: []int{1},
+		}, nil),
+		systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
+			ID:     1,
+			Prompt: "You are a helpful Discord bot assistant.",
+		}, nil),
+		llmRepo.EXPECT().GenerateResponse(
+			gomock.Any(), "You are a helpful Discord bot assistant.", "Hello",
+		).Return("Hi", nil),
+		discordRepo.EXPECT().SendMessage(gomock.Any(), "ch-001", "Hi").Return(
+			errors.New("discord error"),
+		),
 	)
 
 	interactor := newTestInteractor(
@@ -340,23 +350,25 @@ func TestHandleMessageInteractor_Handle_SaveResponseError(t *testing.T) {
 		Content:   "Hello",
 	}
 
-	validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true)
-	msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil)
-	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
-		ID:              1,
-		Name:            "TestBot",
-		SystemPromptIDs: []int{1},
-	}, nil)
-	systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
-		ID:     1,
-		Prompt: "You are a helpful Discord bot assistant.",
-	}, nil)
-	llmRepo.EXPECT().GenerateResponse(
-		gomock.Any(), "You are a helpful Discord bot assistant.", "Hello",
-	).Return("Hi", nil)
-	discordRepo.EXPECT().SendMessage(gomock.Any(), "ch-001", "Hi").Return(nil)
-	respRepo.EXPECT().SaveResponse(gomock.Any(), gomock.Any()).Return(
-		errors.New("db error"),
+	gomock.InOrder(
+		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
+		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
+			ID:              1,
+			Name:            "TestBot",
+			SystemPromptIDs: []int{1},
+		}, nil),
+		systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
+			ID:     1,
+			Prompt: "You are a helpful Discord bot assistant.",
+		}, nil),
+		llmRepo.EXPECT().GenerateResponse(
+			gomock.Any(), "You are a helpful Discord bot assistant.", "Hello",
+		).Return("Hi", nil),
+		discordRepo.EXPECT().SendMessage(gomock.Any(), "ch-001", "Hi").Return(nil),
+		respRepo.EXPECT().SaveResponse(gomock.Any(), gomock.Any()).Return(
+			errors.New("db error"),
+		),
 	)
 
 	interactor := newTestInteractor(

@@ -51,12 +51,12 @@ func NewHandleMessageInteractor(
 }
 
 func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domain.Message) error {
-	if !i.validationRepo.ShouldProcessMessage(message) {
-		return nil
-	}
-
 	if err := i.messageRepo.SaveMessage(ctx, message); err != nil {
 		return fmt.Errorf("failed to save message: %w", err)
+	}
+
+	if !i.validationRepo.ShouldProcessMessage(message) {
+		return nil
 	}
 
 	character, err := i.characterRepo.GetCharacterByID(ctx, i.defaultCharacterID)

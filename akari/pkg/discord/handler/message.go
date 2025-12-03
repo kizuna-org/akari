@@ -29,15 +29,12 @@ func NewMessageHandler(
 }
 
 func (h *MessageHandler) HandleMessageCreate(s *discordgo.Session, message *discordgo.MessageCreate) {
-	if message.Author.Bot {
-		return
-	}
-
 	h.logger.Info("Received message",
 		"author", message.Author.Username,
 		"content", message.Content,
 		"channel_id", message.ChannelID,
 		"message_id", message.ID,
+		"is_bot", message.Author.Bot,
 	)
 
 	ctx := context.Background()
@@ -49,6 +46,7 @@ func (h *MessageHandler) HandleMessageCreate(s *discordgo.Session, message *disc
 		AuthorID:  message.Author.ID,
 		Content:   message.Content,
 		Timestamp: message.Timestamp,
+		IsBot:     message.Author.Bot,
 	}
 
 	if err := h.handleMessageInteractor.Handle(ctx, msg); err != nil {

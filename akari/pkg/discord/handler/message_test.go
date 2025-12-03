@@ -51,8 +51,10 @@ func TestNewMessageHandler(t *testing.T) {
 func TestMessageHandler_HandleMessageCreate_BotMessageIgnored(t *testing.T) {
 	t.Parallel()
 
-	h, _ := setupHandler(t)
+	h, mock := setupHandler(t)
 	msg := createMessage("bot-001", "test", true)
+
+	mock.EXPECT().Handle(gomock.Any(), gomock.Any()).Return(nil)
 
 	h.HandleMessageCreate(nil, msg)
 }

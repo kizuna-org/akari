@@ -13,5 +13,9 @@ func (r *validationRepository) ShouldProcessMessage(message *domain.Message) boo
 		return false
 	}
 
+	if message.IsBot {
+		return false
+	}
+
 	return true
 }
