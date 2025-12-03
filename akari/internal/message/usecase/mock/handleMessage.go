@@ -54,3 +54,15 @@ func (mr *MockHandleMessageInteractorMockRecorder) Handle(ctx, message any) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockHandleMessageInteractor)(nil).Handle), ctx, message)
 }
+
+// SetBotUserID mocks base method.
+func (m *MockHandleMessageInteractor) SetBotUserID(botUserID string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetBotUserID", botUserID)
+}
+
+// SetBotUserID indicates an expected call of SetBotUserID.
+func (mr *MockHandleMessageInteractorMockRecorder) SetBotUserID(botUserID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBotUserID", reflect.TypeOf((*MockHandleMessageInteractor)(nil).SetBotUserID), botUserID)
+}

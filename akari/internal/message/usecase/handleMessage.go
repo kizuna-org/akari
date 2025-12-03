@@ -12,6 +12,7 @@ import (
 
 type HandleMessageInteractor interface {
 	Handle(ctx context.Context, message *domain.Message) error
+	SetBotUserID(botUserID string)
 }
 
 type HandleMessageConfig struct {
@@ -27,7 +28,6 @@ type HandleMessageConfig struct {
 	DiscordUserRepo       domain.DiscordUserRepository
 	DefaultCharacterID    int
 	DefaultPromptIndex    int
-	BotUserID             string
 	BotNamePattern        string
 }
 
@@ -62,9 +62,13 @@ func NewHandleMessageInteractor(config HandleMessageConfig) HandleMessageInterac
 		discordUserRepo:       config.DiscordUserRepo,
 		defaultCharacterID:    config.DefaultCharacterID,
 		defaultPromptIndex:    config.DefaultPromptIndex,
-		botUserID:             config.BotUserID,
+		botUserID:             "",
 		botNamePattern:        config.BotNamePattern,
 	}
+}
+
+func (i *handleMessageInteractorImpl) SetBotUserID(botUserID string) {
+	i.botUserID = botUserID
 }
 
 func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domain.Message) error {

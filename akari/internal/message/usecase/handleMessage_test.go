@@ -25,7 +25,7 @@ func newTestInteractor(
 	conversationGroupRepo domain.ConversationGroupRepository,
 	discordUserRepo domain.DiscordUserRepository,
 ) usecase.HandleMessageInteractor {
-	return usecase.NewHandleMessageInteractor(
+	interactor := usecase.NewHandleMessageInteractor(
 		usecase.HandleMessageConfig{
 			MessageRepo:           msgRepo,
 			ResponseRepo:          respRepo,
@@ -39,10 +39,12 @@ func newTestInteractor(
 			DiscordUserRepo:       discordUserRepo,
 			DefaultCharacterID:    1,
 			DefaultPromptIndex:    0,
-			BotUserID:             "bot-001",
 			BotNamePattern:        "(?i)bot",
 		},
 	)
+	interactor.SetBotUserID("bot-001")
+
+	return interactor
 }
 
 func TestNewHandleMessageInteractor(t *testing.T) {

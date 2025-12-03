@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
@@ -20,7 +21,7 @@ func NewResponseRepository(discordMsgRepo databaseDomain.DiscordMessageRepositor
 
 func (r *responseRepository) SaveResponse(ctx context.Context, response *domain.Response) error {
 	if response == nil {
-		return fmt.Errorf("response is nil")
+		return errors.New("response is nil")
 	}
 
 	if _, err := r.discordMsgRepo.CreateDiscordMessage(ctx, databaseDomain.DiscordMessage{

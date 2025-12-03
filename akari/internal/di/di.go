@@ -17,6 +17,7 @@ import (
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 	discordAdapter "github.com/kizuna-org/akari/pkg/discord/adapter"
 	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
+	discordDomain "github.com/kizuna-org/akari/pkg/discord/domain/repository"
 	discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
 	"github.com/kizuna-org/akari/pkg/discord/handler"
 	discordInfra "github.com/kizuna-org/akari/pkg/discord/infrastructure"
@@ -95,7 +96,6 @@ func newHandleMessageInteractor(
 	discordUserRepo messageDomain.DiscordUserRepository,
 	defaultCharacterID int,
 	defaultPromptIndex int,
-	client *discordInfra.DiscordClient,
 	configRepo config.ConfigRepository,
 ) messageUsecase.HandleMessageInteractor {
 	cfg := configRepo.GetConfig()
@@ -114,7 +114,6 @@ func newHandleMessageInteractor(
 			DiscordUserRepo:       discordUserRepo,
 			DefaultCharacterID:    defaultCharacterID,
 			DefaultPromptIndex:    defaultPromptIndex,
-			BotUserID:             client.Session.State.User.ID,
 			BotNamePattern:        cfg.Discord.BotNameRegExp,
 		},
 	)
@@ -151,7 +150,34 @@ func NewModule() fx.Option {
 
 		// Lifecycle hooks
 		fx.Invoke(registerDatabaseHooks),
+		fx.Invoke(registerDiscordBotHooks),
 	)
+}
+
+func registerDiscordBotHooks(
+	lc fx.Lifecycle,
+	repo discordDomain.DiscordRepository,
+	interactor messageUsecase.HandleMessageInteractor,
+	client *discordInfra.DiscordClient,
+) {
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			if err := repo.Start(); err != nil {
+				return fmt.Errorf("failed to start discord bot: %w", err)
+			}
+
+			interactor.SetBotUserID(client.Session.State.User.ID)
+
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			if err := repo.Stop(); err != nil {
+				return fmt.Errorf("failed to stop discord bot: %w", err)
+			}
+
+			return nil
+		},
+	})
 }
 
 func newEntClient(configRepo config.ConfigRepository) (*ent.Client, error) {
