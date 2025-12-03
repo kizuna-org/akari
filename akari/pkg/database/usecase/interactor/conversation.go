@@ -1,5 +1,7 @@
 package interactor
 
+//go:generate go tool mockgen -package=mock -source=conversation.go -destination=mock/conversation.go
+
 import (
 	"context"
 

@@ -3,6 +3,7 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
@@ -64,10 +65,12 @@ func (r *discordUserRepository) GetOrCreateDiscordUser(
 		}
 	}
 
-	discordUser, err = r.interactor.CreateDiscordUser(ctx, databaseDomain.DiscordUser{
-		ID:       discordUserID,
-		Username: username,
-		Bot:      isBot,
+	_, err = r.interactor.CreateDiscordUser(ctx, databaseDomain.DiscordUser{
+		ID:        discordUserID,
+		Username:  username,
+		Bot:       isBot,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	})
 	if err != nil {
 		return 0, fmt.Errorf("failed to create discord user: %w", err)
