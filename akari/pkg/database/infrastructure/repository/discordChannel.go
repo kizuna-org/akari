@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/gen/ent/discordguild"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
@@ -45,6 +46,10 @@ func (r *repositoryImpl) GetDiscordChannelByID(
 		WithGuild().
 		Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, domain.ErrNotFound
+		}
+
 		return nil, fmt.Errorf("failed to get discord channel by id: %w", err)
 	}
 
@@ -61,6 +66,10 @@ func (r *repositoryImpl) GetDiscordChannelByMessageID(
 		WithGuild().
 		Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, domain.ErrNotFound
+		}
+
 		return nil, fmt.Errorf("failed to get discord channel: %w", err)
 	}
 

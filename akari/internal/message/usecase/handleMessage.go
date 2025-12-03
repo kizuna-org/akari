@@ -4,11 +4,13 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"time"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
+	dbdomain "github.com/kizuna-org/akari/pkg/database/domain"
 )
 
 type HandleMessageInteractor interface {
@@ -96,10 +98,14 @@ func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domai
 	}
 
 	conversationGroup, err := i.conversationGroupRepo.GetConversationGroupByCharacterID(ctx, i.defaultCharacterID)
-	if err != nil {
+	if err != nil && !errors.Is(err, dbdomain.ErrNotFound) {
+		return fmt.Errorf("usecase: failed to get conversation group: %w", err)
+	}
+
+	if conversationGroup == nil {
 		conversationGroup, err = i.conversationGroupRepo.CreateConversationGroup(ctx, i.defaultCharacterID)
 		if err != nil {
-			return fmt.Errorf("failed to create conversation group: %w", err)
+			return fmt.Errorf("usecase: failed to create conversation group: %w", err)
 		}
 	}
 

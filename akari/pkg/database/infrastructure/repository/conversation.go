@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/gen/ent/conversation"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
@@ -44,6 +45,10 @@ func (r *repositoryImpl) GetConversationByID(ctx context.Context, id int) (*doma
 		WithConversationGroup().
 		Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, domain.ErrNotFound
+		}
+
 		return nil, fmt.Errorf("failed to get conversation by id: %w", err)
 	}
 

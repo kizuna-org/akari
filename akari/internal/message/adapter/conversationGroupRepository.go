@@ -2,9 +2,11 @@ package adapter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
+	dbdomain "github.com/kizuna-org/akari/pkg/database/domain"
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 )
 
@@ -29,8 +31,12 @@ func (r *conversationGroupRepository) GetConversationGroupByCharacterID(
 		characterID,
 	)
 	if err != nil {
+		if errors.Is(err, dbdomain.ErrNotFound) {
+			return nil, dbdomain.ErrNotFound
+		}
+
 		return nil, fmt.Errorf(
-			"failed to get conversation group by character id: %w",
+			"adapter: failed to get conversation group by character id: %w",
 			err,
 		)
 	}

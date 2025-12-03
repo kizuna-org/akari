@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
@@ -19,6 +20,10 @@ func (r *repositoryImpl) GetCharacterByID(
 		WithSystemPrompts().
 		Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, domain.ErrNotFound
+		}
+
 		return nil, fmt.Errorf("failed to get character: %w", err)
 	}
 

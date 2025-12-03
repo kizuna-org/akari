@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/gen/ent/character"
 	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
 	"github.com/kizuna-org/akari/pkg/database/domain"
@@ -39,6 +40,10 @@ func (r *repositoryImpl) GetConversationGroupByID(
 		WithCharacter().
 		Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, domain.ErrNotFound
+		}
+
 		return nil, fmt.Errorf("failed to get conversation group by id: %w", err)
 	}
 
@@ -55,6 +60,10 @@ func (r *repositoryImpl) GetConversationGroupByCharacterID(
 		WithCharacter().
 		Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, domain.ErrNotFound
+		}
+
 		return nil, fmt.Errorf("failed to get conversation group by character id: %w", err)
 	}
 
