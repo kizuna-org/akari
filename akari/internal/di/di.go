@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
 
 	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
@@ -97,8 +98,13 @@ func newHandleMessageInteractor(
 	defaultCharacterID int,
 	defaultPromptIndex int,
 	configRepo config.ConfigRepository,
-) messageUsecase.HandleMessageInteractor {
+) (messageUsecase.HandleMessageInteractor, error) {
 	cfg := configRepo.GetConfig()
+
+	botNameRegex, err := regexp.Compile(cfg.Discord.BotNameRegExp)
+	if err != nil {
+		return nil, fmt.Errorf("invalid bot name regex pattern: %w", err)
+	}
 
 	return messageUsecase.NewHandleMessageInteractor(
 		messageUsecase.HandleMessageConfig{
@@ -114,9 +120,9 @@ func newHandleMessageInteractor(
 			DiscordUserRepo:       discordUserRepo,
 			DefaultCharacterID:    defaultCharacterID,
 			DefaultPromptIndex:    defaultPromptIndex,
-			BotNamePattern:        cfg.Discord.BotNameRegExp,
+			BotNamePatternRegex:   botNameRegex,
 		},
-	)
+	), nil
 }
 
 func newServiceAndInteractorProviders() fx.Option {

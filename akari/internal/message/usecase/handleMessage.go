@@ -5,6 +5,7 @@ package usecase
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
@@ -28,7 +29,7 @@ type HandleMessageConfig struct {
 	DiscordUserRepo       domain.DiscordUserRepository
 	DefaultCharacterID    int
 	DefaultPromptIndex    int
-	BotNamePattern        string
+	BotNamePatternRegex   *regexp.Regexp
 }
 
 type handleMessageInteractorImpl struct {
@@ -45,7 +46,7 @@ type handleMessageInteractorImpl struct {
 	defaultCharacterID    int
 	defaultPromptIndex    int
 	botUserID             string
-	botNamePattern        string
+	botNamePatternRegex   *regexp.Regexp
 }
 
 func NewHandleMessageInteractor(config HandleMessageConfig) HandleMessageInteractor {
@@ -63,7 +64,7 @@ func NewHandleMessageInteractor(config HandleMessageConfig) HandleMessageInterac
 		defaultCharacterID:    config.DefaultCharacterID,
 		defaultPromptIndex:    config.DefaultPromptIndex,
 		botUserID:             "",
-		botNamePattern:        config.BotNamePattern,
+		botNamePatternRegex:   config.BotNamePatternRegex,
 	}
 }
 
@@ -170,5 +171,5 @@ func (i *handleMessageInteractorImpl) getSystemPromptContent(
 
 func (i *handleMessageInteractorImpl) isMentioned(message *domain.Message) bool {
 	return i.validationRepo.IsBotMentioned(message, i.botUserID) ||
-		i.validationRepo.ContainsBotName(message, i.botNamePattern)
+		i.validationRepo.ContainsBotName(message, i.botNamePatternRegex)
 }

@@ -1,6 +1,7 @@
 package adapter_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/kizuna-org/akari/internal/message/adapter"
@@ -144,7 +145,8 @@ func TestValidationRepository_ContainsBotName(t *testing.T) {
 			t.Parallel()
 
 			repo := adapter.NewValidationRepository()
-			result := repo.ContainsBotName(testCase.msg, testCase.botNamePattern)
+			botNameRegex := regexp.MustCompile(testCase.botNamePattern)
+			result := repo.ContainsBotName(testCase.msg, botNameRegex)
 
 			assert.Equal(t, testCase.want, result)
 		})

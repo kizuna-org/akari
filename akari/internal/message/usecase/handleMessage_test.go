@@ -2,6 +2,7 @@ package usecase_test
 
 import (
 	"errors"
+	"regexp"
 	"testing"
 	"time"
 
@@ -25,6 +26,7 @@ func newTestInteractor(
 	conversationGroupRepo domain.ConversationGroupRepository,
 	discordUserRepo domain.DiscordUserRepository,
 ) usecase.HandleMessageInteractor {
+	botNameRegex := regexp.MustCompile("(?i)bot")
 	interactor := usecase.NewHandleMessageInteractor(
 		usecase.HandleMessageConfig{
 			MessageRepo:           msgRepo,
@@ -39,7 +41,7 @@ func newTestInteractor(
 			DiscordUserRepo:       discordUserRepo,
 			DefaultCharacterID:    1,
 			DefaultPromptIndex:    0,
-			BotNamePattern:        "(?i)bot",
+			BotNamePatternRegex:   botNameRegex,
 		},
 	)
 	interactor.SetBotUserID("bot-001")
@@ -235,7 +237,7 @@ func TestHandleMessageInteractor_Handle_BotNotMentioned(t *testing.T) {
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
 		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(false),
-		validationRepo.EXPECT().ContainsBotName(msg, "(?i)bot").Return(false),
+		validationRepo.EXPECT().ContainsBotName(msg, gomock.Any()).Return(false),
 	)
 
 	interactor := newTestInteractor(
@@ -298,7 +300,7 @@ func TestHandleMessageInteractor_Handle_BotNameInContent(t *testing.T) {
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
 		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(false),
-		validationRepo.EXPECT().ContainsBotName(msg, "(?i)bot").Return(true),
+		validationRepo.EXPECT().ContainsBotName(msg, gomock.Any()).Return(true),
 		discordUserRepo.EXPECT().GetOrCreateDiscordUser(
 			gomock.Any(),
 			msg.AuthorID,

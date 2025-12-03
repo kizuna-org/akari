@@ -2,7 +2,10 @@ package domain
 
 //go:generate go tool mockgen -package=mock -source=repository.go -destination=mock/repository.go
 
-import "context"
+import (
+	"context"
+	"regexp"
+)
 
 type Character struct {
 	ID              int
@@ -39,7 +42,7 @@ type DiscordRepository interface {
 type ValidationRepository interface {
 	ShouldProcessMessage(message *Message) bool
 	IsBotMentioned(message *Message, botUserID string) bool
-	ContainsBotName(message *Message, botNamePattern string) bool
+	ContainsBotName(message *Message, botNamePatternRegex *regexp.Regexp) bool
 }
 
 type CharacterRepository interface {

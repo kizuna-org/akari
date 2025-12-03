@@ -12,6 +12,7 @@ package mock
 import (
 	context "context"
 	reflect "reflect"
+	regexp "regexp"
 
 	domain "github.com/kizuna-org/akari/internal/message/domain"
 	gomock "go.uber.org/mock/gomock"
@@ -195,17 +196,17 @@ func (m *MockValidationRepository) EXPECT() *MockValidationRepositoryMockRecorde
 }
 
 // ContainsBotName mocks base method.
-func (m *MockValidationRepository) ContainsBotName(message *domain.Message, botNamePattern string) bool {
+func (m *MockValidationRepository) ContainsBotName(message *domain.Message, botNamePatternRegex *regexp.Regexp) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ContainsBotName", message, botNamePattern)
+	ret := m.ctrl.Call(m, "ContainsBotName", message, botNamePatternRegex)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // ContainsBotName indicates an expected call of ContainsBotName.
-func (mr *MockValidationRepositoryMockRecorder) ContainsBotName(message, botNamePattern any) *gomock.Call {
+func (mr *MockValidationRepositoryMockRecorder) ContainsBotName(message, botNamePatternRegex any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContainsBotName", reflect.TypeOf((*MockValidationRepository)(nil).ContainsBotName), message, botNamePattern)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContainsBotName", reflect.TypeOf((*MockValidationRepository)(nil).ContainsBotName), message, botNamePatternRegex)
 }
 
 // IsBotMentioned mocks base method.

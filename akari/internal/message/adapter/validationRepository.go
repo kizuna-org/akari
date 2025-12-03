@@ -29,6 +29,6 @@ func (r *validationRepository) IsBotMentioned(message *domain.Message, botUserID
 	return slices.Contains(message.Mentions, botUserID)
 }
 
-func (r *validationRepository) ContainsBotName(message *domain.Message, botNamePattern string) bool {
-	return regexp.MustCompile(botNamePattern).MatchString(message.Content)
+func (r *validationRepository) ContainsBotName(message *domain.Message, botNamePatternRegex *regexp.Regexp) bool {
+	return botNamePatternRegex.MatchString(message.Content)
 }
