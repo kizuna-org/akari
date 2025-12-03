@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"regexp"
 	"slices"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
@@ -26,4 +27,8 @@ func (r *validationRepository) ShouldProcessMessage(message *domain.Message) boo
 
 func (r *validationRepository) IsBotMentioned(message *domain.Message, botUserID string) bool {
 	return slices.Contains(message.Mentions, botUserID)
+}
+
+func (r *validationRepository) ContainsBotName(message *domain.Message, botNamePattern string) bool {
+	return regexp.MustCompile(botNamePattern).MatchString(message.Content)
 }

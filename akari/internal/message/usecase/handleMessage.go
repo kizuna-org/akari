@@ -25,6 +25,7 @@ type handleMessageInteractorImpl struct {
 	defaultCharacterID int
 	defaultPromptIndex int
 	botUserID          string
+	botNamePattern     string
 }
 
 func NewHandleMessageInteractor(
@@ -38,6 +39,7 @@ func NewHandleMessageInteractor(
 	defaultCharacterID int,
 	defaultPromptIndex int,
 	botUserID string,
+	botNamePattern string,
 ) HandleMessageInteractor {
 	return &handleMessageInteractorImpl{
 		messageRepo:        messageRepo,
@@ -50,6 +52,7 @@ func NewHandleMessageInteractor(
 		defaultCharacterID: defaultCharacterID,
 		defaultPromptIndex: defaultPromptIndex,
 		botUserID:          botUserID,
+		botNamePattern:     botNamePattern,
 	}
 }
 
@@ -62,7 +65,7 @@ func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domai
 		return nil
 	}
 
-	if !i.validationRepo.IsBotMentioned(message, i.botUserID) {
+	if !i.isMentioned(message) {
 		return nil
 	}
 
@@ -104,4 +107,9 @@ func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domai
 	}
 
 	return nil
+}
+
+func (i *handleMessageInteractorImpl) isMentioned(message *domain.Message) bool {
+	return i.validationRepo.IsBotMentioned(message, i.botUserID) ||
+		i.validationRepo.ContainsBotName(message, i.botNamePattern)
 }

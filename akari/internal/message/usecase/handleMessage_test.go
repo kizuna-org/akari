@@ -23,7 +23,7 @@ func newTestInteractor(
 	systemPromptRepo domain.SystemPromptRepository,
 ) usecase.HandleMessageInteractor {
 	return usecase.NewHandleMessageInteractor(
-		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo, 1, 0, "bot-001",
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo, 1, 0, "bot-001", "(?i)bot",
 	)
 }
 
@@ -157,6 +157,62 @@ func TestHandleMessageInteractor_Handle_BotNotMentioned(t *testing.T) {
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
 		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
 		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(false),
+		validationRepo.EXPECT().ContainsBotName(msg, "(?i)bot").Return(false),
+	)
+
+	interactor := newTestInteractor(
+		msgRepo, respRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
+	)
+	err := interactor.Handle(t.Context(), msg)
+
+	assert.NoError(t, err)
+}
+
+func TestHandleMessageInteractor_Handle_BotNameInContent(t *testing.T) {
+	t.Parallel()
+
+	ctrl := gomock.NewController(t)
+	t.Cleanup(ctrl.Finish)
+
+	msgRepo := mock.NewMockMessageRepository(ctrl)
+	respRepo := mock.NewMockResponseRepository(ctrl)
+	llmRepo := mock.NewMockLLMRepository(ctrl)
+	discordRepo := mock.NewMockDiscordRepository(ctrl)
+	validationRepo := mock.NewMockValidationRepository(ctrl)
+	characterRepo := mock.NewMockCharacterRepository(ctrl)
+	systemPromptRepo := mock.NewMockSystemPromptRepository(ctrl)
+
+	msg := &domain.Message{
+		ID:        "msg-001",
+		ChannelID: "ch-001",
+		GuildID:   "guild-001",
+		AuthorID:  "user-001",
+		Content:   "Hey bot, what time is it?",
+		Timestamp: time.Now(),
+		Mentions:  []string{},
+	}
+
+	characterRepo.EXPECT().GetCharacterByID(gomock.Any(), 1).Return(&domain.Character{
+		ID:              1,
+		Name:            "TestBot",
+		SystemPromptIDs: []int{1},
+	}, nil)
+
+	systemPromptRepo.EXPECT().GetSystemPromptByID(gomock.Any(), 1).Return(&domain.SystemPrompt{
+		ID:     1,
+		Prompt: "You are a helpful Discord bot assistant.",
+	}, nil)
+
+	gomock.InOrder(
+		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
+		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
+		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(false),
+		validationRepo.EXPECT().ContainsBotName(msg, "(?i)bot").Return(true),
+		llmRepo.EXPECT().GenerateResponse(
+			gomock.Any(), "You are a helpful Discord bot assistant.", "Hey bot, what time is it?",
+		).Return("It's 3 PM", nil),
+		discordRepo.EXPECT().SendMessage(gomock.Any(), "ch-001", "It's 3 PM").Return(nil),
+		respRepo.EXPECT().SaveResponse(gomock.Any(), gomock.Any()).Return(nil),
 	)
 
 	interactor := newTestInteractor(

@@ -81,10 +81,13 @@ func newHandleMessageInteractor(
 	defaultCharacterID int,
 	defaultPromptIndex int,
 	client *discordInfra.DiscordClient,
+	configRepo config.ConfigRepository,
 ) messageUsecase.HandleMessageInteractor {
+	cfg := configRepo.GetConfig()
+
 	return messageUsecase.NewHandleMessageInteractor(
 		messageRepo, responseRepo, llmRepo, discordRepo, validationRepo, characterRepo, systemPromptRepo,
-		defaultCharacterID, defaultPromptIndex, client.Session.State.User.ID,
+		defaultCharacterID, defaultPromptIndex, client.Session.State.User.ID, cfg.Discord.BotNameRegExp,
 	)
 }
 
