@@ -39,11 +39,11 @@ func (i *discordInteractorImpl) SendMessage(
 ) (*entity.Message, error) {
 	msg, err := i.service.SendMessage(ctx, channelID, content)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send message in interactor: %w", err)
+		return nil, fmt.Errorf("interactor: failed to send message: %w", err)
 	}
 
 	if err := i.SaveMessage(ctx, msg); err != nil {
-		return nil, fmt.Errorf("failed to save message in interactor: %w", err)
+		return nil, fmt.Errorf("interactor: failed to save message: %w", err)
 	}
 
 	return msg, nil
@@ -56,7 +56,7 @@ func (i *discordInteractorImpl) GetMessage(
 ) (*entity.Message, error) {
 	msg, err := i.service.GetMessage(ctx, channelID, messageID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get message in interactor: %w", err)
+		return nil, fmt.Errorf("interactor: failed to get message: %w", err)
 	}
 
 	return msg, nil
@@ -71,7 +71,7 @@ func (i *discordInteractorImpl) SaveMessage(ctx context.Context, message *entity
 		Timestamp: message.Timestamp,
 		CreatedAt: message.Timestamp,
 	}); err != nil {
-		return fmt.Errorf("failed to save message to database: %w", err)
+		return fmt.Errorf("interactor: failed to save message to database: %w", err)
 	}
 
 	return nil
