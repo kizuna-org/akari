@@ -195,46 +195,18 @@ func (m *MockValidationRepository) EXPECT() *MockValidationRepositoryMockRecorde
 	return m.recorder
 }
 
-// ContainsBotName mocks base method.
-func (m *MockValidationRepository) ContainsBotName(message *domain.Message, botNamePatternRegex *regexp.Regexp) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ContainsBotName", message, botNamePatternRegex)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// ContainsBotName indicates an expected call of ContainsBotName.
-func (mr *MockValidationRepositoryMockRecorder) ContainsBotName(message, botNamePatternRegex any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ContainsBotName", reflect.TypeOf((*MockValidationRepository)(nil).ContainsBotName), message, botNamePatternRegex)
-}
-
-// IsBotMentioned mocks base method.
-func (m *MockValidationRepository) IsBotMentioned(message *domain.Message, botUserID string) bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "IsBotMentioned", message, botUserID)
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// IsBotMentioned indicates an expected call of IsBotMentioned.
-func (mr *MockValidationRepositoryMockRecorder) IsBotMentioned(message, botUserID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsBotMentioned", reflect.TypeOf((*MockValidationRepository)(nil).IsBotMentioned), message, botUserID)
-}
-
 // ShouldProcessMessage mocks base method.
-func (m *MockValidationRepository) ShouldProcessMessage(message *domain.Message) bool {
+func (m *MockValidationRepository) ShouldProcessMessage(message *domain.Message, botUserID string, botNameRegExp *regexp.Regexp) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ShouldProcessMessage", message)
+	ret := m.ctrl.Call(m, "ShouldProcessMessage", message, botUserID, botNameRegExp)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // ShouldProcessMessage indicates an expected call of ShouldProcessMessage.
-func (mr *MockValidationRepositoryMockRecorder) ShouldProcessMessage(message any) *gomock.Call {
+func (mr *MockValidationRepositoryMockRecorder) ShouldProcessMessage(message, botUserID, botNameRegExp any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShouldProcessMessage", reflect.TypeOf((*MockValidationRepository)(nil).ShouldProcessMessage), message)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShouldProcessMessage", reflect.TypeOf((*MockValidationRepository)(nil).ShouldProcessMessage), message, botUserID, botNameRegExp)
 }
 
 // MockCharacterRepository is a mock of CharacterRepository interface.

@@ -13,83 +13,60 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
-		msg  *domain.Message
-		want bool
-	}{
-		{
-			name: "valid message",
-			msg: &domain.Message{
-				Content: "Hello",
-			},
-			want: true,
-		},
-		{
-			name: "empty content",
-			msg: &domain.Message{
-				Content: "",
-			},
-			want: false,
-		},
-		{
-			name: "nil message",
-			msg:  nil,
-			want: false,
-		},
-		{
-			name: "bot message",
-			msg: &domain.Message{
-				Content: "Hello",
-				IsBot:   true,
-			},
-			want: false,
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			repo := adapter.NewValidationRepository()
-			result := repo.ShouldProcessMessage(testCase.msg)
-
-			assert.Equal(t, testCase.want, result)
-		})
-	}
-}
-
-func TestValidationRepository_IsBotMentioned(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
 		name      string
 		msg       *domain.Message
 		botUserID string
+		botName   string
 		want      bool
 	}{
 		{
-			name: "bot mentioned",
-			msg: &domain.Message{
-				Mentions: []string{"bot-123", "user-456"},
-			},
+			name:      "valid message with bot mentioned",
+			msg:       &domain.Message{Content: "Hello", Mentions: []string{"bot-123"}},
 			botUserID: "bot-123",
+			botName:   "akari",
 			want:      true,
 		},
 		{
-			name: "bot not mentioned",
-			msg: &domain.Message{
-				Mentions: []string{"user-456", "user-789"},
-			},
+			name:      "valid message with bot name",
+			msg:       &domain.Message{Content: "Hey akari, how are you?"},
 			botUserID: "bot-123",
+			botName:   "akari",
+			want:      true,
+		},
+		{
+			name:      "empty content",
+			msg:       &domain.Message{Content: ""},
+			botUserID: "bot-123",
+			botName:   "akari",
 			want:      false,
 		},
 		{
-			name: "empty mentions",
-			msg: &domain.Message{
-				Mentions: []string{},
-			},
+			name:      "nil message",
+			msg:       nil,
 			botUserID: "bot-123",
+			botName:   "akari",
 			want:      false,
+		},
+		{
+			name:      "bot message",
+			msg:       &domain.Message{Content: "Hello", IsBot: true},
+			botUserID: "bot-123",
+			botName:   "akari",
+			want:      false,
+		},
+		{
+			name:      "no mention and no bot name",
+			msg:       &domain.Message{Content: "Hey there"},
+			botUserID: "bot-123",
+			botName:   "akari",
+			want:      false,
+		},
+		{
+			name:      "case insensitive bot name match",
+			msg:       &domain.Message{Content: "Hey AKARI, how are you?"},
+			botUserID: "bot-123",
+			botName:   "(?i)akari",
+			want:      true,
 		},
 	}
 
@@ -98,55 +75,8 @@ func TestValidationRepository_IsBotMentioned(t *testing.T) {
 			t.Parallel()
 
 			repo := adapter.NewValidationRepository()
-			result := repo.IsBotMentioned(testCase.msg, testCase.botUserID)
-
-			assert.Equal(t, testCase.want, result)
-		})
-	}
-}
-
-func TestValidationRepository_ContainsBotName(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name           string
-		msg            *domain.Message
-		botNamePattern string
-		want           bool
-	}{
-		{
-			name: "contains bot name",
-			msg: &domain.Message{
-				Content: "Hey akari, how are you?",
-			},
-			botNamePattern: "akari",
-			want:           true,
-		},
-		{
-			name: "does not contain bot name",
-			msg: &domain.Message{
-				Content: "Hey there, how are you?",
-			},
-			botNamePattern: "akari",
-			want:           false,
-		},
-		{
-			name: "case insensitive match",
-			msg: &domain.Message{
-				Content: "Hey AKARI, how are you?",
-			},
-			botNamePattern: "(?i)akari",
-			want:           true,
-		},
-	}
-
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			repo := adapter.NewValidationRepository()
-			botNameRegex := regexp.MustCompile(testCase.botNamePattern)
-			result := repo.ContainsBotName(testCase.msg, botNameRegex)
+			botNameRegex := regexp.MustCompile(testCase.botName)
+			result := repo.ShouldProcessMessage(testCase.msg, testCase.botUserID, botNameRegex)
 
 			assert.Equal(t, testCase.want, result)
 		})

@@ -40,9 +40,7 @@ type DiscordRepository interface {
 }
 
 type ValidationRepository interface {
-	ShouldProcessMessage(message *Message) bool
-	IsBotMentioned(message *Message, botUserID string) bool
-	ContainsBotName(message *Message, botNamePatternRegex *regexp.Regexp) bool
+	ShouldProcessMessage(message *Message, botUserID string, botNameRegExp *regexp.Regexp) bool
 }
 
 type CharacterRepository interface {

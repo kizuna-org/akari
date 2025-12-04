@@ -120,10 +120,10 @@ func TestHandleMessageInteractor_Handle_Success(t *testing.T) {
 		Prompt: "You are a helpful Discord bot assistant.",
 	}, nil)
 
+	botNameRegex := regexp.MustCompile("(?i)bot")
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
-		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
-		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
+		validationRepo.EXPECT().ShouldProcessMessage(msg, "bot-001", botNameRegex).Return(true),
 		discordUserRepo.EXPECT().GetOrCreateDiscordUser(
 			gomock.Any(),
 			msg.AuthorID,
@@ -188,9 +188,10 @@ func TestHandleMessageInteractor_Handle_ValidationFails(t *testing.T) {
 		Content: "",
 	}
 
+	botNameRegex := regexp.MustCompile("(?i)bot")
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
-		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(false),
+		validationRepo.EXPECT().ShouldProcessMessage(msg, "bot-001", botNameRegex).Return(false),
 	)
 
 	interactor := newTestInteractor(
@@ -233,11 +234,10 @@ func TestHandleMessageInteractor_Handle_BotNotMentioned(t *testing.T) {
 		Mentions: []string{"user-002"},
 	}
 
+	botNameRegex := regexp.MustCompile("(?i)bot")
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
-		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
-		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(false),
-		validationRepo.EXPECT().ContainsBotName(msg, gomock.Any()).Return(false),
+		validationRepo.EXPECT().ShouldProcessMessage(msg, "bot-001", botNameRegex).Return(false),
 	)
 
 	interactor := newTestInteractor(
@@ -296,11 +296,10 @@ func TestHandleMessageInteractor_Handle_BotNameInContent(t *testing.T) {
 		Prompt: "You are a helpful Discord bot assistant.",
 	}, nil)
 
+	botNameRegex := regexp.MustCompile("(?i)bot")
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
-		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
-		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(false),
-		validationRepo.EXPECT().ContainsBotName(msg, gomock.Any()).Return(true),
+		validationRepo.EXPECT().ShouldProcessMessage(msg, "bot-001", botNameRegex).Return(true),
 		discordUserRepo.EXPECT().GetOrCreateDiscordUser(
 			gomock.Any(),
 			msg.AuthorID,
@@ -409,10 +408,10 @@ func TestHandleMessageInteractor_Handle_GetCharacterError(t *testing.T) {
 		IsBot:    false,
 	}
 
+	botNameRegex := regexp.MustCompile("(?i)bot")
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
-		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
-		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
+		validationRepo.EXPECT().ShouldProcessMessage(msg, "bot-001", botNameRegex).Return(true),
 		discordUserRepo.EXPECT().GetOrCreateDiscordUser(
 			gomock.Any(),
 			msg.AuthorID,
@@ -477,10 +476,10 @@ func TestHandleMessageInteractor_Handle_GetSystemPromptError(t *testing.T) {
 		IsBot:    false,
 	}
 
+	botNameRegex := regexp.MustCompile("(?i)bot")
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
-		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
-		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
+		validationRepo.EXPECT().ShouldProcessMessage(msg, "bot-001", botNameRegex).Return(true),
 		discordUserRepo.EXPECT().GetOrCreateDiscordUser(
 			gomock.Any(),
 			msg.AuthorID,
@@ -550,10 +549,10 @@ func TestHandleMessageInteractor_Handle_LLMError(t *testing.T) {
 		IsBot:    false,
 	}
 
+	botNameRegex := regexp.MustCompile("(?i)bot")
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
-		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
-		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
+		validationRepo.EXPECT().ShouldProcessMessage(msg, "bot-001", botNameRegex).Return(true),
 		discordUserRepo.EXPECT().GetOrCreateDiscordUser(
 			gomock.Any(),
 			msg.AuthorID,
@@ -629,10 +628,10 @@ func TestHandleMessageInteractor_Handle_SendMessageError(t *testing.T) {
 		IsBot:     false,
 	}
 
+	botNameRegex := regexp.MustCompile("(?i)bot")
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
-		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
-		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
+		validationRepo.EXPECT().ShouldProcessMessage(msg, "bot-001", botNameRegex).Return(true),
 		discordUserRepo.EXPECT().GetOrCreateDiscordUser(
 			gomock.Any(),
 			msg.AuthorID,
@@ -711,10 +710,10 @@ func TestHandleMessageInteractor_Handle_SaveResponseError(t *testing.T) {
 		IsBot:     false,
 	}
 
+	botNameRegex := regexp.MustCompile("(?i)bot")
 	gomock.InOrder(
 		msgRepo.EXPECT().SaveMessage(gomock.Any(), msg).Return(nil),
-		validationRepo.EXPECT().ShouldProcessMessage(msg).Return(true),
-		validationRepo.EXPECT().IsBotMentioned(msg, "bot-001").Return(true),
+		validationRepo.EXPECT().ShouldProcessMessage(msg, "bot-001", botNameRegex).Return(true),
 		discordUserRepo.EXPECT().GetOrCreateDiscordUser(
 			gomock.Any(),
 			msg.AuthorID,

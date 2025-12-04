@@ -79,11 +79,7 @@ func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *domai
 		return fmt.Errorf("failed to save message: %w", err)
 	}
 
-	if !i.validationRepo.ShouldProcessMessage(message) {
-		return nil
-	}
-
-	if !i.isMentioned(message) {
+	if !i.validationRepo.ShouldProcessMessage(message, i.botUserID, i.botNamePatternRegex) {
 		return nil
 	}
 
@@ -173,9 +169,4 @@ func (i *handleMessageInteractorImpl) getSystemPromptContent(
 	}
 
 	return systemPrompt.Prompt, nil
-}
-
-func (i *handleMessageInteractorImpl) isMentioned(message *domain.Message) bool {
-	return i.validationRepo.IsBotMentioned(message, i.botUserID) ||
-		i.validationRepo.ContainsBotName(message, i.botNamePatternRegex)
 }

@@ -13,7 +13,11 @@ func NewValidationRepository() domain.ValidationRepository {
 	return &validationRepository{}
 }
 
-func (r *validationRepository) ShouldProcessMessage(message *domain.Message) bool {
+func (r *validationRepository) ShouldProcessMessage(
+	message *domain.Message,
+	botUserID string,
+	botNamePatternRegex *regexp.Regexp,
+) bool {
 	if message == nil || message.Content == "" {
 		return false
 	}
@@ -22,13 +26,5 @@ func (r *validationRepository) ShouldProcessMessage(message *domain.Message) boo
 		return false
 	}
 
-	return true
-}
-
-func (r *validationRepository) IsBotMentioned(message *domain.Message, botUserID string) bool {
-	return slices.Contains(message.Mentions, botUserID)
-}
-
-func (r *validationRepository) ContainsBotName(message *domain.Message, botNamePatternRegex *regexp.Regexp) bool {
-	return botNamePatternRegex.MatchString(message.Content)
+	return slices.Contains(message.Mentions, botUserID) || botNamePatternRegex.MatchString(message.Content)
 }
