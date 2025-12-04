@@ -61,6 +61,13 @@ func TestResponseRepository_SaveResponse(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name:      "nil response",
+			resp:      nil,
+			setupMock: func(mockDB *databaseMock.MockDiscordMessageRepository) {},
+			wantErr:   true,
+			errMsg:    "response is nil",
+		},
 	}
 
 	for _, testCase := range tests {

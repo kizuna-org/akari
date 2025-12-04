@@ -41,6 +41,15 @@ func TestConversationGroupRepository_GetConversationGroupByCharacterID(t *testin
 			wantErr: true,
 			errMsg:  "not found",
 		},
+		{
+			name:   "database error",
+			charID: 1,
+			setupMock: func(m *interactorMock.MockConversationGroupInteractor) {
+				m.EXPECT().GetConversationGroupByCharacterID(gomock.Any(), 1).Return(nil, errors.New("db error"))
+			},
+			wantErr: true,
+			errMsg:  "failed to get conversation group by character id",
+		},
 	}
 
 	for _, testCase := range tests {

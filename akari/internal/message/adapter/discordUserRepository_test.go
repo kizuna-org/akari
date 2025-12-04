@@ -88,6 +88,25 @@ func TestDiscordUserRepository_GetDiscordUserByID(t *testing.T) {
 			want:    3,
 			wantErr: false,
 		},
+		{
+			name:          "error - create akari user failed (GetDiscordUserByID)",
+			discordUserID: "discord-009",
+			setupMock: func(m *interactorMock.MockDiscordUserInteractor,
+				akariUserInteractor *interactorMock.MockAkariUserInteractor) {
+				m.EXPECT().GetDiscordUserByID(gomock.Any(), "discord-009").Return(&domain.DiscordUser{
+					ID:       "discord-009",
+					Username: "user9",
+					Bot:      false,
+				}, nil)
+				akariUserInteractor.EXPECT().GetAkariUserByDiscordUserID(gomock.Any(),
+					"discord-009").Return(nil, &ent.NotFoundError{})
+				akariUserInteractor.EXPECT().CreateAkariUser(gomock.Any()).Return(nil,
+					errors.New("db error"))
+			},
+			want:    0,
+			wantErr: true,
+			errMsg:  "failed to create akari user",
+		},
 	}
 
 	for _, testCase := range tests {
@@ -250,6 +269,27 @@ func TestDiscordUserRepository_GetOrCreateDiscordUser(t *testing.T) {
 						Username: "user4",
 						Bot:      false,
 					}, nil)
+				akariUserInteractor.EXPECT().CreateAkariUser(gomock.Any()).Return(nil,
+					errors.New("db error"))
+			},
+			want:    0,
+			wantErr: true,
+			errMsg:  "failed to create akari user",
+		},
+		{
+			name:          "error - create akari user failed (GetOrCreateDiscordUser after GetDiscordUserByID)",
+			discordUserID: "discord-008",
+			username:      "user8",
+			isBot:         false,
+			setupMock: func(m *interactorMock.MockDiscordUserInteractor,
+				akariUserInteractor *interactorMock.MockAkariUserInteractor) {
+				m.EXPECT().GetDiscordUserByID(gomock.Any(), "discord-008").Return(&domain.DiscordUser{
+					ID:       "discord-008",
+					Username: "user8",
+					Bot:      false,
+				}, nil)
+				akariUserInteractor.EXPECT().GetAkariUserByDiscordUserID(gomock.Any(),
+					"discord-008").Return(nil, &ent.NotFoundError{})
 				akariUserInteractor.EXPECT().CreateAkariUser(gomock.Any()).Return(nil,
 					errors.New("db error"))
 			},
