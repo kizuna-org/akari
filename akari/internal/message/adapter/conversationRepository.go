@@ -30,7 +30,7 @@ func (r *conversationRepository) CreateConversation(
 		userID,
 		conversationGroupID,
 	); err != nil {
-		return fmt.Errorf("failed to create conversation: %w", err)
+		return fmt.Errorf("adapter: failed to create conversation: %w", err)
 	}
 
 	return nil

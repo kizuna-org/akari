@@ -52,7 +52,7 @@ func (r *conversationGroupRepository) CreateConversationGroup(
 ) (*domain.ConversationGroup, error) {
 	conversationGroup, err := r.repository.CreateConversationGroup(ctx, characterID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create conversation group: %w", err)
+		return nil, fmt.Errorf("adapter: failed to create conversation group: %w", err)
 	}
 
 	return &domain.ConversationGroup{

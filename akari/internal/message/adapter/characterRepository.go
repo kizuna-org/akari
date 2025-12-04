@@ -21,7 +21,7 @@ func NewCharacterRepository(repository databaseDomain.CharacterRepository) domai
 func (r *characterRepository) GetCharacterByID(ctx context.Context, characterID int) (*domain.Character, error) {
 	character, err := r.repository.GetCharacterByID(ctx, characterID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get character by id: %w", err)
+		return nil, fmt.Errorf("adapter: failed to get character by id: %w", err)
 	}
 
 	return &domain.Character{
