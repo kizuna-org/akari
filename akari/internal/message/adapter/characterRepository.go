@@ -5,21 +5,21 @@ import (
 	"fmt"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
-	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 )
 
 type characterRepository struct {
-	interactor databaseInteractor.CharacterInteractor
+	repository databaseDomain.CharacterRepository
 }
 
-func NewCharacterRepository(interactor databaseInteractor.CharacterInteractor) domain.CharacterRepository {
+func NewCharacterRepository(repository databaseDomain.CharacterRepository) domain.CharacterRepository {
 	return &characterRepository{
-		interactor: interactor,
+		repository: repository,
 	}
 }
 
 func (r *characterRepository) GetCharacterByID(ctx context.Context, characterID int) (*domain.Character, error) {
-	character, err := r.interactor.GetCharacterByID(ctx, characterID)
+	character, err := r.repository.GetCharacterByID(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get character by id: %w", err)
 	}

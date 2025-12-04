@@ -28,9 +28,14 @@ import (
 	"go.uber.org/fx"
 )
 
+type (
+	defaultCharacterID int
+	defaultPromptIndex int
+)
+
 const (
-	defaultCharacterID = 1
-	defaultPromptIndex = 0
+	characterIDValue int = 1
+	promptIndexValue int = 0
 )
 
 func newInfrastructureProviders() fx.Option {
@@ -43,6 +48,12 @@ func newInfrastructureProviders() fx.Option {
 		newSystemPromptRepository,
 		newCharacterRepository,
 		newDiscordMessageRepository,
+		newConversationRepository,
+		newConversationGroupRepository,
+		newDiscordUserRepository,
+		newAkariUserRepository,
+		newDiscordChannelRepository,
+		newDiscordGuildRepository,
 		newDiscordClient,
 	)
 }
@@ -78,8 +89,8 @@ func newMessagePackageProviders() fx.Option {
 			newHandleMessageInteractor,
 		),
 		fx.Supply(
-			defaultCharacterID,
-			defaultPromptIndex,
+			defaultCharacterID(characterIDValue),
+			defaultPromptIndex(promptIndexValue),
 		),
 	)
 }
@@ -95,8 +106,8 @@ func newHandleMessageInteractor(
 	conversationRepo messageDomain.ConversationRepository,
 	conversationGroupRepo messageDomain.ConversationGroupRepository,
 	discordUserRepo messageDomain.DiscordUserRepository,
-	defaultCharacterID int,
-	defaultPromptIndex int,
+	characterID defaultCharacterID,
+	promptIdx defaultPromptIndex,
 	configRepo config.ConfigRepository,
 ) (messageUsecase.HandleMessageInteractor, error) {
 	cfg := configRepo.GetConfig()
@@ -118,8 +129,8 @@ func newHandleMessageInteractor(
 			ConversationRepo:      conversationRepo,
 			ConversationGroupRepo: conversationGroupRepo,
 			DiscordUserRepo:       discordUserRepo,
-			DefaultCharacterID:    defaultCharacterID,
-			DefaultPromptIndex:    defaultPromptIndex,
+			DefaultCharacterID:    int(characterID),
+			DefaultPromptIndex:    int(promptIdx),
 			BotNamePatternRegex:   botNameRegex,
 		},
 	), nil
@@ -250,6 +261,30 @@ func newCharacterRepository(repo databaseRepo.Repository) databaseDomain.Charact
 }
 
 func newDiscordMessageRepository(repo databaseRepo.Repository) databaseDomain.DiscordMessageRepository {
+	return repo
+}
+
+func newConversationRepository(repo databaseRepo.Repository) databaseDomain.ConversationRepository {
+	return repo
+}
+
+func newConversationGroupRepository(repo databaseRepo.Repository) databaseDomain.ConversationGroupRepository {
+	return repo
+}
+
+func newDiscordUserRepository(repo databaseRepo.Repository) databaseDomain.DiscordUserRepository {
+	return repo
+}
+
+func newAkariUserRepository(repo databaseRepo.Repository) databaseDomain.AkariUserRepository {
+	return repo
+}
+
+func newDiscordChannelRepository(repo databaseRepo.Repository) databaseDomain.DiscordChannelRepository {
+	return repo
+}
+
+func newDiscordGuildRepository(repo databaseRepo.Repository) databaseDomain.DiscordGuildRepository {
 	return repo
 }
 

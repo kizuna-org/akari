@@ -5,21 +5,21 @@ import (
 	"fmt"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
-	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 )
 
 type systemPromptRepository struct {
-	interactor databaseInteractor.SystemPromptInteractor
+	repository databaseDomain.SystemPromptRepository
 }
 
-func NewSystemPromptRepository(interactor databaseInteractor.SystemPromptInteractor) domain.SystemPromptRepository {
+func NewSystemPromptRepository(repository databaseDomain.SystemPromptRepository) domain.SystemPromptRepository {
 	return &systemPromptRepository{
-		interactor: interactor,
+		repository: repository,
 	}
 }
 
 func (r *systemPromptRepository) GetSystemPromptByID(ctx context.Context, id int) (*domain.SystemPrompt, error) {
-	systemPrompt, err := r.interactor.GetSystemPromptByID(ctx, id)
+	systemPrompt, err := r.repository.GetSystemPromptByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get system prompt by id: %w", err)
 	}

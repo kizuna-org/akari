@@ -7,18 +7,17 @@ import (
 
 	"github.com/kizuna-org/akari/internal/message/domain"
 	dbdomain "github.com/kizuna-org/akari/pkg/database/domain"
-	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 )
 
 type conversationGroupRepository struct {
-	interactor databaseInteractor.ConversationGroupInteractor
+	repository dbdomain.ConversationGroupRepository
 }
 
 func NewConversationGroupRepository(
-	interactor databaseInteractor.ConversationGroupInteractor,
+	repository dbdomain.ConversationGroupRepository,
 ) domain.ConversationGroupRepository {
 	return &conversationGroupRepository{
-		interactor: interactor,
+		repository: repository,
 	}
 }
 
@@ -26,7 +25,7 @@ func (r *conversationGroupRepository) GetConversationGroupByCharacterID(
 	ctx context.Context,
 	characterID int,
 ) (*domain.ConversationGroup, error) {
-	conversationGroup, err := r.interactor.GetConversationGroupByCharacterID(
+	conversationGroup, err := r.repository.GetConversationGroupByCharacterID(
 		ctx,
 		characterID,
 	)
@@ -51,7 +50,7 @@ func (r *conversationGroupRepository) CreateConversationGroup(
 	ctx context.Context,
 	characterID int,
 ) (*domain.ConversationGroup, error) {
-	conversationGroup, err := r.interactor.CreateConversationGroup(ctx, characterID)
+	conversationGroup, err := r.repository.CreateConversationGroup(ctx, characterID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create conversation group: %w", err)
 	}

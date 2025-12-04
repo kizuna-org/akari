@@ -6,18 +6,18 @@ import (
 
 	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/internal/message/domain"
-	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 )
 
 type akariUserRepository struct {
-	interactor databaseInteractor.AkariUserInteractor
+	repository databaseDomain.AkariUserRepository
 }
 
 func NewAkariUserRepository(
-	interactor databaseInteractor.AkariUserInteractor,
+	repository databaseDomain.AkariUserRepository,
 ) domain.AkariUserRepository {
 	return &akariUserRepository{
-		interactor: interactor,
+		repository: repository,
 	}
 }
 
@@ -25,7 +25,7 @@ func (r *akariUserRepository) GetOrCreateAkariUserByDiscordUserID(
 	ctx context.Context,
 	discordUserID string,
 ) (int, error) {
-	akariUser, err := r.interactor.GetAkariUserByDiscordUserID(ctx, discordUserID)
+	akariUser, err := r.repository.GetAkariUserByDiscordUserID(ctx, discordUserID)
 	if err == nil {
 		return akariUser.ID, nil
 	}
@@ -34,7 +34,7 @@ func (r *akariUserRepository) GetOrCreateAkariUserByDiscordUserID(
 		return 0, fmt.Errorf("adapter: failed to get akari user by discord user id: %w", err)
 	}
 
-	akariUser, err = r.interactor.CreateAkariUser(ctx)
+	akariUser, err = r.repository.CreateAkariUser(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("adapter: failed to create akari user: %w", err)
 	}

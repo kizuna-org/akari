@@ -5,16 +5,16 @@ import (
 	"fmt"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
-	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 )
 
 type conversationRepository struct {
-	interactor databaseInteractor.ConversationInteractor
+	repository databaseDomain.ConversationRepository
 }
 
-func NewConversationRepository(interactor databaseInteractor.ConversationInteractor) domain.ConversationRepository {
+func NewConversationRepository(repository databaseDomain.ConversationRepository) domain.ConversationRepository {
 	return &conversationRepository{
-		interactor: interactor,
+		repository: repository,
 	}
 }
 
@@ -24,7 +24,7 @@ func (r *conversationRepository) CreateConversation(
 	userID int,
 	conversationGroupID *int,
 ) error {
-	if _, err := r.interactor.CreateConversation(
+	if _, err := r.repository.CreateConversation(
 		ctx,
 		messageID,
 		userID,
