@@ -71,20 +71,25 @@ func TestResponseRepository_SaveResponse(t *testing.T) {
 	}
 
 	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
+		testCaseVal := testCase
+		t.Run(testCaseVal.name, func(t *testing.T) {
 			t.Parallel()
 
 			ctrl := gomock.NewController(t)
 			t.Cleanup(ctrl.Finish)
 
 			mockDiscordMsgRepo := databaseMock.NewMockDiscordMessageRepository(ctrl)
-			testCase.setupMock(mockDiscordMsgRepo)
+			testCaseVal.setupMock(mockDiscordMsgRepo)
 
 			repo := adapter.NewResponseRepository(mockDiscordMsgRepo)
-			err := repo.SaveResponse(t.Context(), testCase.resp)
+			err := repo.SaveResponse(t.Context(), testCaseVal.resp)
 
-			if testCase.wantErr {
-				require.Error(t, err)
+			if testCaseVal.wantErr {
+				if testCaseVal.errMsg != "" {
+					require.ErrorContains(t, err, testCaseVal.errMsg)
+				} else {
+					require.Error(t, err)
+				}
 			} else {
 				require.NoError(t, err)
 			}
