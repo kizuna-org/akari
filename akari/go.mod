@@ -1,6 +1,6 @@
 module github.com/kizuna-org/akari
 
-go 1.25.4
+go 1.25.5
 
 tool (
 	entgo.io/ent/cmd/ent
