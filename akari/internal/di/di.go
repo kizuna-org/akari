@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"time"
 
 	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
@@ -68,7 +69,7 @@ func newUsecaseProviders() fx.Option {
 		databaseInteractor.NewConversationGroupInteractor,
 		databaseInteractor.NewDiscordUserInteractor,
 		databaseInteractor.NewAkariUserInteractor,
-		discordRepository.NewDiscordRepository,
+		newDiscordRepository,
 	)
 }
 
@@ -292,6 +293,15 @@ func newDiscordClient(configRepo config.ConfigRepository) (*discordInfra.Discord
 	cfg := configRepo.GetConfig()
 
 	return discordInfra.NewDiscordClient(cfg.Discord.Token)
+}
+
+func newDiscordRepository(
+	client *discordInfra.DiscordClient,
+	configRepo config.ConfigRepository,
+) discordDomain.DiscordRepository {
+	cfg := configRepo.GetConfig()
+
+	return discordRepository.NewDiscordRepository(client, time.Duration(cfg.Discord.ReadyTimeout)*time.Second)
 }
 
 func NewApp() *fx.App {

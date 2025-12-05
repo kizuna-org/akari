@@ -14,13 +14,27 @@ import (
 func TestNewDiscordRepository(t *testing.T) {
 	t.Parallel()
 
-	client, err := infrastructure.NewDiscordClient("test-token")
-	if err != nil {
-		t.Fatalf("failed to create discord client: %v", err)
+	tests := []struct {
+		name    string
+		timeout time.Duration
+	}{
+		{name: "with default timeout", timeout: 0},
+		{name: "with custom timeout", timeout: 15 * time.Second},
 	}
 
-	repo := repository.NewDiscordRepository(client)
-	assert.NotNil(t, repo)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			client, err := infrastructure.NewDiscordClient("test-token")
+			if err != nil {
+				t.Fatalf("failed to create discord client: %v", err)
+			}
+
+			repo := repository.NewDiscordRepository(client, testCase.timeout)
+			assert.NotNil(t, repo)
+		})
+	}
 }
 
 func TestDiscordRepository_Integration(t *testing.T) {
@@ -33,7 +47,7 @@ func TestDiscordRepository_Integration(t *testing.T) {
 
 	assert.NotNil(t, client)
 
-	repo := repository.NewDiscordRepository(client)
+	repo := repository.NewDiscordRepository(client, 0)
 	assert.NotNil(t, repo)
 }
 

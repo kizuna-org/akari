@@ -1,6 +1,7 @@
 package infrastructure
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -35,8 +36,13 @@ func NewDiscordClient(token string) (*DiscordClient, error) {
 	}, nil
 }
 
-func (c *DiscordClient) WaitReady() {
-	<-c.readySignal
+func (c *DiscordClient) WaitReady(ctx context.Context) error {
+	select {
+	case <-c.readySignal:
+		return nil
+	case <-ctx.Done():
+		return fmt.Errorf("failed to wait for discord ready: %w", ctx.Err())
+	}
 }
 
 func (c *DiscordClient) RegisterReadyHandler() {
