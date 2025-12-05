@@ -1,13 +1,12 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"log/slog"
 
-	adapter "github.com/kizuna-org/akari/internal/app/adapter/discord"
-	"github.com/kizuna-org/akari/internal/app/infrastructure/logger"
-	"github.com/kizuna-org/akari/pkg/config"
+	"github.com/kizuna-org/akari/internal/di"
+	"github.com/kizuna-org/akari/pkg/discord/adapter"
+	"go.uber.org/fx"
 )
 
 const version = "0.1.0"
@@ -22,13 +21,14 @@ func main() {
 		return
 	}
 
-	configRepo := config.NewConfigRepository()
-	cfg := configRepo.GetConfig()
+	app := fx.New(
+		di.NewModule(),
+		fx.Invoke(runBot),
+	)
 
-	logger.SetupLogger(cfg.EnvMode)
+	app.Run()
+}
 
-	ctx := context.Background()
-	if err := adapter.RunDiscordBot(ctx); err != nil {
-		slog.Error("discord mode failed", "error", err)
-	}
+func runBot(lc fx.Lifecycle, botRunner *adapter.BotRunner) {
+	botRunner.RegisterLifecycle(lc)
 }

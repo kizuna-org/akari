@@ -4,24 +4,22 @@ import (
 	"log/slog"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	"github.com/kizuna-org/akari/pkg/discord/domain/service/mock"
 	"github.com/kizuna-org/akari/pkg/discord/handler"
 	"github.com/kizuna-org/akari/pkg/discord/infrastructure"
-	interactormock "github.com/kizuna-org/akari/pkg/discord/usecase/interactor/mock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
-func setupHandler(t *testing.T) (*handler.MessageHandler, *interactormock.MockDiscordInteractor) {
+func setupHandler(t *testing.T) (*handler.MessageHandler, *mock.MockHandleMessageInteractor) {
 	t.Helper()
 
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
-	mockInteractor := interactormock.NewMockDiscordInteractor(ctrl)
+	mockInteractor := mock.NewMockHandleMessageInteractor(ctrl)
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	client, err := infrastructure.NewDiscordClient("test-token")
@@ -50,57 +48,37 @@ func TestNewMessageHandler(t *testing.T) {
 	assert.NotNil(t, h)
 }
 
-func TestMessageHandler_HandleMessageCreate(t *testing.T) {
+func TestMessageHandler_HandleMessageCreate_BotMessageIgnored(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name      string
-		msg       *discordgo.MessageCreate
-		mockSetup func(*interactormock.MockDiscordInteractor)
-	}{
-		{
-			name:      "bot message ignored",
-			msg:       createMessage("bot-001", "!ping", true),
-			mockSetup: nil,
-		},
-		{
-			name: "ping command",
-			msg:  createMessage("user-001", "!ping", false),
-			mockSetup: func(m *interactormock.MockDiscordInteractor) {
-				m.EXPECT().SendMessage(gomock.Any(), "channel-001", "Pong!").
-					Return(&entity.Message{
-						ID:        "msg-002",
-						Content:   "Pong!",
-						Timestamp: time.Now(),
-					}, nil)
-			},
-		},
-		{
-			name:      "non-ping message",
-			msg:       createMessage("user-001", "Hello", false),
-			mockSetup: nil,
-		},
-		{
-			name: "send message error",
-			msg:  createMessage("user-001", "!ping", false),
-			mockSetup: func(m *interactormock.MockDiscordInteractor) {
-				m.EXPECT().SendMessage(gomock.Any(), "channel-001", "Pong!").Return(nil, assert.AnError)
-			},
-		},
-	}
+	h, mock := setupHandler(t)
+	msg := createMessage("bot-001", "test", true)
 
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
+	mock.EXPECT().Handle(gomock.Any(), gomock.Any()).Return(nil)
 
-			h, mock := setupHandler(t)
-			if testCase.mockSetup != nil {
-				testCase.mockSetup(mock)
-			}
+	h.HandleMessageCreate(nil, msg)
+}
 
-			h.HandleMessageCreate(nil, testCase.msg)
-		})
-	}
+func TestMessageHandler_HandleMessageCreate_Success(t *testing.T) {
+	t.Parallel()
+
+	h, mock := setupHandler(t)
+	msg := createMessage("user-001", "Hello", false)
+
+	mock.EXPECT().Handle(gomock.Any(), gomock.Any()).Return(nil)
+
+	h.HandleMessageCreate(nil, msg)
+}
+
+func TestMessageHandler_HandleMessageCreate_Error(t *testing.T) {
+	t.Parallel()
+
+	h, mock := setupHandler(t)
+	msg := createMessage("user-001", "Hello", false)
+
+	mock.EXPECT().Handle(gomock.Any(), gomock.Any()).Return(assert.AnError)
+
+	h.HandleMessageCreate(nil, msg)
 }
 
 func TestMessageHandler_RegisterHandlers(t *testing.T) {
