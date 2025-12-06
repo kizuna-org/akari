@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/kizuna-org/akari/compare/v0.1.1...v0.1.2) (2025-12-06)
+
+
+### Bug Fixes
+
+* **deps:** update module google.golang.org/genai to v1.36.0 ([#92](https://github.com/kizuna-org/akari/issues/92)) ([2529e37](https://github.com/kizuna-org/akari/commit/2529e37bdee818a9b9705c8a97475ae8b95a5d23))
+
 ## [0.1.1](https://github.com/kizuna-org/akari/compare/v0.1.0...v0.1.1) (2025-11-20)
 
 
