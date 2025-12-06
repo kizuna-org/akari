@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/gen/ent/discorduser"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
@@ -39,6 +40,10 @@ func (r *repositoryImpl) GetDiscordUserByID(
 		Where(discorduser.IDEQ(id)).
 		Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, domain.ErrNotFound
+		}
+
 		return nil, fmt.Errorf("failed to get discord user by id: %w", err)
 	}
 

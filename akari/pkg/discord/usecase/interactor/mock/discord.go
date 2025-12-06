@@ -56,6 +56,20 @@ func (mr *MockDiscordInteractorMockRecorder) GetMessage(ctx, channelID, messageI
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMessage", reflect.TypeOf((*MockDiscordInteractor)(nil).GetMessage), ctx, channelID, messageID)
 }
 
+// SaveMessage mocks base method.
+func (m *MockDiscordInteractor) SaveMessage(ctx context.Context, message *entity.Message) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveMessage", ctx, message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SaveMessage indicates an expected call of SaveMessage.
+func (mr *MockDiscordInteractorMockRecorder) SaveMessage(ctx, message any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveMessage", reflect.TypeOf((*MockDiscordInteractor)(nil).SaveMessage), ctx, message)
+}
+
 // SendMessage mocks base method.
 func (m *MockDiscordInteractor) SendMessage(ctx context.Context, channelID, content string) (*entity.Message, error) {
 	m.ctrl.T.Helper()

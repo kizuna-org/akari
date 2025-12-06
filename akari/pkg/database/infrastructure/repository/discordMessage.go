@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/gen/ent/discordmessage"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 )
@@ -58,6 +59,10 @@ func (r *repositoryImpl) GetDiscordMessageByID(
 		WithChannel().
 		Only(ctx)
 	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, domain.ErrNotFound
+		}
+
 		return nil, fmt.Errorf("failed to get discord message by id: %w", err)
 	}
 

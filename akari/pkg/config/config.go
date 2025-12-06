@@ -55,6 +55,7 @@ type LogConfig struct {
 type DiscordConfig struct {
 	Token         string
 	BotNameRegExp string
+	ReadyTimeout  int `default:"10"`
 }
 
 type DatabaseConfig struct {
