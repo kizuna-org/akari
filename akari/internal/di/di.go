@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
+	"github.com/kizuna-org/akari/internal/infrastructure/logger"
 	messageAdapter "github.com/kizuna-org/akari/internal/message/adapter"
 	messageDomain "github.com/kizuna-org/akari/internal/message/domain"
 	messageUsecase "github.com/kizuna-org/akari/internal/message/usecase"
@@ -117,7 +118,7 @@ func newServiceAndInteractorProviders() fx.Option {
 		discordInteractor.NewDiscordInteractor,
 		handler.NewMessageHandler,
 		discordAdapter.NewBotRunner,
-		slog.Default,
+		logger.NewLogger,
 	)
 }
 
