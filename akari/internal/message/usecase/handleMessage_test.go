@@ -3,6 +3,7 @@ package usecase_test
 import (
 	"errors"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
@@ -508,30 +509,10 @@ func TestHandle(t *testing.T) {
 			}
 
 			if testSetup.err && testSetup.errMsg != "" && err != nil {
-				if !stringContains(err.Error(), testSetup.errMsg) {
+				if !strings.Contains(err.Error(), testSetup.errMsg) {
 					t.Errorf("expected error to contain '%s', but got '%s'", testSetup.errMsg, err.Error())
 				}
 			}
 		})
 	}
-}
-
-func stringContains(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		match := true
-
-		for j := range len(substr) {
-			if s[i+j] != substr[j] {
-				match = false
-
-				break
-			}
-		}
-
-		if match {
-			return true
-		}
-	}
-
-	return false
 }
