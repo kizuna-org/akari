@@ -86,8 +86,13 @@ func (r *discordRepositoryImpl) Start() error {
 	defer cancel()
 
 	if err := r.client.WaitReady(ctx); err != nil {
-		if err := r.client.Session.Close(); err != nil {
-			return fmt.Errorf("repository: failed to close discord session after ready timeout: %w", err)
+		closeErr := r.client.Session.Close()
+		if closeErr != nil {
+			return fmt.Errorf(
+				"repository: failed to wait for discord ready: %w (also failed to close session: %w)",
+				err,
+				closeErr,
+			)
 		}
 
 		return fmt.Errorf("repository: failed to wait for discord ready: %w", err)
