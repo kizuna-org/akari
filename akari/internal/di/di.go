@@ -2,6 +2,7 @@ package di
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -155,6 +156,10 @@ func registerDiscordBotHooks(
 		OnStart: func(ctx context.Context) error {
 			if err := repo.Start(); err != nil {
 				return fmt.Errorf("failed to start discord bot: %w", err)
+			}
+
+			if client.Session == nil || client.Session.State == nil || client.Session.State.User == nil {
+				return errors.New("di: discord session not ready")
 			}
 
 			interactor.SetBotUserID(client.Session.State.User.ID)

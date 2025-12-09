@@ -27,5 +27,9 @@ func (r *validationRepository) ShouldProcessMessage(
 		return false
 	}
 
+	if botNamePatternRegex == nil {
+		return slices.Contains(message.Mentions, botUserID)
+	}
+
 	return slices.Contains(message.Mentions, botUserID) || botNamePatternRegex.MatchString(message.Content)
 }
