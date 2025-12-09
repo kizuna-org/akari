@@ -20,7 +20,7 @@ func NewDiscordRepository(discordInteractor discordInteractor.DiscordInteractor)
 
 func (r *discordRepository) SendMessage(ctx context.Context, channelID string, content string) error {
 	if _, err := r.discordInteractor.SendMessage(ctx, channelID, content); err != nil {
-		return fmt.Errorf("failed to send discord message: %w", err)
+		return fmt.Errorf("adapter: failed to send discord message: %w", err)
 	}
 
 	return nil

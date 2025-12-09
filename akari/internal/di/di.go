@@ -93,7 +93,7 @@ func newHandleMessageInteractor(
 
 	botNameRegex, err := regexp.Compile(cfg.Discord.BotNameRegExp)
 	if err != nil {
-		return nil, fmt.Errorf("invalid bot name regex pattern: %w", err)
+		return nil, fmt.Errorf("di: invalid bot name regex pattern: %w", err)
 	}
 
 	return messageUsecase.NewHandleMessageInteractor(

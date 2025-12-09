@@ -28,12 +28,12 @@ func (r *llmRepository) GenerateResponse(ctx context.Context, systemPrompt strin
 		nil,
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate response from LLM: %w", err)
+		return "", fmt.Errorf("adapter: failed to generate response from LLM: %w", err)
 	}
 
 	if len(responses) > 0 && responses[0] != nil {
 		return *responses[0], nil
 	}
 
-	return "", errors.New("no response from LLM")
+	return "", errors.New("adapter: no response from LLM")
 }

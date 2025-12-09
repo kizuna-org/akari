@@ -191,7 +191,7 @@ func setupFailedCharacterGet(ctrl *gomock.Controller) testSetup {
 			BotNamePatternRegex: regexp.MustCompile(`^bot`),
 		},
 		err:    true,
-		errMsg: "failed to get character",
+		errMsg: "usecase: get character",
 	}
 }
 
@@ -356,7 +356,7 @@ func setupFailedGenerateResponse(ctrl *gomock.Controller) testSetup {
 			BotNamePatternRegex: regexp.MustCompile(`^bot`),
 		},
 		err:    true,
-		errMsg: "failed to generate response",
+		errMsg: "usecase: generate response",
 	}
 }
 
@@ -420,7 +420,7 @@ func setupFailedSendMessage(ctrl *gomock.Controller) testSetup {
 			BotNamePatternRegex: regexp.MustCompile(`^bot`),
 		},
 		err:    true,
-		errMsg: "failed to send message",
+		errMsg: "usecase: send message",
 	}
 }
 
@@ -467,7 +467,7 @@ func setupFailedGetSystemPrompt(ctrl *gomock.Controller) testSetup {
 			BotNamePatternRegex: regexp.MustCompile(`^bot`),
 		},
 		err:    true,
-		errMsg: "failed to get system prompt",
+		errMsg: "usecase: get system prompt",
 	}
 }
 

@@ -38,7 +38,7 @@ func (r *discordRepositoryImpl) SendMessage(
 ) (*entity.Message, error) {
 	msg, err := r.client.Session.ChannelMessageSend(channelID, content)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send message: %w", err)
+		return nil, fmt.Errorf("repository: failed to send message: %w", err)
 	}
 
 	return &entity.Message{
@@ -60,7 +60,7 @@ func (r *discordRepositoryImpl) GetMessage(
 ) (*entity.Message, error) {
 	msg, err := r.client.Session.ChannelMessage(channelID, messageID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get message: %w", err)
+		return nil, fmt.Errorf("repository: failed to get message: %w", err)
 	}
 
 	return &entity.Message{
@@ -79,7 +79,7 @@ func (r *discordRepositoryImpl) Start() error {
 	r.client.RegisterReadyHandler()
 
 	if err := r.client.Session.Open(); err != nil {
-		return fmt.Errorf("failed to open discord session: %w", err)
+		return fmt.Errorf("repository: failed to open discord session: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), r.readyTimeout)
@@ -87,10 +87,10 @@ func (r *discordRepositoryImpl) Start() error {
 
 	if err := r.client.WaitReady(ctx); err != nil {
 		if err := r.client.Session.Close(); err != nil {
-			return fmt.Errorf("failed to close discord session after ready timeout: %w", err)
+			return fmt.Errorf("repository: failed to close discord session after ready timeout: %w", err)
 		}
 
-		return fmt.Errorf("failed to wait for discord ready: %w", err)
+		return fmt.Errorf("repository: failed to wait for discord ready: %w", err)
 	}
 
 	return nil
@@ -98,7 +98,7 @@ func (r *discordRepositoryImpl) Start() error {
 
 func (r *discordRepositoryImpl) Stop() error {
 	if err := r.client.Session.Close(); err != nil {
-		return fmt.Errorf("failed to close discord session: %w", err)
+		return fmt.Errorf("repository: failed to close discord session: %w", err)
 	}
 
 	return nil

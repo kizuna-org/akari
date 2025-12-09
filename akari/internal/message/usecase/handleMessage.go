@@ -71,21 +71,21 @@ func (i *handleMessageInteractorImpl) generateAndSendResponse(
 ) error {
 	character, err := i.characterRepo.Get(ctx, i.defaultCharacterID)
 	if err != nil {
-		return fmt.Errorf("failed to get character: %w", err)
+		return fmt.Errorf("usecase: get character: %w", err)
 	}
 
 	systemPromptContent, err := i.getSystemPromptContent(ctx, character)
 	if err != nil {
-		return err
+		return fmt.Errorf("usecase: get system prompt content: %w", err)
 	}
 
 	responseContent, err := i.llmRepo.GenerateResponse(ctx, systemPromptContent, message.Content)
 	if err != nil {
-		return fmt.Errorf("failed to generate response: %w", err)
+		return fmt.Errorf("usecase: generate response: %w", err)
 	}
 
 	if err := i.discordRepo.SendMessage(ctx, message.ChannelID, responseContent); err != nil {
-		return fmt.Errorf("failed to send message: %w", err)
+		return fmt.Errorf("usecase: send message: %w", err)
 	}
 
 	return nil
@@ -104,7 +104,7 @@ func (i *handleMessageInteractorImpl) getSystemPromptContent(
 		character.SystemPromptIDs[i.defaultPromptIndex],
 	)
 	if err != nil {
-		return "", fmt.Errorf("failed to get system prompt: %w", err)
+		return "", fmt.Errorf("usecase: get system prompt: %w", err)
 	}
 
 	return systemPrompt.Prompt, nil
