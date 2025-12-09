@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/kizuna-org/akari/pkg/discord/adapter"
 	repomock "github.com/kizuna-org/akari/pkg/discord/domain/repository/mock"
 	"github.com/kizuna-org/akari/pkg/discord/domain/service/mock"
@@ -30,7 +31,7 @@ func TestNewBotRunner(t *testing.T) {
 	}
 
 	msgHandler := handler.NewMessageHandler(mockInteractor, logger, client)
-	runner := adapter.NewBotRunner(msgHandler, mockRepo, logger)
+	runner := adapter.NewBotRunner(msgHandler, mockRepo, mockInteractor, client, logger)
 
 	assert.NotNil(t, runner)
 }
@@ -48,9 +49,17 @@ func TestBotRunner_RegisterLifecycle(t *testing.T) {
 		t.Fatalf("failed to create discord client: %v", err)
 	}
 
-	msgHandler := handler.NewMessageHandler(mockInteractor, logger, client)
-	runner := adapter.NewBotRunner(msgHandler, mockRepo, logger)
+	// Set up a mock session state
+	client.Session.State = &discordgo.State{
+		Ready: discordgo.Ready{
+			User: &discordgo.User{ID: "bot-user-123"},
+		},
+	}
 
+	msgHandler := handler.NewMessageHandler(mockInteractor, logger, client)
+	runner := adapter.NewBotRunner(msgHandler, mockRepo, mockInteractor, client, logger)
+
+	mockInteractor.EXPECT().SetBotUserID("bot-user-123")
 	mockRepo.EXPECT().Start().Return(nil)
 	mockRepo.EXPECT().Stop().Return(nil)
 
@@ -78,7 +87,7 @@ func TestBotRunner_RegisterLifecycle_StartError(t *testing.T) {
 	}
 
 	msgHandler := handler.NewMessageHandler(mockInteractor, logger, client)
-	runner := adapter.NewBotRunner(msgHandler, mockRepo, logger)
+	runner := adapter.NewBotRunner(msgHandler, mockRepo, mockInteractor, client, logger)
 
 	mockRepo.EXPECT().Start().Return(assert.AnError)
 

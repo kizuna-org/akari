@@ -2,7 +2,6 @@ package di
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -143,38 +142,7 @@ func NewModule() fx.Option {
 
 		// Lifecycle hooks
 		fx.Invoke(registerDatabaseHooks),
-		fx.Invoke(registerDiscordBotHooks),
 	)
-}
-
-func registerDiscordBotHooks(
-	lc fx.Lifecycle,
-	repo discordDomain.DiscordRepository,
-	interactor discordService.HandleMessageInteractor,
-	client *discordInfra.DiscordClient,
-) {
-	lc.Append(fx.Hook{
-		OnStart: func(ctx context.Context) error {
-			if err := repo.Start(); err != nil {
-				return fmt.Errorf("failed to start discord bot: %w", err)
-			}
-
-			if client.Session == nil || client.Session.State == nil || client.Session.State.User == nil {
-				return errors.New("di: discord session not ready")
-			}
-
-			interactor.SetBotUserID(client.Session.State.User.ID)
-
-			return nil
-		},
-		OnStop: func(ctx context.Context) error {
-			if err := repo.Stop(); err != nil {
-				return fmt.Errorf("failed to stop discord bot: %w", err)
-			}
-
-			return nil
-		},
-	})
 }
 
 func newEntClient(configRepo config.ConfigRepository) (*ent.Client, error) {
