@@ -11,6 +11,7 @@ import (
 
 type DiscordClient struct {
 	Session     *discordgo.Session
+	readyMutex  sync.Mutex
 	readyOnce   sync.Once
 	readySignal chan struct{}
 }
@@ -31,14 +32,23 @@ func NewDiscordClient(token string) (*DiscordClient, error) {
 
 	return &DiscordClient{
 		Session:     session,
+		readyMutex:  sync.Mutex{},
 		readyOnce:   sync.Once{},
-		readySignal: make(chan struct{}),
+		readySignal: nil,
 	}, nil
 }
 
 func (c *DiscordClient) WaitReady(ctx context.Context) error {
+	c.readyMutex.Lock()
+	readySignal := c.readySignal
+	c.readyMutex.Unlock()
+
+	if readySignal == nil {
+		return errors.New("ready handler not registered: call RegisterReadyHandler before WaitReady")
+	}
+
 	select {
-	case <-c.readySignal:
+	case <-readySignal:
 		return nil
 	case <-ctx.Done():
 		return fmt.Errorf("failed to wait for discord ready: %w", ctx.Err())
@@ -46,6 +56,12 @@ func (c *DiscordClient) WaitReady(ctx context.Context) error {
 }
 
 func (c *DiscordClient) RegisterReadyHandler() {
+	c.readyMutex.Lock()
+	if c.readySignal == nil {
+		c.readySignal = make(chan struct{})
+	}
+	c.readyMutex.Unlock()
+
 	c.Session.AddHandler(c.onReady)
 }
 

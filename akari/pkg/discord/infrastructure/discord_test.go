@@ -62,13 +62,33 @@ func TestDiscordClient_RegisterReadyHandler(t *testing.T) {
 func TestDiscordClient_WaitReady(t *testing.T) {
 	t.Parallel()
 
-	client, err := infrastructure.NewDiscordClient("test-token")
-	require.NoError(t, err)
+	t.Run("should return error when handler not registered", func(t *testing.T) {
+		t.Parallel()
 
-	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
-	defer cancel()
+		client, err := infrastructure.NewDiscordClient("test-token")
+		require.NoError(t, err)
 
-	err = client.WaitReady(ctx)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to wait for discord ready")
+		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+		defer cancel()
+
+		err = client.WaitReady(ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "ready handler not registered")
+	})
+
+	t.Run("should timeout when handler registered but ready not called", func(t *testing.T) {
+		t.Parallel()
+
+		client, err := infrastructure.NewDiscordClient("test-token")
+		require.NoError(t, err)
+
+		client.RegisterReadyHandler()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+		defer cancel()
+
+		err = client.WaitReady(ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to wait for discord ready")
+	})
 }
