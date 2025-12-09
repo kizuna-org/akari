@@ -4,16 +4,23 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
+	"time"
 
 	"entgo.io/ent/dialect"
 	"github.com/kizuna-org/akari/gen/ent"
-	internalDiscordUsecase "github.com/kizuna-org/akari/internal/app/usecase/discord"
+	"github.com/kizuna-org/akari/internal/infrastructure/logger"
+	messageAdapter "github.com/kizuna-org/akari/internal/message/adapter"
+	messageDomain "github.com/kizuna-org/akari/internal/message/domain"
+	messageUsecase "github.com/kizuna-org/akari/internal/message/usecase"
 	"github.com/kizuna-org/akari/pkg/config"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	databaseInfra "github.com/kizuna-org/akari/pkg/database/infrastructure"
 	databaseRepo "github.com/kizuna-org/akari/pkg/database/infrastructure/repository"
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
+	discordAdapter "github.com/kizuna-org/akari/pkg/discord/adapter"
 	discordRepository "github.com/kizuna-org/akari/pkg/discord/adapter/repository"
+	discordDomain "github.com/kizuna-org/akari/pkg/discord/domain/repository"
 	discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
 	"github.com/kizuna-org/akari/pkg/discord/handler"
 	discordInfra "github.com/kizuna-org/akari/pkg/discord/infrastructure"
@@ -23,6 +30,97 @@ import (
 	"go.uber.org/fx"
 )
 
+type (
+	defaultCharacterID int
+	defaultPromptIndex int
+)
+
+const (
+	characterIDValue int = 1
+	promptIndexValue int = 0
+)
+
+func newInfrastructureProviders() fx.Option {
+	return fx.Provide(
+		newEntClient,
+		gemini.NewRepository,
+		newDatabaseClient,
+		databaseRepo.NewRepository,
+		newDatabaseRepository,
+		newSystemPromptRepository,
+		newCharacterRepository,
+		newDiscordClient,
+	)
+}
+
+func newUsecaseProviders() fx.Option {
+	return fx.Provide(
+		databaseInteractor.NewDatabaseInteractor,
+		databaseInteractor.NewCharacterInteractor,
+		newDiscordRepository,
+		llmInteractor.NewLLMInteractor,
+		databaseInteractor.NewSystemPromptInteractor,
+	)
+}
+
+func newMessagePackageProviders() fx.Option {
+	return fx.Options(
+		fx.Provide(
+			messageAdapter.NewCharacterRepository,
+			messageAdapter.NewDiscordRepository,
+			messageAdapter.NewLLMRepository,
+			messageAdapter.NewSystemPromptRepository,
+			messageAdapter.NewValidationRepository,
+			newHandleMessageInteractor,
+		),
+		fx.Supply(
+			defaultCharacterID(characterIDValue),
+			defaultPromptIndex(promptIndexValue),
+		),
+	)
+}
+
+func newHandleMessageInteractor(
+	characterRepo messageDomain.CharacterRepository,
+	discordRepo messageDomain.DiscordRepository,
+	llmRepo messageDomain.LLMRepository,
+	systemPromptRepo messageDomain.SystemPromptRepository,
+	validationRepo messageDomain.ValidationRepository,
+	characterID defaultCharacterID,
+	promptIdx defaultPromptIndex,
+	configRepo config.ConfigRepository,
+) (discordService.HandleMessageInteractor, error) {
+	cfg := configRepo.GetConfig()
+
+	botNameRegex, err := regexp.Compile(cfg.Discord.BotNameRegExp)
+	if err != nil {
+		return nil, fmt.Errorf("di: invalid bot name regex pattern: %w", err)
+	}
+
+	return messageUsecase.NewHandleMessageInteractor(
+		messageUsecase.HandleMessageConfig{
+			CharacterRepo:       characterRepo,
+			DiscordRepo:         discordRepo,
+			LLMRepo:             llmRepo,
+			SystemPromptRepo:    systemPromptRepo,
+			ValidationRepo:      validationRepo,
+			DefaultCharacterID:  int(characterID),
+			DefaultPromptIndex:  int(promptIdx),
+			BotNamePatternRegex: botNameRegex,
+		},
+	), nil
+}
+
+func newServiceAndInteractorProviders() fx.Option {
+	return fx.Provide(
+		discordService.NewDiscordService,
+		discordInteractor.NewDiscordInteractor,
+		handler.NewMessageHandler,
+		discordAdapter.NewBotRunner,
+		logger.NewLogger,
+	)
+}
+
 func NewModule() fx.Option {
 	return fx.Module("akari",
 		// Configuration
@@ -31,44 +129,16 @@ func NewModule() fx.Option {
 		),
 
 		// Infrastructure
-		fx.Provide(
-			newEntClient,
-			gemini.NewRepository,
-			newDatabaseClient,
-			databaseRepo.NewRepository,
-			newDatabaseRepository,
-			newSystemPromptRepository,
-			newCharacterRepository,
-			newDiscordClient,
-		),
+		newInfrastructureProviders(),
 
 		// Usecase
-		fx.Provide(
-			llmInteractor.NewLLMInteractor,
-			databaseInteractor.NewDatabaseInteractor,
-			databaseInteractor.NewSystemPromptInteractor,
-			databaseInteractor.NewCharacterInteractor,
-			discordRepository.NewDiscordRepository,
-			internalDiscordUsecase.NewDiscordMessageUsecase,
-		),
+		newUsecaseProviders(),
 
-		// Service
-		fx.Provide(
-			discordService.NewDiscordService,
-		),
+		// Message Package
+		newMessagePackageProviders(),
 
-		// Interactor
-		fx.Provide(
-			discordInteractor.NewDiscordInteractor,
-		),
-
-		fx.Provide(
-			handler.NewMessageHandler,
-		),
-
-		fx.Provide(
-			slog.Default,
-		),
+		// Service and Interactor
+		newServiceAndInteractorProviders(),
 
 		// Lifecycle hooks
 		fx.Invoke(registerDatabaseHooks),
@@ -130,11 +200,20 @@ func newDatabaseRepository(repo databaseRepo.Repository) databaseDomain.Database
 	return repo
 }
 
-func newSystemPromptRepository(repo databaseRepo.Repository) databaseDomain.SystemPromptRepository {
+func newCharacterRepository(repo databaseRepo.Repository) databaseDomain.CharacterRepository {
 	return repo
 }
 
-func newCharacterRepository(repo databaseRepo.Repository) databaseDomain.CharacterRepository {
+func newDiscordRepository(
+	client *discordInfra.DiscordClient,
+	configRepo config.ConfigRepository,
+) discordDomain.DiscordRepository {
+	cfg := configRepo.GetConfig()
+
+	return discordRepository.NewDiscordRepository(client, time.Duration(cfg.Discord.ReadyTimeout)*time.Second)
+}
+
+func newSystemPromptRepository(repo databaseRepo.Repository) databaseDomain.SystemPromptRepository {
 	return repo
 }
 

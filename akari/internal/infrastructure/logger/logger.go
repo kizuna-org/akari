@@ -7,10 +7,12 @@ import (
 	"github.com/kizuna-org/akari/pkg/config"
 )
 
-func SetupLogger(envMode config.EnvMode) {
+func NewLogger(configRepo config.ConfigRepository) *slog.Logger {
+	cfg := configRepo.GetConfig()
+
 	var handler slog.Handler
 
-	switch envMode {
+	switch cfg.EnvMode {
 	case config.EnvModeDevelopment:
 		opts := &slog.HandlerOptions{
 			Level:       slog.LevelDebug,
@@ -41,5 +43,8 @@ func SetupLogger(envMode config.EnvMode) {
 		handler = slog.NewTextHandler(os.Stdout, opts)
 	}
 
-	slog.SetDefault(slog.New(handler))
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
+	return logger
 }

@@ -1,7 +1,9 @@
 package infrastructure_test
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/kizuna-org/akari/pkg/discord/infrastructure"
 	"github.com/stretchr/testify/assert"
@@ -45,4 +47,48 @@ func TestNewDiscordClient(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDiscordClient_RegisterReadyHandler(t *testing.T) {
+	t.Parallel()
+
+	client, err := infrastructure.NewDiscordClient("test-token")
+	require.NoError(t, err)
+
+	client.RegisterReadyHandler()
+	require.NotNil(t, client.Session)
+}
+
+func TestDiscordClient_WaitReady(t *testing.T) {
+	t.Parallel()
+
+	t.Run("should return error when handler not registered", func(t *testing.T) {
+		t.Parallel()
+
+		client, err := infrastructure.NewDiscordClient("test-token")
+		require.NoError(t, err)
+
+		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+		defer cancel()
+
+		err = client.WaitReady(ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "ready handler not registered")
+	})
+
+	t.Run("should timeout when handler registered but ready not called", func(t *testing.T) {
+		t.Parallel()
+
+		client, err := infrastructure.NewDiscordClient("test-token")
+		require.NoError(t, err)
+
+		client.RegisterReadyHandler()
+
+		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+		defer cancel()
+
+		err = client.WaitReady(ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to wait for discord ready")
+	})
 }
