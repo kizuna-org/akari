@@ -23,6 +23,7 @@ type HandleMessageConfig struct {
 	DiscordRepo         domain.DiscordRepository
 	DiscordMessageRepo  domain.DiscordMessageRepository
 	DiscordChannelRepo  domain.DiscordChannelRepository
+	DiscordGuildRepo    domain.DiscordGuildRepository
 	LLMRepo             domain.LLMRepository
 	SystemPromptRepo    domain.SystemPromptRepository
 	ValidationRepo      domain.ValidationRepository
@@ -36,6 +37,7 @@ type handleMessageInteractorImpl struct {
 	discordRepo         domain.DiscordRepository
 	discordMessageRepo  domain.DiscordMessageRepository
 	discordChannelRepo  domain.DiscordChannelRepository
+	discordGuildRepo    domain.DiscordGuildRepository
 	llmRepo             domain.LLMRepository
 	systemPromptRepo    domain.SystemPromptRepository
 	validationRepo      domain.ValidationRepository
@@ -51,6 +53,7 @@ func NewHandleMessageInteractor(config HandleMessageConfig) discordService.Handl
 		discordRepo:         config.DiscordRepo,
 		discordMessageRepo:  config.DiscordMessageRepo,
 		discordChannelRepo:  config.DiscordChannelRepo,
+		discordGuildRepo:    config.DiscordGuildRepo,
 		llmRepo:             config.LLMRepo,
 		systemPromptRepo:    config.SystemPromptRepo,
 		validationRepo:      config.ValidationRepo,
@@ -69,12 +72,19 @@ func (i *handleMessageInteractorImpl) Handle(
 	ctx context.Context,
 	message *discordEntity.Message,
 	channel *discordEntity.Channel,
+	guild *discordEntity.Guild,
 ) error {
 	if message == nil {
 		return errors.New("usecase: message is nil")
 	}
 
 	domainMessage := entity.ToMessage(message)
+
+	if guild != nil {
+		if _, err := i.discordGuildRepo.CreateIfNotExists(ctx, entity.ToGuild(guild)); err != nil {
+			return fmt.Errorf("usecase: create discord guild if not exists: %w", err)
+		}
+	}
 
 	if channel != nil {
 		if _, err := i.discordChannelRepo.CreateIfNotExists(ctx, entity.ToChannel(channel)); err != nil {
