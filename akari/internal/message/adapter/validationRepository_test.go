@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/kizuna-org/akari/internal/message/adapter"
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	"github.com/kizuna-org/akari/internal/message/domain/entity"
 	"github.com/stretchr/testify/assert"
 )
 

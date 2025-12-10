@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	"github.com/kizuna-org/akari/internal/message/domain/entity"
 )
 
 type validationRepository struct{}

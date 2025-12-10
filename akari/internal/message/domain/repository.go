@@ -6,7 +6,7 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	"github.com/kizuna-org/akari/internal/message/domain/entity"
 )
 
 type Character struct {
@@ -26,6 +26,10 @@ type CharacterRepository interface {
 
 type DiscordRepository interface {
 	SendMessage(ctx context.Context, channelID string, content string) error
+}
+
+type DiscordMessageRepository interface {
+	SaveMessage(ctx context.Context, message *entity.Message) error
 }
 
 type LLMRepository interface {

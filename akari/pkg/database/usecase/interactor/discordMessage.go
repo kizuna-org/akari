@@ -1,5 +1,7 @@
 package interactor
 
+//go:generate go tool mockgen -package=mock -source=discordMessage.go -destination=mock/discordMessage.go
+
 import (
 	"context"
 

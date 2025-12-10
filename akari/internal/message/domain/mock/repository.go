@@ -15,7 +15,7 @@ import (
 	regexp "regexp"
 
 	domain "github.com/kizuna-org/akari/internal/message/domain"
-	entity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	entity "github.com/kizuna-org/akari/internal/message/domain/entity"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -94,6 +94,44 @@ func (m *MockDiscordRepository) SendMessage(ctx context.Context, channelID, cont
 func (mr *MockDiscordRepositoryMockRecorder) SendMessage(ctx, channelID, content any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMessage", reflect.TypeOf((*MockDiscordRepository)(nil).SendMessage), ctx, channelID, content)
+}
+
+// MockDiscordMessageRepository is a mock of DiscordMessageRepository interface.
+type MockDiscordMessageRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockDiscordMessageRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockDiscordMessageRepositoryMockRecorder is the mock recorder for MockDiscordMessageRepository.
+type MockDiscordMessageRepositoryMockRecorder struct {
+	mock *MockDiscordMessageRepository
+}
+
+// NewMockDiscordMessageRepository creates a new mock instance.
+func NewMockDiscordMessageRepository(ctrl *gomock.Controller) *MockDiscordMessageRepository {
+	mock := &MockDiscordMessageRepository{ctrl: ctrl}
+	mock.recorder = &MockDiscordMessageRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDiscordMessageRepository) EXPECT() *MockDiscordMessageRepositoryMockRecorder {
+	return m.recorder
+}
+
+// SaveMessage mocks base method.
+func (m *MockDiscordMessageRepository) SaveMessage(ctx context.Context, message *entity.Message) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveMessage", ctx, message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SaveMessage indicates an expected call of SaveMessage.
+func (mr *MockDiscordMessageRepositoryMockRecorder) SaveMessage(ctx, message any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveMessage", reflect.TypeOf((*MockDiscordMessageRepository)(nil).SaveMessage), ctx, message)
 }
 
 // MockLLMRepository is a mock of LLMRepository interface.

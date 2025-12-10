@@ -38,22 +38,7 @@ func (h *MessageHandler) HandleMessageCreate(s *discordgo.Session, message *disc
 	)
 
 	ctx := context.Background()
-
-	mentions := make([]string, len(message.Mentions))
-	for i, mention := range message.Mentions {
-		mentions[i] = mention.ID
-	}
-
-	domainMessage := &entity.Message{
-		ID:        message.ID,
-		ChannelID: message.ChannelID,
-		GuildID:   message.GuildID,
-		AuthorID:  message.Author.ID,
-		Content:   message.Content,
-		Timestamp: message.Timestamp,
-		IsBot:     message.Author.Bot,
-		Mentions:  mentions,
-	}
+	domainMessage := buildDomainMessage(message)
 
 	if err := h.interactor.Handle(ctx, domainMessage); err != nil {
 		h.logger.Error("Failed to handle message", "error", err)
@@ -67,4 +52,22 @@ func (h *MessageHandler) RegisterHandlers() {
 
 func (h *MessageHandler) GetSession() *discordgo.Session {
 	return h.client.Session
+}
+
+func buildDomainMessage(message *discordgo.MessageCreate) *entity.Message {
+	mentions := make([]string, len(message.Mentions))
+	for i, mention := range message.Mentions {
+		mentions[i] = mention.ID
+	}
+
+	return &entity.Message{
+		ID:        message.ID,
+		ChannelID: message.ChannelID,
+		GuildID:   message.GuildID,
+		AuthorID:  message.Author.ID,
+		Content:   message.Content,
+		Timestamp: message.Timestamp,
+		IsBot:     message.Author.Bot,
+		Mentions:  mentions,
+	}
 }
