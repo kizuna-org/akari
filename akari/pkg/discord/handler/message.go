@@ -49,7 +49,14 @@ func (h *MessageHandler) HandleMessageCreate(session *discordgo.Session, message
 		return
 	}
 
-	if err := h.interactor.Handle(ctx, domainMessage, domainChannel); err != nil {
+	domainGuild, err := fetchGuild(session, message)
+	if err != nil {
+		h.logger.Error("Failed to fetch guild", "error", err)
+
+		return
+	}
+
+	if err := h.interactor.Handle(ctx, domainMessage, domainChannel, domainGuild); err != nil {
 		h.logger.Error("Failed to handle message", "error", err)
 	}
 }
@@ -101,6 +108,28 @@ func fetchChannel(session *discordgo.Session, message *discordgo.MessageCreate) 
 		Type:      int(discordgoChannel.Type),
 		Name:      discordgoChannel.Name,
 		GuildID:   discordgoChannel.GuildID,
+		CreatedAt: createdAt,
+	}, nil
+}
+
+func fetchGuild(session *discordgo.Session, message *discordgo.MessageCreate) (*entity.Guild, error) {
+	if session == nil {
+		return nil, errors.New("handler: session not found")
+	}
+
+	discordgoGuild, err := session.Guild(message.GuildID)
+	if err != nil {
+		return nil, fmt.Errorf("handler: failed to fetch guild: %w", err)
+	}
+
+	createdAt, err := discordgo.SnowflakeTimestamp(discordgoGuild.ID)
+	if err != nil {
+		return nil, fmt.Errorf("handler: failed to parse guild timestamp: %w", err)
+	}
+
+	return &entity.Guild{
+		ID:        discordgoGuild.ID,
+		Name:      discordgoGuild.Name,
 		CreatedAt: createdAt,
 	}, nil
 }

@@ -51,6 +51,7 @@ func newInfrastructureProviders() fx.Option {
 		newCharacterRepository,
 		newDiscordMessageRepository,
 		newDiscordChannelRepository,
+		newDiscordGuildRepository,
 		newDiscordClient,
 	)
 }
@@ -61,6 +62,7 @@ func newUsecaseProviders() fx.Option {
 		databaseInteractor.NewCharacterInteractor,
 		databaseInteractor.NewDiscordMessageInteractor,
 		databaseInteractor.NewDiscordChannelInteractor,
+		databaseInteractor.NewDiscordGuildInteractor,
 		newDiscordRepository,
 		llmInteractor.NewLLMInteractor,
 		databaseInteractor.NewSystemPromptInteractor,
@@ -74,6 +76,7 @@ func newMessagePackageProviders() fx.Option {
 			messageAdapter.NewDiscordRepository,
 			messageAdapter.NewDiscordMessageRepository,
 			messageAdapter.NewDiscordChannelRepository,
+			messageAdapter.NewDiscordGuildRepository,
 			messageAdapter.NewLLMRepository,
 			messageAdapter.NewSystemPromptRepository,
 			messageAdapter.NewValidationRepository,
@@ -91,6 +94,7 @@ func newHandleMessageInteractor(
 	discordRepo messageDomain.DiscordRepository,
 	discordMessageRepo messageDomain.DiscordMessageRepository,
 	discordChannelRepo messageDomain.DiscordChannelRepository,
+	discordGuildRepo messageDomain.DiscordGuildRepository,
 	llmRepo messageDomain.LLMRepository,
 	systemPromptRepo messageDomain.SystemPromptRepository,
 	validationRepo messageDomain.ValidationRepository,
@@ -111,6 +115,7 @@ func newHandleMessageInteractor(
 			DiscordRepo:         discordRepo,
 			DiscordMessageRepo:  discordMessageRepo,
 			DiscordChannelRepo:  discordChannelRepo,
+			DiscordGuildRepo:    discordGuildRepo,
 			LLMRepo:             llmRepo,
 			SystemPromptRepo:    systemPromptRepo,
 			ValidationRepo:      validationRepo,
@@ -232,6 +237,10 @@ func newDiscordMessageRepository(repo databaseRepo.Repository) databaseDomain.Di
 }
 
 func newDiscordChannelRepository(repo databaseRepo.Repository) databaseDomain.DiscordChannelRepository {
+	return repo
+}
+
+func newDiscordGuildRepository(repo databaseRepo.Repository) databaseDomain.DiscordGuildRepository {
 	return repo
 }
 

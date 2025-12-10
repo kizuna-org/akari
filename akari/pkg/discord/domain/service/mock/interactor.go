@@ -42,17 +42,17 @@ func (m *MockHandleMessageInteractor) EXPECT() *MockHandleMessageInteractorMockR
 }
 
 // Handle mocks base method.
-func (m *MockHandleMessageInteractor) Handle(ctx context.Context, message *entity.Message, channel *entity.Channel) error {
+func (m *MockHandleMessageInteractor) Handle(ctx context.Context, message *entity.Message, channel *entity.Channel, guild *entity.Guild) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Handle", ctx, message, channel)
+	ret := m.ctrl.Call(m, "Handle", ctx, message, channel, guild)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Handle indicates an expected call of Handle.
-func (mr *MockHandleMessageInteractorMockRecorder) Handle(ctx, message, channel any) *gomock.Call {
+func (mr *MockHandleMessageInteractorMockRecorder) Handle(ctx, message, channel, guild any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockHandleMessageInteractor)(nil).Handle), ctx, message, channel)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockHandleMessageInteractor)(nil).Handle), ctx, message, channel, guild)
 }
 
 // SetBotUserID mocks base method.

@@ -36,6 +36,10 @@ type DiscordChannelRepository interface {
 	CreateIfNotExists(ctx context.Context, channel *entity.Channel) (string, error)
 }
 
+type DiscordGuildRepository interface {
+	CreateIfNotExists(ctx context.Context, guild *entity.Guild) (string, error)
+}
+
 type LLMRepository interface {
 	GenerateResponse(ctx context.Context, systemPrompt string, userMessage string) (string, error)
 }

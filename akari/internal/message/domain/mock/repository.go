@@ -173,6 +173,45 @@ func (mr *MockDiscordChannelRepositoryMockRecorder) CreateIfNotExists(ctx, chann
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIfNotExists", reflect.TypeOf((*MockDiscordChannelRepository)(nil).CreateIfNotExists), ctx, channel)
 }
 
+// MockDiscordGuildRepository is a mock of DiscordGuildRepository interface.
+type MockDiscordGuildRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockDiscordGuildRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockDiscordGuildRepositoryMockRecorder is the mock recorder for MockDiscordGuildRepository.
+type MockDiscordGuildRepositoryMockRecorder struct {
+	mock *MockDiscordGuildRepository
+}
+
+// NewMockDiscordGuildRepository creates a new mock instance.
+func NewMockDiscordGuildRepository(ctrl *gomock.Controller) *MockDiscordGuildRepository {
+	mock := &MockDiscordGuildRepository{ctrl: ctrl}
+	mock.recorder = &MockDiscordGuildRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDiscordGuildRepository) EXPECT() *MockDiscordGuildRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateIfNotExists mocks base method.
+func (m *MockDiscordGuildRepository) CreateIfNotExists(ctx context.Context, guild *entity.Guild) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIfNotExists", ctx, guild)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateIfNotExists indicates an expected call of CreateIfNotExists.
+func (mr *MockDiscordGuildRepositoryMockRecorder) CreateIfNotExists(ctx, guild any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIfNotExists", reflect.TypeOf((*MockDiscordGuildRepository)(nil).CreateIfNotExists), ctx, guild)
+}
+
 // MockLLMRepository is a mock of LLMRepository interface.
 type MockLLMRepository struct {
 	ctrl     *gomock.Controller
