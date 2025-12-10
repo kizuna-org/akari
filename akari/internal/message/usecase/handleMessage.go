@@ -21,6 +21,7 @@ type HandleMessageInteractor interface {
 type HandleMessageConfig struct {
 	CharacterRepo       domain.CharacterRepository
 	DiscordRepo         domain.DiscordRepository
+	DiscordUserRepo     domain.DiscordUserRepository
 	DiscordMessageRepo  domain.DiscordMessageRepository
 	DiscordChannelRepo  domain.DiscordChannelRepository
 	DiscordGuildRepo    domain.DiscordGuildRepository
@@ -35,6 +36,7 @@ type HandleMessageConfig struct {
 type handleMessageInteractorImpl struct {
 	characterRepo       domain.CharacterRepository
 	discordRepo         domain.DiscordRepository
+	discordUserRepo     domain.DiscordUserRepository
 	discordMessageRepo  domain.DiscordMessageRepository
 	discordChannelRepo  domain.DiscordChannelRepository
 	discordGuildRepo    domain.DiscordGuildRepository
@@ -51,6 +53,7 @@ func NewHandleMessageInteractor(config HandleMessageConfig) discordService.Handl
 	return &handleMessageInteractorImpl{
 		characterRepo:       config.CharacterRepo,
 		discordRepo:         config.DiscordRepo,
+		discordUserRepo:     config.DiscordUserRepo,
 		discordMessageRepo:  config.DiscordMessageRepo,
 		discordChannelRepo:  config.DiscordChannelRepo,
 		discordGuildRepo:    config.DiscordGuildRepo,
@@ -70,6 +73,7 @@ func (i *handleMessageInteractorImpl) SetBotUserID(botUserID string) {
 
 func (i *handleMessageInteractorImpl) Handle(
 	ctx context.Context,
+	user *discordEntity.User,
 	message *discordEntity.Message,
 	channel *discordEntity.Channel,
 	guild *discordEntity.Guild,
@@ -79,6 +83,12 @@ func (i *handleMessageInteractorImpl) Handle(
 	}
 
 	domainMessage := entity.ToMessage(message)
+
+	if user != nil {
+		if _, err := i.discordUserRepo.CreateIfNotExists(ctx, entity.ToUser(user)); err != nil {
+			return fmt.Errorf("usecase: get or create user: %w", err)
+		}
+	}
 
 	if guild != nil {
 		if _, err := i.discordGuildRepo.CreateIfNotExists(ctx, entity.ToGuild(guild)); err != nil {

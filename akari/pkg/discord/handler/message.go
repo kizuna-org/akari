@@ -56,7 +56,14 @@ func (h *MessageHandler) HandleMessageCreate(session *discordgo.Session, message
 		return
 	}
 
-	if err := h.interactor.Handle(ctx, domainMessage, domainChannel, domainGuild); err != nil {
+	domainUser, err := fetchUser(session, message)
+	if err != nil {
+		h.logger.Error("Failed to fetch user", "error", err)
+
+		return
+	}
+
+	if err := h.interactor.Handle(ctx, domainUser, domainMessage, domainChannel, domainGuild); err != nil {
 		h.logger.Error("Failed to handle message", "error", err)
 	}
 }
@@ -131,5 +138,22 @@ func fetchGuild(session *discordgo.Session, message *discordgo.MessageCreate) (*
 		ID:        discordgoGuild.ID,
 		Name:      discordgoGuild.Name,
 		CreatedAt: createdAt,
+	}, nil
+}
+
+func fetchUser(session *discordgo.Session, message *discordgo.MessageCreate) (*entity.User, error) {
+	if session == nil {
+		return nil, errors.New("handler: session not found")
+	}
+
+	discordgoUser, err := session.User(message.Author.ID)
+	if err != nil {
+		return nil, fmt.Errorf("handler: %w", err)
+	}
+
+	return &entity.User{
+		ID:       discordgoUser.ID,
+		Username: discordgoUser.Username,
+		Bot:      discordgoUser.Bot,
 	}, nil
 }
