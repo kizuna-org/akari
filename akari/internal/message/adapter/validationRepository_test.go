@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/kizuna-org/akari/internal/message/adapter"
-	"github.com/kizuna-org/akari/internal/message/domain"
+	"github.com/kizuna-org/akari/internal/message/domain/entity"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,28 +14,28 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		msg       *domain.Message
+		msg       *entity.Message
 		botUserID string
 		botName   string
 		want      bool
 	}{
 		{
 			name:      "valid message with bot mentioned",
-			msg:       &domain.Message{Content: "Hello", Mentions: []string{"bot-123"}},
+			msg:       &entity.Message{Content: "Hello", Mentions: []string{"bot-123"}},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      true,
 		},
 		{
 			name:      "valid message with bot name",
-			msg:       &domain.Message{Content: "Hey akari, how are you?"},
+			msg:       &entity.Message{Content: "Hey akari, how are you?"},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      true,
 		},
 		{
 			name:      "empty content",
-			msg:       &domain.Message{Content: ""},
+			msg:       &entity.Message{Content: ""},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      false,
@@ -49,21 +49,21 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 		},
 		{
 			name:      "bot message",
-			msg:       &domain.Message{Content: "Hello", IsBot: true},
+			msg:       &entity.Message{Content: "Hello", IsBot: true},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      false,
 		},
 		{
 			name:      "no mention and no bot name",
-			msg:       &domain.Message{Content: "Hey there"},
+			msg:       &entity.Message{Content: "Hey there"},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      false,
 		},
 		{
 			name:      "case insensitive bot name match",
-			msg:       &domain.Message{Content: "Hey AKARI, how are you?"},
+			msg:       &entity.Message{Content: "Hey AKARI, how are you?"},
 			botUserID: "bot-123",
 			botName:   "(?i)akari",
 			want:      true,

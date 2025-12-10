@@ -13,23 +13,50 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+const (
+	defaultCharacterID   = 1
+	defaultPromptID      = 1
+	defaultBotID         = "bot1"
+	defaultMessageID     = "msg1"
+	defaultChannelID     = "ch1"
+	defaultGuildID       = "guild1"
+	defaultAuthorID      = "user1"
+	defaultContent       = "hello"
+	defaultSystemPrompt  = "system prompt"
+	defaultLLMResponse   = "response"
+	defaultCharacterName = "TestCharacter"
+	defaultBotPattern    = "^bot"
+)
+
+func newCharacter(promptIDs []int) *domain.Character {
+	return &domain.Character{ID: defaultCharacterID, Name: defaultCharacterName, SystemPromptIDs: promptIDs}
+}
+
+func newSystemPrompt(prompt string) *domain.SystemPrompt {
+	return &domain.SystemPrompt{ID: defaultPromptID, Prompt: prompt}
+}
+
+func setupBaseConfig(ctrl *gomock.Controller) usecase.HandleMessageConfig {
+	return usecase.HandleMessageConfig{
+		LLMRepo:             mock.NewMockLLMRepository(ctrl),
+		DiscordRepo:         mock.NewMockDiscordRepository(ctrl),
+		DiscordMessageRepo:  mock.NewMockDiscordMessageRepository(ctrl),
+		ValidationRepo:      mock.NewMockValidationRepository(ctrl),
+		CharacterRepo:       mock.NewMockCharacterRepository(ctrl),
+		SystemPromptRepo:    mock.NewMockSystemPromptRepository(ctrl),
+		DefaultCharacterID:  defaultCharacterID,
+		DefaultPromptIndex:  0,
+		BotNamePatternRegex: regexp.MustCompile(defaultBotPattern),
+	}
+}
+
 func TestNewHandleMessageInteractor(t *testing.T) {
 	t.Parallel()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	config := usecase.HandleMessageConfig{
-		LLMRepo:             mock.NewMockLLMRepository(ctrl),
-		DiscordRepo:         mock.NewMockDiscordRepository(ctrl),
-		ValidationRepo:      mock.NewMockValidationRepository(ctrl),
-		CharacterRepo:       mock.NewMockCharacterRepository(ctrl),
-		SystemPromptRepo:    mock.NewMockSystemPromptRepository(ctrl),
-		DefaultCharacterID:  1,
-		DefaultPromptIndex:  0,
-		BotNamePatternRegex: regexp.MustCompile(`^bot$`),
-	}
-
+	config := setupBaseConfig(ctrl)
 	interactor := usecase.NewHandleMessageInteractor(config)
 
 	if interactor == nil {
@@ -43,450 +70,235 @@ func TestSetBotUserID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	config := usecase.HandleMessageConfig{
-		LLMRepo:             mock.NewMockLLMRepository(ctrl),
-		DiscordRepo:         mock.NewMockDiscordRepository(ctrl),
-		ValidationRepo:      mock.NewMockValidationRepository(ctrl),
-		CharacterRepo:       mock.NewMockCharacterRepository(ctrl),
-		SystemPromptRepo:    mock.NewMockSystemPromptRepository(ctrl),
-		DefaultCharacterID:  1,
-		DefaultPromptIndex:  0,
-		BotNamePatternRegex: regexp.MustCompile(`^bot$`),
-	}
-
+	config := setupBaseConfig(ctrl)
 	interactor := usecase.NewHandleMessageInteractor(config)
-	interactor.SetBotUserID("bot123")
+	interactor.SetBotUserID(defaultBotID)
 }
 
-type testSetup struct {
-	msg    *entity.Message
-	botID  string
-	config usecase.HandleMessageConfig
-	err    bool
-	errMsg string
+type testCase struct {
+	name                 string
+	isBot                bool
+	shouldProcessMessage bool
+	character            *domain.Character
+	characterErr         error
+	systemPrompt         *domain.SystemPrompt
+	systemPromptErr      error
+	llmResponse          string
+	llmErr               error
+	discordErr           error
+	defaultPromptIndex   int
+	wantErr              bool
+	wantErrMsg           string
 }
 
-func setupSuccessfulMessage(ctrl *gomock.Controller) testSetup {
+func (tc testCase) setupCharacterRepo(ctrl *gomock.Controller) *mock.MockCharacterRepository {
+	if tc.shouldProcessMessage {
+		repo := mock.NewMockCharacterRepository(ctrl)
+		repo.EXPECT().Get(gomock.Not(gomock.Nil()), defaultCharacterID).Return(tc.character, tc.characterErr).Times(1)
+
+		return repo
+	}
+
+	return mock.NewMockCharacterRepository(ctrl)
+}
+
+func (tc testCase) setupSystemPromptRepo(ctrl *gomock.Controller) *mock.MockSystemPromptRepository {
+	shouldFetch := tc.character != nil && len(tc.character.SystemPromptIDs) > 0 &&
+		tc.characterErr == nil && tc.defaultPromptIndex < len(tc.character.SystemPromptIDs)
+	if shouldFetch {
+		repo := mock.NewMockSystemPromptRepository(ctrl)
+		repo.EXPECT().Get(gomock.Not(gomock.Nil()), defaultPromptID).Return(tc.systemPrompt, tc.systemPromptErr).Times(1)
+
+		return repo
+	}
+
+	return mock.NewMockSystemPromptRepository(ctrl)
+}
+
+func (tc testCase) setupLLMRepo(ctrl *gomock.Controller) *mock.MockLLMRepository {
+	shouldCall := tc.character != nil && tc.characterErr == nil && tc.systemPromptErr == nil
+	if !shouldCall {
+		return mock.NewMockLLMRepository(ctrl)
+	}
+
+	var systemPromptText string
+	if len(tc.character.SystemPromptIDs) > 0 && tc.systemPrompt != nil &&
+		tc.defaultPromptIndex < len(tc.character.SystemPromptIDs) {
+		systemPromptText = tc.systemPrompt.Prompt
+	}
+
+	repo := mock.NewMockLLMRepository(ctrl)
+	repo.EXPECT().GenerateResponse(gomock.Not(gomock.Nil()), systemPromptText, defaultContent).
+		Return(tc.llmResponse, tc.llmErr).Times(1)
+
+	return repo
+}
+
+func (tc testCase) setupDiscordRepo(ctrl *gomock.Controller) *mock.MockDiscordRepository {
+	shouldSend := tc.character != nil && tc.characterErr == nil &&
+		tc.systemPromptErr == nil && tc.llmErr == nil
+	if shouldSend {
+		repo := mock.NewMockDiscordRepository(ctrl)
+		repo.EXPECT().SendMessage(gomock.Not(gomock.Nil()), defaultChannelID, tc.llmResponse).Return(tc.discordErr).Times(1)
+
+		return repo
+	}
+
+	return mock.NewMockDiscordRepository(ctrl)
+}
+
+func (tc testCase) setup(ctrl *gomock.Controller) (*entity.Message, usecase.HandleMessageConfig) {
 	msg := &entity.Message{
-		ID:        "msg123",
-		ChannelID: "ch123",
-		GuildID:   "guild123",
-		AuthorID:  "user123",
-		Content:   "hello bot",
-		IsBot:     false,
+		ID:        defaultMessageID,
+		ChannelID: defaultChannelID,
+		GuildID:   defaultGuildID,
+		AuthorID:  defaultAuthorID,
+		Content:   defaultContent,
+		IsBot:     tc.isBot,
 	}
 
-	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot123", gomock.Any()).Return(true).Times(1)
+	discordMessageRepo := mock.NewMockDiscordMessageRepository(ctrl)
+	discordMessageRepo.EXPECT().SaveMessage(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).Return(nil).Times(1)
 
-	charRepo := mock.NewMockCharacterRepository(ctrl)
-	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		&domain.Character{
-			ID:              1,
-			Name:            "TestCharacter",
-			SystemPromptIDs: []int{1, 2},
-		},
-		nil,
-	).Times(1)
+	validationRepo := mock.NewMockValidationRepository(ctrl)
+	validationRepo.EXPECT().ShouldProcessMessage(gomock.Not(gomock.Nil()), defaultBotID, gomock.Not(gomock.Nil())).
+		Return(tc.shouldProcessMessage).Times(1)
 
-	promptRepo := mock.NewMockSystemPromptRepository(ctrl)
-	promptRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		&domain.SystemPrompt{
-			ID:     1,
-			Prompt: "You are a helpful bot",
-		},
-		nil,
-	).Times(1)
-
-	llmRepo := mock.NewMockLLMRepository(ctrl)
-	llmRepo.EXPECT().GenerateResponse(
-		gomock.Any(),
-		"You are a helpful bot",
-		"hello bot",
-	).Return("Hello! How can I help?", nil).Times(1)
-
-	discordRepo := mock.NewMockDiscordRepository(ctrl)
-	discordRepo.EXPECT().SendMessage(
-		gomock.Any(),
-		"ch123",
-		"Hello! How can I help?",
-	).Return(nil).Times(1)
-
-	return testSetup{
-		msg:   msg,
-		botID: "bot123",
-		config: usecase.HandleMessageConfig{
-			LLMRepo:             llmRepo,
-			DiscordRepo:         discordRepo,
-			ValidationRepo:      valRepo,
-			CharacterRepo:       charRepo,
-			SystemPromptRepo:    promptRepo,
-			DefaultCharacterID:  1,
-			DefaultPromptIndex:  0,
-			BotNamePatternRegex: regexp.MustCompile(`^bot`),
-		},
-		err: false,
-	}
-}
-
-func setupMessageNotProcessed(ctrl *gomock.Controller) testSetup {
-	msg := &entity.Message{
-		ID:        "msg456",
-		ChannelID: "ch456",
-		GuildID:   "guild456",
-		AuthorID:  "bot456",
-		Content:   "I am a bot",
-		IsBot:     true,
+	config := usecase.HandleMessageConfig{
+		LLMRepo:             tc.setupLLMRepo(ctrl),
+		DiscordRepo:         tc.setupDiscordRepo(ctrl),
+		DiscordMessageRepo:  discordMessageRepo,
+		ValidationRepo:      validationRepo,
+		CharacterRepo:       tc.setupCharacterRepo(ctrl),
+		SystemPromptRepo:    tc.setupSystemPromptRepo(ctrl),
+		DefaultCharacterID:  defaultCharacterID,
+		DefaultPromptIndex:  tc.defaultPromptIndex,
+		BotNamePatternRegex: regexp.MustCompile(defaultBotPattern),
 	}
 
-	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot456", gomock.Any()).Return(false).Times(1)
-
-	return testSetup{
-		msg:   msg,
-		botID: "bot456",
-		config: usecase.HandleMessageConfig{
-			LLMRepo:             mock.NewMockLLMRepository(ctrl),
-			DiscordRepo:         mock.NewMockDiscordRepository(ctrl),
-			ValidationRepo:      valRepo,
-			CharacterRepo:       mock.NewMockCharacterRepository(ctrl),
-			SystemPromptRepo:    mock.NewMockSystemPromptRepository(ctrl),
-			DefaultCharacterID:  1,
-			DefaultPromptIndex:  0,
-			BotNamePatternRegex: regexp.MustCompile(`^bot`),
-		},
-		err: false,
-	}
-}
-
-func setupFailedCharacterGet(ctrl *gomock.Controller) testSetup {
-	msg := &entity.Message{
-		ID:        "msg999",
-		ChannelID: "ch999",
-		GuildID:   "guild999",
-		AuthorID:  "user999",
-		Content:   "hello",
-		IsBot:     false,
-	}
-
-	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot999", gomock.Any()).Return(true).Times(1)
-
-	charRepo := mock.NewMockCharacterRepository(ctrl)
-	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		nil,
-		errors.New("character not found"),
-	).Times(1)
-
-	return testSetup{
-		msg:   msg,
-		botID: "bot999",
-		config: usecase.HandleMessageConfig{
-			LLMRepo:             mock.NewMockLLMRepository(ctrl),
-			DiscordRepo:         mock.NewMockDiscordRepository(ctrl),
-			ValidationRepo:      valRepo,
-			CharacterRepo:       charRepo,
-			SystemPromptRepo:    mock.NewMockSystemPromptRepository(ctrl),
-			DefaultCharacterID:  1,
-			DefaultPromptIndex:  0,
-			BotNamePatternRegex: regexp.MustCompile(`^bot`),
-		},
-		err:    true,
-		errMsg: "usecase: get character",
-	}
-}
-
-func setupEmptyPromptIDs(ctrl *gomock.Controller) testSetup {
-	msg := &entity.Message{
-		ID:        "msg111",
-		ChannelID: "ch111",
-		GuildID:   "guild111",
-		AuthorID:  "user111",
-		Content:   "hello",
-		IsBot:     false,
-	}
-
-	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot111", gomock.Any()).Return(true).Times(1)
-
-	charRepo := mock.NewMockCharacterRepository(ctrl)
-	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		&domain.Character{
-			ID:              1,
-			Name:            "TestCharacter",
-			SystemPromptIDs: []int{},
-		},
-		nil,
-	).Times(1)
-
-	llmRepo := mock.NewMockLLMRepository(ctrl)
-	llmRepo.EXPECT().GenerateResponse(
-		gomock.Any(),
-		"",
-		"hello",
-	).Return("Hello!", nil).Times(1)
-
-	discordRepo := mock.NewMockDiscordRepository(ctrl)
-	discordRepo.EXPECT().SendMessage(
-		gomock.Any(),
-		"ch111",
-		"Hello!",
-	).Return(nil).Times(1)
-
-	return testSetup{
-		msg:   msg,
-		botID: "bot111",
-		config: usecase.HandleMessageConfig{
-			LLMRepo:             llmRepo,
-			DiscordRepo:         discordRepo,
-			ValidationRepo:      valRepo,
-			CharacterRepo:       charRepo,
-			SystemPromptRepo:    mock.NewMockSystemPromptRepository(ctrl),
-			DefaultCharacterID:  1,
-			DefaultPromptIndex:  0,
-			BotNamePatternRegex: regexp.MustCompile(`^bot`),
-		},
-		err: false,
-	}
-}
-
-func setupPromptIndexOutOfRange(ctrl *gomock.Controller) testSetup {
-	msg := &entity.Message{
-		ID:        "msg222",
-		ChannelID: "ch222",
-		GuildID:   "guild222",
-		AuthorID:  "user222",
-		Content:   "hello",
-		IsBot:     false,
-	}
-
-	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot222", gomock.Any()).Return(true).Times(1)
-
-	charRepo := mock.NewMockCharacterRepository(ctrl)
-	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		&domain.Character{
-			ID:              1,
-			Name:            "TestCharacter",
-			SystemPromptIDs: []int{1},
-		},
-		nil,
-	).Times(1)
-
-	llmRepo := mock.NewMockLLMRepository(ctrl)
-	llmRepo.EXPECT().GenerateResponse(
-		gomock.Any(),
-		"",
-		"hello",
-	).Return("Hello!", nil).Times(1)
-
-	discordRepo := mock.NewMockDiscordRepository(ctrl)
-	discordRepo.EXPECT().SendMessage(
-		gomock.Any(),
-		"ch222",
-		"Hello!",
-	).Return(nil).Times(1)
-
-	return testSetup{
-		msg:   msg,
-		botID: "bot222",
-		config: usecase.HandleMessageConfig{
-			LLMRepo:             llmRepo,
-			DiscordRepo:         discordRepo,
-			ValidationRepo:      valRepo,
-			CharacterRepo:       charRepo,
-			SystemPromptRepo:    mock.NewMockSystemPromptRepository(ctrl),
-			DefaultCharacterID:  1,
-			DefaultPromptIndex:  5,
-			BotNamePatternRegex: regexp.MustCompile(`^bot`),
-		},
-		err: false,
-	}
-}
-
-func setupFailedGenerateResponse(ctrl *gomock.Controller) testSetup {
-	msg := &entity.Message{
-		ID:        "msg333",
-		ChannelID: "ch333",
-		GuildID:   "guild333",
-		AuthorID:  "user333",
-		Content:   "hello",
-		IsBot:     false,
-	}
-
-	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot333", gomock.Any()).Return(true).Times(1)
-
-	charRepo := mock.NewMockCharacterRepository(ctrl)
-	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		&domain.Character{
-			ID:              1,
-			Name:            "TestCharacter",
-			SystemPromptIDs: []int{1},
-		},
-		nil,
-	).Times(1)
-
-	promptRepo := mock.NewMockSystemPromptRepository(ctrl)
-	promptRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		&domain.SystemPrompt{
-			ID:     1,
-			Prompt: "You are a helpful bot",
-		},
-		nil,
-	).Times(1)
-
-	llmRepo := mock.NewMockLLMRepository(ctrl)
-	llmRepo.EXPECT().GenerateResponse(
-		gomock.Any(),
-		"You are a helpful bot",
-		"hello",
-	).Return("", errors.New("llm error")).Times(1)
-
-	return testSetup{
-		msg:   msg,
-		botID: "bot333",
-		config: usecase.HandleMessageConfig{
-			LLMRepo:             llmRepo,
-			DiscordRepo:         mock.NewMockDiscordRepository(ctrl),
-			ValidationRepo:      valRepo,
-			CharacterRepo:       charRepo,
-			SystemPromptRepo:    promptRepo,
-			DefaultCharacterID:  1,
-			DefaultPromptIndex:  0,
-			BotNamePatternRegex: regexp.MustCompile(`^bot`),
-		},
-		err:    true,
-		errMsg: "usecase: generate response",
-	}
-}
-
-func setupFailedSendMessage(ctrl *gomock.Controller) testSetup {
-	msg := &entity.Message{
-		ID:        "msg444",
-		ChannelID: "ch444",
-		GuildID:   "guild444",
-		AuthorID:  "user444",
-		Content:   "hello",
-		IsBot:     false,
-	}
-
-	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot444", gomock.Any()).Return(true).Times(1)
-
-	charRepo := mock.NewMockCharacterRepository(ctrl)
-	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		&domain.Character{
-			ID:              1,
-			Name:            "TestCharacter",
-			SystemPromptIDs: []int{1},
-		},
-		nil,
-	).Times(1)
-
-	promptRepo := mock.NewMockSystemPromptRepository(ctrl)
-	promptRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		&domain.SystemPrompt{
-			ID:     1,
-			Prompt: "You are a helpful bot",
-		},
-		nil,
-	).Times(1)
-
-	llmRepo := mock.NewMockLLMRepository(ctrl)
-	llmRepo.EXPECT().GenerateResponse(
-		gomock.Any(),
-		"You are a helpful bot",
-		"hello",
-	).Return("Hello!", nil).Times(1)
-
-	discordRepo := mock.NewMockDiscordRepository(ctrl)
-	discordRepo.EXPECT().SendMessage(
-		gomock.Any(),
-		"ch444",
-		"Hello!",
-	).Return(errors.New("discord error")).Times(1)
-
-	return testSetup{
-		msg:   msg,
-		botID: "bot444",
-		config: usecase.HandleMessageConfig{
-			LLMRepo:             llmRepo,
-			DiscordRepo:         discordRepo,
-			ValidationRepo:      valRepo,
-			CharacterRepo:       charRepo,
-			SystemPromptRepo:    promptRepo,
-			DefaultCharacterID:  1,
-			DefaultPromptIndex:  0,
-			BotNamePatternRegex: regexp.MustCompile(`^bot`),
-		},
-		err:    true,
-		errMsg: "usecase: send message",
-	}
-}
-
-func setupFailedGetSystemPrompt(ctrl *gomock.Controller) testSetup {
-	msg := &entity.Message{
-		ID:        "msg666",
-		ChannelID: "ch666",
-		GuildID:   "guild666",
-		AuthorID:  "user666",
-		Content:   "hello",
-		IsBot:     false,
-	}
-
-	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot666", gomock.Any()).Return(true).Times(1)
-
-	charRepo := mock.NewMockCharacterRepository(ctrl)
-	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		&domain.Character{
-			ID:              1,
-			Name:            "TestCharacter",
-			SystemPromptIDs: []int{1},
-		},
-		nil,
-	).Times(1)
-
-	promptRepo := mock.NewMockSystemPromptRepository(ctrl)
-	promptRepo.EXPECT().Get(gomock.Any(), 1).Return(
-		nil,
-		errors.New("prompt not found"),
-	).Times(1)
-
-	return testSetup{
-		msg:   msg,
-		botID: "bot666",
-		config: usecase.HandleMessageConfig{
-			LLMRepo:             mock.NewMockLLMRepository(ctrl),
-			DiscordRepo:         mock.NewMockDiscordRepository(ctrl),
-			ValidationRepo:      valRepo,
-			CharacterRepo:       charRepo,
-			SystemPromptRepo:    promptRepo,
-			DefaultCharacterID:  1,
-			DefaultPromptIndex:  0,
-			BotNamePatternRegex: regexp.MustCompile(`^bot`),
-		},
-		err:    true,
-		errMsg: "usecase: get system prompt",
-	}
+	return msg, config
 }
 
 func TestHandle(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name  string
-		setup func(*gomock.Controller) testSetup
-	}{
-		{name: "successful message handling with response", setup: setupSuccessfulMessage},
-		{name: "message should not be processed", setup: setupMessageNotProcessed},
-		{name: "failed to get character", setup: setupFailedCharacterGet},
-		{name: "empty system prompt IDs", setup: setupEmptyPromptIDs},
-		{name: "prompt index out of range", setup: setupPromptIndexOutOfRange},
-		{name: "failed to generate response", setup: setupFailedGenerateResponse},
-		{name: "failed to send discord message", setup: setupFailedSendMessage},
-		{name: "failed to get system prompt", setup: setupFailedGetSystemPrompt},
+	tests := []testCase{
+		{
+			name:                 "successful message handling with response",
+			isBot:                false,
+			shouldProcessMessage: true,
+			character:            newCharacter([]int{1}),
+			characterErr:         nil,
+			systemPrompt:         newSystemPrompt(defaultSystemPrompt),
+			systemPromptErr:      nil,
+			llmResponse:          defaultLLMResponse,
+			llmErr:               nil,
+			discordErr:           nil,
+			defaultPromptIndex:   0,
+			wantErr:              false,
+		},
+		{
+			name:                 "message should not be processed",
+			isBot:                true,
+			shouldProcessMessage: false,
+			character:            nil,
+			characterErr:         nil,
+			systemPrompt:         nil,
+			systemPromptErr:      nil,
+			llmResponse:          "",
+			llmErr:               nil,
+			discordErr:           nil,
+			defaultPromptIndex:   0,
+			wantErr:              false,
+		},
+		{
+			name:                 "failed to get character",
+			isBot:                false,
+			shouldProcessMessage: true,
+			character:            nil,
+			characterErr:         errors.New("character not found"),
+			systemPrompt:         nil,
+			systemPromptErr:      nil,
+			llmResponse:          "",
+			llmErr:               nil,
+			discordErr:           nil,
+			defaultPromptIndex:   0,
+			wantErr:              true,
+			wantErrMsg:           "usecase: get character",
+		},
+		{
+			name:                 "empty system prompt IDs",
+			isBot:                false,
+			shouldProcessMessage: true,
+			character:            newCharacter([]int{}),
+			characterErr:         nil,
+			systemPrompt:         nil,
+			systemPromptErr:      nil,
+			llmResponse:          defaultLLMResponse,
+			llmErr:               nil,
+			discordErr:           nil,
+			defaultPromptIndex:   0,
+			wantErr:              false,
+		},
+		{
+			name:                 "prompt index out of range",
+			isBot:                false,
+			shouldProcessMessage: true,
+			character:            newCharacter([]int{1}),
+			characterErr:         nil,
+			systemPrompt:         nil,
+			systemPromptErr:      nil,
+			llmResponse:          defaultLLMResponse,
+			llmErr:               nil,
+			discordErr:           nil,
+			defaultPromptIndex:   5,
+			wantErr:              false,
+		},
+		{
+			name:                 "failed to generate response",
+			isBot:                false,
+			shouldProcessMessage: true,
+			character:            newCharacter([]int{1}),
+			characterErr:         nil,
+			systemPrompt:         newSystemPrompt(defaultSystemPrompt),
+			systemPromptErr:      nil,
+			llmResponse:          "",
+			llmErr:               errors.New("llm error"),
+			discordErr:           nil,
+			defaultPromptIndex:   0,
+			wantErr:              true,
+			wantErrMsg:           "usecase: generate response",
+		},
+		{
+			name:                 "failed to send discord message",
+			isBot:                false,
+			shouldProcessMessage: true,
+			character:            newCharacter([]int{1}),
+			characterErr:         nil,
+			systemPrompt:         newSystemPrompt(defaultSystemPrompt),
+			systemPromptErr:      nil,
+			llmResponse:          defaultLLMResponse,
+			llmErr:               nil,
+			discordErr:           errors.New("discord error"),
+			defaultPromptIndex:   0,
+			wantErr:              true,
+			wantErrMsg:           "usecase: send message",
+		},
+		{
+			name:                 "failed to get system prompt",
+			isBot:                false,
+			shouldProcessMessage: true,
+			character:            newCharacter([]int{1}),
+			characterErr:         nil,
+			systemPrompt:         nil,
+			systemPromptErr:      errors.New("prompt not found"),
+			llmResponse:          "",
+			llmErr:               nil,
+			discordErr:           nil,
+			defaultPromptIndex:   0,
+			wantErr:              true,
+			wantErrMsg:           "usecase: get system prompt",
+		},
 	}
 
 	for _, tt := range tests {
@@ -497,20 +309,24 @@ func TestHandle(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			testSetup := testCase.setup(ctrl)
+			msg, config := testCase.setup(ctrl)
 
-			interactor := usecase.NewHandleMessageInteractor(testSetup.config)
-			interactor.SetBotUserID(testSetup.botID)
+			interactor := usecase.NewHandleMessageInteractor(config)
+			interactor.SetBotUserID(defaultBotID)
 
-			err := interactor.Handle(t.Context(), testSetup.msg)
+			err := interactor.Handle(t.Context(), msg)
 
-			if (err != nil) != testSetup.err {
-				t.Errorf("expected error: %v, got: %v", testSetup.err, err)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("expected error: %v, got: %v", testCase.wantErr, err)
 			}
 
-			if testSetup.err && testSetup.errMsg != "" && err != nil {
-				if !strings.Contains(err.Error(), testSetup.errMsg) {
-					t.Errorf("expected error to contain '%s', but got '%s'", testSetup.errMsg, err.Error())
+			if testCase.wantErr && testCase.wantErrMsg != "" && err != nil {
+				if !strings.Contains(err.Error(), testCase.wantErrMsg) {
+					t.Errorf(
+						"expected error to contain '%s', but got '%s'",
+						testCase.wantErrMsg,
+						err.Error(),
+					)
 				}
 			}
 		})
