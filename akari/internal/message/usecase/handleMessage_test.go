@@ -160,6 +160,10 @@ func (tc testCase) setup(ctrl *gomock.Controller) (*entity.Message, usecase.Hand
 	discordMessageRepo := mock.NewMockDiscordMessageRepository(ctrl)
 	discordMessageRepo.EXPECT().SaveMessage(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).Return(nil).Times(1)
 
+	discordChannelRepo := mock.NewMockDiscordChannelRepository(ctrl)
+	discordChannelRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
+		Return("", nil).AnyTimes()
+
 	validationRepo := mock.NewMockValidationRepository(ctrl)
 	validationRepo.EXPECT().ShouldProcessMessage(gomock.Not(gomock.Nil()), defaultBotID, gomock.Not(gomock.Nil())).
 		Return(tc.shouldProcessMessage).Times(1)
@@ -168,6 +172,7 @@ func (tc testCase) setup(ctrl *gomock.Controller) (*entity.Message, usecase.Hand
 		LLMRepo:             tc.setupLLMRepo(ctrl),
 		DiscordRepo:         tc.setupDiscordRepo(ctrl),
 		DiscordMessageRepo:  discordMessageRepo,
+		DiscordChannelRepo:  discordChannelRepo,
 		ValidationRepo:      validationRepo,
 		CharacterRepo:       tc.setupCharacterRepo(ctrl),
 		SystemPromptRepo:    tc.setupSystemPromptRepo(ctrl),
@@ -314,7 +319,7 @@ func TestHandle(t *testing.T) {
 			interactor := usecase.NewHandleMessageInteractor(config)
 			interactor.SetBotUserID(defaultBotID)
 
-			err := interactor.Handle(t.Context(), msg)
+			err := interactor.Handle(t.Context(), msg, &entity.Channel{ID: defaultChannelID, GuildID: defaultGuildID})
 
 			if (err != nil) != testCase.wantErr {
 				t.Errorf("expected error: %v, got: %v", testCase.wantErr, err)
