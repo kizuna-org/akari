@@ -22,6 +22,7 @@ type HandleMessageConfig struct {
 	CharacterRepo       domain.CharacterRepository
 	DiscordRepo         domain.DiscordRepository
 	DiscordMessageRepo  domain.DiscordMessageRepository
+	DiscordChannelRepo  domain.DiscordChannelRepository
 	LLMRepo             domain.LLMRepository
 	SystemPromptRepo    domain.SystemPromptRepository
 	ValidationRepo      domain.ValidationRepository
@@ -34,6 +35,7 @@ type handleMessageInteractorImpl struct {
 	characterRepo       domain.CharacterRepository
 	discordRepo         domain.DiscordRepository
 	discordMessageRepo  domain.DiscordMessageRepository
+	discordChannelRepo  domain.DiscordChannelRepository
 	llmRepo             domain.LLMRepository
 	systemPromptRepo    domain.SystemPromptRepository
 	validationRepo      domain.ValidationRepository
@@ -48,6 +50,7 @@ func NewHandleMessageInteractor(config HandleMessageConfig) discordService.Handl
 		characterRepo:       config.CharacterRepo,
 		discordRepo:         config.DiscordRepo,
 		discordMessageRepo:  config.DiscordMessageRepo,
+		discordChannelRepo:  config.DiscordChannelRepo,
 		llmRepo:             config.LLMRepo,
 		systemPromptRepo:    config.SystemPromptRepo,
 		validationRepo:      config.ValidationRepo,
@@ -62,12 +65,22 @@ func (i *handleMessageInteractorImpl) SetBotUserID(botUserID string) {
 	i.botUserID = botUserID
 }
 
-func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *discordEntity.Message) error {
+func (i *handleMessageInteractorImpl) Handle(
+	ctx context.Context,
+	message *discordEntity.Message,
+	channel *discordEntity.Channel,
+) error {
 	if message == nil {
 		return errors.New("usecase: message is nil")
 	}
 
 	domainMessage := entity.ToMessage(message)
+
+	if channel != nil {
+		if _, err := i.discordChannelRepo.CreateIfNotExists(ctx, entity.ToChannel(channel)); err != nil {
+			return fmt.Errorf("usecase: create discord channel if not exists: %w", err)
+		}
+	}
 
 	if err := i.discordMessageRepo.SaveMessage(ctx, domainMessage); err != nil {
 		return fmt.Errorf("usecase: save message: %w", err)
