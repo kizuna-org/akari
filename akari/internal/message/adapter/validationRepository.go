@@ -5,7 +5,6 @@ import (
 	"slices"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
 type validationRepository struct{}
@@ -15,7 +14,7 @@ func NewValidationRepository() domain.ValidationRepository {
 }
 
 func (r *validationRepository) ShouldProcessMessage(
-	message *entity.Message,
+	message *domain.Message,
 	botUserID string,
 	botNamePatternRegex *regexp.Regexp,
 ) bool {

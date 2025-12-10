@@ -77,7 +77,7 @@ func setupSuccessfulMessage(ctrl *gomock.Controller) testSetup {
 	}
 
 	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(msg, "bot123", gomock.Any()).Return(true).Times(1)
+	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot123", gomock.Any()).Return(true).Times(1)
 
 	charRepo := mock.NewMockCharacterRepository(ctrl)
 	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
@@ -140,7 +140,7 @@ func setupMessageNotProcessed(ctrl *gomock.Controller) testSetup {
 	}
 
 	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(msg, "bot456", gomock.Any()).Return(false).Times(1)
+	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot456", gomock.Any()).Return(false).Times(1)
 
 	return testSetup{
 		msg:   msg,
@@ -170,7 +170,7 @@ func setupFailedCharacterGet(ctrl *gomock.Controller) testSetup {
 	}
 
 	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(msg, "bot999", gomock.Any()).Return(true).Times(1)
+	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot999", gomock.Any()).Return(true).Times(1)
 
 	charRepo := mock.NewMockCharacterRepository(ctrl)
 	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
@@ -207,7 +207,7 @@ func setupEmptyPromptIDs(ctrl *gomock.Controller) testSetup {
 	}
 
 	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(msg, "bot111", gomock.Any()).Return(true).Times(1)
+	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot111", gomock.Any()).Return(true).Times(1)
 
 	charRepo := mock.NewMockCharacterRepository(ctrl)
 	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
@@ -261,7 +261,7 @@ func setupPromptIndexOutOfRange(ctrl *gomock.Controller) testSetup {
 	}
 
 	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(msg, "bot222", gomock.Any()).Return(true).Times(1)
+	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot222", gomock.Any()).Return(true).Times(1)
 
 	charRepo := mock.NewMockCharacterRepository(ctrl)
 	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
@@ -315,7 +315,7 @@ func setupFailedGenerateResponse(ctrl *gomock.Controller) testSetup {
 	}
 
 	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(msg, "bot333", gomock.Any()).Return(true).Times(1)
+	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot333", gomock.Any()).Return(true).Times(1)
 
 	charRepo := mock.NewMockCharacterRepository(ctrl)
 	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
@@ -372,7 +372,7 @@ func setupFailedSendMessage(ctrl *gomock.Controller) testSetup {
 	}
 
 	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(msg, "bot444", gomock.Any()).Return(true).Times(1)
+	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot444", gomock.Any()).Return(true).Times(1)
 
 	charRepo := mock.NewMockCharacterRepository(ctrl)
 	charRepo.EXPECT().Get(gomock.Any(), 1).Return(
@@ -436,7 +436,7 @@ func setupFailedGetSystemPrompt(ctrl *gomock.Controller) testSetup {
 	}
 
 	valRepo := mock.NewMockValidationRepository(ctrl)
-	valRepo.EXPECT().ShouldProcessMessage(msg, "bot666", gomock.Any()).Return(true).Times(1)
+	valRepo.EXPECT().ShouldProcessMessage(gomock.Any(), "bot666", gomock.Any()).Return(true).Times(1)
 
 	charRepo := mock.NewMockCharacterRepository(ctrl)
 	charRepo.EXPECT().Get(gomock.Any(), 1).Return(

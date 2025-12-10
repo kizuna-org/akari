@@ -58,16 +58,18 @@ func (i *handleMessageInteractorImpl) SetBotUserID(botUserID string) {
 }
 
 func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *discordEntity.Message) error {
-	if !i.validationRepo.ShouldProcessMessage(message, i.botUserID, i.botNamePatternRegex) {
+	domainMessage := domain.ToMessage(message)
+
+	if !i.validationRepo.ShouldProcessMessage(domainMessage, i.botUserID, i.botNamePatternRegex) {
 		return nil
 	}
 
-	return i.generateAndSendResponse(ctx, message)
+	return i.generateAndSendResponse(ctx, domainMessage)
 }
 
 func (i *handleMessageInteractorImpl) generateAndSendResponse(
 	ctx context.Context,
-	message *discordEntity.Message,
+	message *domain.Message,
 ) error {
 	character, err := i.characterRepo.Get(ctx, i.defaultCharacterID)
 	if err != nil {

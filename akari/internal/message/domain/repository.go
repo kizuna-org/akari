@@ -5,8 +5,6 @@ package domain
 import (
 	"context"
 	"regexp"
-
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
 type Character struct {
@@ -37,5 +35,5 @@ type SystemPromptRepository interface {
 }
 
 type ValidationRepository interface {
-	ShouldProcessMessage(message *entity.Message, botUserID string, botNameRegExp *regexp.Regexp) bool
+	ShouldProcessMessage(message *Message, botUserID string, botNameRegExp *regexp.Regexp) bool
 }

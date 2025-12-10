@@ -15,7 +15,6 @@ import (
 	regexp "regexp"
 
 	domain "github.com/kizuna-org/akari/internal/message/domain"
-	entity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -199,7 +198,7 @@ func (m *MockValidationRepository) EXPECT() *MockValidationRepositoryMockRecorde
 }
 
 // ShouldProcessMessage mocks base method.
-func (m *MockValidationRepository) ShouldProcessMessage(message *entity.Message, botUserID string, botNameRegExp *regexp.Regexp) bool {
+func (m *MockValidationRepository) ShouldProcessMessage(message *domain.Message, botUserID string, botNameRegExp *regexp.Regexp) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ShouldProcessMessage", message, botUserID, botNameRegExp)
 	ret0, _ := ret[0].(bool)
