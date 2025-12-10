@@ -49,6 +49,7 @@ func newInfrastructureProviders() fx.Option {
 		newDatabaseRepository,
 		newSystemPromptRepository,
 		newCharacterRepository,
+		newDiscordUserRepository,
 		newDiscordMessageRepository,
 		newDiscordChannelRepository,
 		newDiscordGuildRepository,
@@ -60,6 +61,7 @@ func newUsecaseProviders() fx.Option {
 	return fx.Provide(
 		databaseInteractor.NewDatabaseInteractor,
 		databaseInteractor.NewCharacterInteractor,
+		databaseInteractor.NewDiscordUserInteractor,
 		databaseInteractor.NewDiscordMessageInteractor,
 		databaseInteractor.NewDiscordChannelInteractor,
 		databaseInteractor.NewDiscordGuildInteractor,
@@ -74,6 +76,7 @@ func newMessagePackageProviders() fx.Option {
 		fx.Provide(
 			messageAdapter.NewCharacterRepository,
 			messageAdapter.NewDiscordRepository,
+			messageAdapter.NewDiscordUserRepository,
 			messageAdapter.NewDiscordMessageRepository,
 			messageAdapter.NewDiscordChannelRepository,
 			messageAdapter.NewDiscordGuildRepository,
@@ -92,6 +95,7 @@ func newMessagePackageProviders() fx.Option {
 func newHandleMessageInteractor(
 	characterRepo messageDomain.CharacterRepository,
 	discordRepo messageDomain.DiscordRepository,
+	discordUserRepo messageDomain.DiscordUserRepository,
 	discordMessageRepo messageDomain.DiscordMessageRepository,
 	discordChannelRepo messageDomain.DiscordChannelRepository,
 	discordGuildRepo messageDomain.DiscordGuildRepository,
@@ -113,6 +117,7 @@ func newHandleMessageInteractor(
 		messageUsecase.HandleMessageConfig{
 			CharacterRepo:       characterRepo,
 			DiscordRepo:         discordRepo,
+			DiscordUserRepo:     discordUserRepo,
 			DiscordMessageRepo:  discordMessageRepo,
 			DiscordChannelRepo:  discordChannelRepo,
 			DiscordGuildRepo:    discordGuildRepo,
@@ -229,6 +234,10 @@ func newDiscordRepository(
 }
 
 func newSystemPromptRepository(repo databaseRepo.Repository) databaseDomain.SystemPromptRepository {
+	return repo
+}
+
+func newDiscordUserRepository(repo databaseRepo.Repository) databaseDomain.DiscordUserRepository {
 	return repo
 }
 

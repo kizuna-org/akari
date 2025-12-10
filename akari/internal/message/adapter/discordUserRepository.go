@@ -1,0 +1,42 @@
+package adapter
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/kizuna-org/akari/gen/ent"
+	"github.com/kizuna-org/akari/internal/message/domain/entity"
+	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
+)
+
+type discordUserRepository struct {
+	discordUserInteractor databaseInteractor.DiscordUserInteractor
+}
+
+func NewDiscordUserRepository(
+	discordUserInteractor databaseInteractor.DiscordUserInteractor,
+) *discordUserRepository {
+	return &discordUserRepository{
+		discordUserInteractor: discordUserInteractor,
+	}
+}
+
+func (r *discordUserRepository) CreateIfNotExists(ctx context.Context, user *entity.User) (string, error) {
+	if user == nil {
+		return "", errors.New("adapter: user is required")
+	}
+
+	if _, err := r.discordUserInteractor.GetDiscordUserByID(ctx, user.ID); err == nil {
+		return user.ID, nil
+	} else if !ent.IsNotFound(err) {
+		return "", fmt.Errorf("adapter: failed to get discord user by id: %w", err)
+	}
+
+	discordUser, err := r.discordUserInteractor.CreateDiscordUser(ctx, user.ToDatabaseUser())
+	if err != nil {
+		return "", fmt.Errorf("adapter: failed to create discord user: %w", err)
+	}
+
+	return discordUser.ID, nil
+}

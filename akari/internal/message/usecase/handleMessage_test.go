@@ -157,6 +157,10 @@ func (tc testCase) setup(ctrl *gomock.Controller) (*entity.Message, usecase.Hand
 		IsBot:     tc.isBot,
 	}
 
+	discordUserRepo := mock.NewMockDiscordUserRepository(ctrl)
+	discordUserRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
+		Return("", nil).AnyTimes()
+
 	discordMessageRepo := mock.NewMockDiscordMessageRepository(ctrl)
 	discordMessageRepo.EXPECT().SaveMessage(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).Return(nil).Times(1)
 
@@ -175,6 +179,7 @@ func (tc testCase) setup(ctrl *gomock.Controller) (*entity.Message, usecase.Hand
 	config := usecase.HandleMessageConfig{
 		LLMRepo:             tc.setupLLMRepo(ctrl),
 		DiscordRepo:         tc.setupDiscordRepo(ctrl),
+		DiscordUserRepo:     discordUserRepo,
 		DiscordMessageRepo:  discordMessageRepo,
 		DiscordChannelRepo:  discordChannelRepo,
 		DiscordGuildRepo:    discordGuildRepo,
@@ -326,6 +331,7 @@ func TestHandle(t *testing.T) {
 
 			err := interactor.Handle(
 				t.Context(),
+				&entity.User{ID: defaultAuthorID},
 				msg,
 				&entity.Channel{ID: defaultChannelID, GuildID: defaultGuildID},
 				&entity.Guild{ID: defaultGuildID},

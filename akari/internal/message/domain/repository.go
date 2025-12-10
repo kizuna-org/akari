@@ -28,6 +28,10 @@ type DiscordRepository interface {
 	SendMessage(ctx context.Context, channelID string, content string) error
 }
 
+type DiscordUserRepository interface {
+	CreateIfNotExists(ctx context.Context, user *entity.User) (string, error)
+}
+
 type DiscordMessageRepository interface {
 	SaveMessage(ctx context.Context, message *entity.Message) error
 }
