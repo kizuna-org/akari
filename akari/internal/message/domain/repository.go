@@ -32,6 +32,10 @@ type DiscordMessageRepository interface {
 	SaveMessage(ctx context.Context, message *entity.Message) error
 }
 
+type DiscordChannelRepository interface {
+	CreateIfNotExists(ctx context.Context, channel *entity.Channel) (string, error)
+}
+
 type LLMRepository interface {
 	GenerateResponse(ctx context.Context, systemPrompt string, userMessage string) (string, error)
 }

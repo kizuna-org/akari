@@ -9,6 +9,6 @@ import (
 )
 
 type HandleMessageInteractor interface {
-	Handle(ctx context.Context, message *entity.Message) error
+	Handle(ctx context.Context, message *entity.Message, channel *entity.Channel) error
 	SetBotUserID(botUserID string)
 }

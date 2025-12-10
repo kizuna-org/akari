@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 
 	"github.com/bwmarrin/discordgo"
@@ -28,7 +30,7 @@ func NewMessageHandler(
 	}
 }
 
-func (h *MessageHandler) HandleMessageCreate(s *discordgo.Session, message *discordgo.MessageCreate) {
+func (h *MessageHandler) HandleMessageCreate(session *discordgo.Session, message *discordgo.MessageCreate) {
 	h.logger.Info("Received message",
 		"author", message.Author.Username,
 		"content", message.Content,
@@ -40,7 +42,14 @@ func (h *MessageHandler) HandleMessageCreate(s *discordgo.Session, message *disc
 	ctx := context.Background()
 	domainMessage := buildDomainMessage(message)
 
-	if err := h.interactor.Handle(ctx, domainMessage); err != nil {
+	domainChannel, err := fetchChannel(session, message)
+	if err != nil {
+		h.logger.Error("Failed to fetch channel", "error", err)
+
+		return
+	}
+
+	if err := h.interactor.Handle(ctx, domainMessage, domainChannel); err != nil {
 		h.logger.Error("Failed to handle message", "error", err)
 	}
 }
@@ -70,4 +79,28 @@ func buildDomainMessage(message *discordgo.MessageCreate) *entity.Message {
 		IsBot:     message.Author.Bot,
 		Mentions:  mentions,
 	}
+}
+
+func fetchChannel(session *discordgo.Session, message *discordgo.MessageCreate) (*entity.Channel, error) {
+	if session == nil {
+		return nil, errors.New("handler: session not found")
+	}
+
+	discordgoChannel, err := session.Channel(message.ChannelID)
+	if err != nil {
+		return nil, fmt.Errorf("handler: failed to fetch channel: %w", err)
+	}
+
+	createdAt, err := discordgo.SnowflakeTimestamp(discordgoChannel.ID)
+	if err != nil {
+		return nil, fmt.Errorf("handler: failed to parse channel timestamp: %w", err)
+	}
+
+	return &entity.Channel{
+		ID:        discordgoChannel.ID,
+		Type:      int(discordgoChannel.Type),
+		Name:      discordgoChannel.Name,
+		GuildID:   discordgoChannel.GuildID,
+		CreatedAt: createdAt,
+	}, nil
 }

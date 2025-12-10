@@ -50,6 +50,7 @@ func newInfrastructureProviders() fx.Option {
 		newSystemPromptRepository,
 		newCharacterRepository,
 		newDiscordMessageRepository,
+		newDiscordChannelRepository,
 		newDiscordClient,
 	)
 }
@@ -59,6 +60,7 @@ func newUsecaseProviders() fx.Option {
 		databaseInteractor.NewDatabaseInteractor,
 		databaseInteractor.NewCharacterInteractor,
 		databaseInteractor.NewDiscordMessageInteractor,
+		databaseInteractor.NewDiscordChannelInteractor,
 		newDiscordRepository,
 		llmInteractor.NewLLMInteractor,
 		databaseInteractor.NewSystemPromptInteractor,
@@ -71,6 +73,7 @@ func newMessagePackageProviders() fx.Option {
 			messageAdapter.NewCharacterRepository,
 			messageAdapter.NewDiscordRepository,
 			messageAdapter.NewDiscordMessageRepository,
+			messageAdapter.NewDiscordChannelRepository,
 			messageAdapter.NewLLMRepository,
 			messageAdapter.NewSystemPromptRepository,
 			messageAdapter.NewValidationRepository,
@@ -87,6 +90,7 @@ func newHandleMessageInteractor(
 	characterRepo messageDomain.CharacterRepository,
 	discordRepo messageDomain.DiscordRepository,
 	discordMessageRepo messageDomain.DiscordMessageRepository,
+	discordChannelRepo messageDomain.DiscordChannelRepository,
 	llmRepo messageDomain.LLMRepository,
 	systemPromptRepo messageDomain.SystemPromptRepository,
 	validationRepo messageDomain.ValidationRepository,
@@ -106,6 +110,7 @@ func newHandleMessageInteractor(
 			CharacterRepo:       characterRepo,
 			DiscordRepo:         discordRepo,
 			DiscordMessageRepo:  discordMessageRepo,
+			DiscordChannelRepo:  discordChannelRepo,
 			LLMRepo:             llmRepo,
 			SystemPromptRepo:    systemPromptRepo,
 			ValidationRepo:      validationRepo,
@@ -223,6 +228,10 @@ func newSystemPromptRepository(repo databaseRepo.Repository) databaseDomain.Syst
 }
 
 func newDiscordMessageRepository(repo databaseRepo.Repository) databaseDomain.DiscordMessageRepository {
+	return repo
+}
+
+func newDiscordChannelRepository(repo databaseRepo.Repository) databaseDomain.DiscordChannelRepository {
 	return repo
 }
 

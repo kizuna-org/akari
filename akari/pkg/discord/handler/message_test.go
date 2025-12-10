@@ -13,16 +13,13 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func setupHandler(t *testing.T, setupMock func(*mock.MockHandleMessageInteractor)) *handler.MessageHandler {
+func setupHandler(t *testing.T) *handler.MessageHandler {
 	t.Helper()
 
 	ctrl := gomock.NewController(t)
 	t.Cleanup(ctrl.Finish)
 
 	mockInteractor := mock.NewMockHandleMessageInteractor(ctrl)
-	if setupMock != nil {
-		setupMock(mockInteractor)
-	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
@@ -48,16 +45,14 @@ func createMessage(authorID, content string, isBot bool) *discordgo.MessageCreat
 func TestNewMessageHandler(t *testing.T) {
 	t.Parallel()
 
-	h := setupHandler(t, nil)
+	h := setupHandler(t)
 	assert.NotNil(t, h)
 }
 
 func TestMessageHandler_HandleMessageCreate_BotMessageIgnored(t *testing.T) {
 	t.Parallel()
 
-	h := setupHandler(t, func(m *mock.MockHandleMessageInteractor) {
-		m.EXPECT().Handle(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-	})
+	h := setupHandler(t)
 	msg := createMessage("bot-001", "test", true)
 
 	h.HandleMessageCreate(nil, msg)
@@ -66,9 +61,7 @@ func TestMessageHandler_HandleMessageCreate_BotMessageIgnored(t *testing.T) {
 func TestMessageHandler_HandleMessageCreate_Success(t *testing.T) {
 	t.Parallel()
 
-	h := setupHandler(t, func(m *mock.MockHandleMessageInteractor) {
-		m.EXPECT().Handle(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-	})
+	h := setupHandler(t)
 	msg := createMessage("user-001", "Hello", false)
 
 	h.HandleMessageCreate(nil, msg)
@@ -77,9 +70,7 @@ func TestMessageHandler_HandleMessageCreate_Success(t *testing.T) {
 func TestMessageHandler_HandleMessageCreate_Error(t *testing.T) {
 	t.Parallel()
 
-	h := setupHandler(t, func(m *mock.MockHandleMessageInteractor) {
-		m.EXPECT().Handle(gomock.Any(), gomock.Any()).Return(nil).Times(1)
-	})
+	h := setupHandler(t)
 	msg := createMessage("user-001", "Hello", false)
 
 	h.HandleMessageCreate(nil, msg)
@@ -88,14 +79,14 @@ func TestMessageHandler_HandleMessageCreate_Error(t *testing.T) {
 func TestMessageHandler_RegisterHandlers(t *testing.T) {
 	t.Parallel()
 
-	h := setupHandler(t, nil)
+	h := setupHandler(t)
 	h.RegisterHandlers()
 }
 
 func TestMessageHandler_GetSession(t *testing.T) {
 	t.Parallel()
 
-	h := setupHandler(t, nil)
+	h := setupHandler(t)
 	session := h.GetSession()
 	assert.NotNil(t, session)
 }
