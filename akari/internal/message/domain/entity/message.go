@@ -1,8 +1,9 @@
-package domain
+package entity
 
 import (
 	"time"
 
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
@@ -17,7 +18,22 @@ type Message struct {
 	Mentions  []string
 }
 
+func (m *Message) ToDiscordMessage() databaseDomain.DiscordMessage {
+	return databaseDomain.DiscordMessage{
+		ID:        m.ID,
+		ChannelID: m.ChannelID,
+		AuthorID:  m.AuthorID,
+		Content:   m.Content,
+		Timestamp: m.Timestamp,
+		CreatedAt: time.Now(),
+	}
+}
+
 func ToMessage(msg *discordEntity.Message) *Message {
+	if msg == nil {
+		return nil
+	}
+
 	return &Message{
 		ID:        msg.ID,
 		ChannelID: msg.ChannelID,

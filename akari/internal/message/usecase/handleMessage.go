@@ -4,10 +4,12 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 
 	"github.com/kizuna-org/akari/internal/message/domain"
+	"github.com/kizuna-org/akari/internal/message/domain/entity"
 	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 	discordService "github.com/kizuna-org/akari/pkg/discord/domain/service"
 )
@@ -19,6 +21,7 @@ type HandleMessageInteractor interface {
 type HandleMessageConfig struct {
 	CharacterRepo       domain.CharacterRepository
 	DiscordRepo         domain.DiscordRepository
+	DiscordMessageRepo  domain.DiscordMessageRepository
 	LLMRepo             domain.LLMRepository
 	SystemPromptRepo    domain.SystemPromptRepository
 	ValidationRepo      domain.ValidationRepository
@@ -30,6 +33,7 @@ type HandleMessageConfig struct {
 type handleMessageInteractorImpl struct {
 	characterRepo       domain.CharacterRepository
 	discordRepo         domain.DiscordRepository
+	discordMessageRepo  domain.DiscordMessageRepository
 	llmRepo             domain.LLMRepository
 	systemPromptRepo    domain.SystemPromptRepository
 	validationRepo      domain.ValidationRepository
@@ -43,6 +47,7 @@ func NewHandleMessageInteractor(config HandleMessageConfig) discordService.Handl
 	return &handleMessageInteractorImpl{
 		characterRepo:       config.CharacterRepo,
 		discordRepo:         config.DiscordRepo,
+		discordMessageRepo:  config.DiscordMessageRepo,
 		llmRepo:             config.LLMRepo,
 		systemPromptRepo:    config.SystemPromptRepo,
 		validationRepo:      config.ValidationRepo,
@@ -58,7 +63,15 @@ func (i *handleMessageInteractorImpl) SetBotUserID(botUserID string) {
 }
 
 func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *discordEntity.Message) error {
-	domainMessage := domain.ToMessage(message)
+	if message == nil {
+		return errors.New("usecase: message is nil")
+	}
+
+	domainMessage := entity.ToMessage(message)
+
+	if err := i.discordMessageRepo.SaveMessage(ctx, domainMessage); err != nil {
+		return fmt.Errorf("usecase: save message: %w", err)
+	}
 
 	if !i.validationRepo.ShouldProcessMessage(domainMessage, i.botUserID, i.botNamePatternRegex) {
 		return nil
@@ -69,7 +82,7 @@ func (i *handleMessageInteractorImpl) Handle(ctx context.Context, message *disco
 
 func (i *handleMessageInteractorImpl) generateAndSendResponse(
 	ctx context.Context,
-	message *domain.Message,
+	message *entity.Message,
 ) error {
 	character, err := i.characterRepo.Get(ctx, i.defaultCharacterID)
 	if err != nil {

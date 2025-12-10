@@ -5,6 +5,8 @@ package domain
 import (
 	"context"
 	"regexp"
+
+	"github.com/kizuna-org/akari/internal/message/domain/entity"
 )
 
 type Character struct {
@@ -26,6 +28,10 @@ type DiscordRepository interface {
 	SendMessage(ctx context.Context, channelID string, content string) error
 }
 
+type DiscordMessageRepository interface {
+	SaveMessage(ctx context.Context, message *entity.Message) error
+}
+
 type LLMRepository interface {
 	GenerateResponse(ctx context.Context, systemPrompt string, userMessage string) (string, error)
 }
@@ -35,5 +41,5 @@ type SystemPromptRepository interface {
 }
 
 type ValidationRepository interface {
-	ShouldProcessMessage(message *Message, botUserID string, botNameRegExp *regexp.Regexp) bool
+	ShouldProcessMessage(message *entity.Message, botUserID string, botNameRegExp *regexp.Regexp) bool
 }

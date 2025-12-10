@@ -49,6 +49,7 @@ func newInfrastructureProviders() fx.Option {
 		newDatabaseRepository,
 		newSystemPromptRepository,
 		newCharacterRepository,
+		newDiscordMessageRepository,
 		newDiscordClient,
 	)
 }
@@ -57,6 +58,7 @@ func newUsecaseProviders() fx.Option {
 	return fx.Provide(
 		databaseInteractor.NewDatabaseInteractor,
 		databaseInteractor.NewCharacterInteractor,
+		databaseInteractor.NewDiscordMessageInteractor,
 		newDiscordRepository,
 		llmInteractor.NewLLMInteractor,
 		databaseInteractor.NewSystemPromptInteractor,
@@ -68,6 +70,7 @@ func newMessagePackageProviders() fx.Option {
 		fx.Provide(
 			messageAdapter.NewCharacterRepository,
 			messageAdapter.NewDiscordRepository,
+			messageAdapter.NewDiscordMessageRepository,
 			messageAdapter.NewLLMRepository,
 			messageAdapter.NewSystemPromptRepository,
 			messageAdapter.NewValidationRepository,
@@ -83,6 +86,7 @@ func newMessagePackageProviders() fx.Option {
 func newHandleMessageInteractor(
 	characterRepo messageDomain.CharacterRepository,
 	discordRepo messageDomain.DiscordRepository,
+	discordMessageRepo messageDomain.DiscordMessageRepository,
 	llmRepo messageDomain.LLMRepository,
 	systemPromptRepo messageDomain.SystemPromptRepository,
 	validationRepo messageDomain.ValidationRepository,
@@ -101,6 +105,7 @@ func newHandleMessageInteractor(
 		messageUsecase.HandleMessageConfig{
 			CharacterRepo:       characterRepo,
 			DiscordRepo:         discordRepo,
+			DiscordMessageRepo:  discordMessageRepo,
 			LLMRepo:             llmRepo,
 			SystemPromptRepo:    systemPromptRepo,
 			ValidationRepo:      validationRepo,
@@ -214,6 +219,10 @@ func newDiscordRepository(
 }
 
 func newSystemPromptRepository(repo databaseRepo.Repository) databaseDomain.SystemPromptRepository {
+	return repo
+}
+
+func newDiscordMessageRepository(repo databaseRepo.Repository) databaseDomain.DiscordMessageRepository {
 	return repo
 }
 
