@@ -1,0 +1,109 @@
+package entity_test
+
+import (
+	"testing"
+	"time"
+
+	"github.com/kizuna-org/akari/internal/message/domain/entity"
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
+	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	"github.com/stretchr/testify/require"
+)
+
+func TestToGuild(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		guild *discordEntity.Guild
+		want  *entity.Guild
+	}{
+		{
+			name:  "nil guild",
+			guild: nil,
+			want:  nil,
+		},
+		{
+			name: "valid guild",
+			guild: &discordEntity.Guild{
+				ID:        "g-123",
+				Name:      "test guild",
+				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			},
+			want: &entity.Guild{
+				ID:        "g-123",
+				Name:      "test guild",
+				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		{
+			name: "empty guild",
+			guild: &discordEntity.Guild{
+				ID:   "",
+				Name: "",
+			},
+			want: &entity.Guild{
+				ID:   "",
+				Name: "",
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := entity.ToGuild(testCase.guild)
+			require.Equal(t, testCase.want, got)
+		})
+	}
+}
+
+func TestGuildToDatabaseGuild(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		g    *entity.Guild
+		want databaseDomain.DiscordGuild
+	}{
+		{
+			name: "convert guild",
+			g: &entity.Guild{
+				ID:        "g-123",
+				Name:      "test guild",
+				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			},
+			want: databaseDomain.DiscordGuild{
+				ID:         "g-123",
+				Name:       "test guild",
+				ChannelIDs: []string{},
+				CreatedAt:  time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		{
+			name: "guild with empty name",
+			g: &entity.Guild{
+				ID:   "g-789",
+				Name: "",
+			},
+			want: databaseDomain.DiscordGuild{
+				ID:         "g-789",
+				Name:       "",
+				ChannelIDs: []string{},
+			},
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := testCase.g.ToDatabaseGuild()
+			require.Equal(t, testCase.want.ID, got.ID)
+			require.Equal(t, testCase.want.Name, got.Name)
+			require.Equal(t, testCase.want.ChannelIDs, got.ChannelIDs)
+			require.Equal(t, testCase.want.CreatedAt, got.CreatedAt)
+		})
+	}
+}
