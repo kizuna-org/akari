@@ -10,6 +10,7 @@ import (
 	"github.com/kizuna-org/akari/internal/message/domain/mock"
 	"github.com/kizuna-org/akari/internal/message/usecase"
 	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	"github.com/kizuna-org/akari/pkg/discord/domain/service"
 	"go.uber.org/mock/gomock"
 )
 
@@ -86,9 +87,18 @@ type testCase struct {
 	llmResponse          string
 	llmErr               error
 	discordErr           error
+	userCreateErr        error
+	guildCreateErr       error
+	channelCreateErr     error
+	messageCreateErr     error
 	defaultPromptIndex   int
 	wantErr              bool
 	wantErrMsg           string
+	nilDiscordData       bool
+	includeUser          bool
+	includeGuild         bool
+	includeChannel       bool
+	includeMessage       bool
 }
 
 func (tc testCase) setupCharacterRepo(ctrl *gomock.Controller) *mock.MockCharacterRepository {
@@ -147,6 +157,68 @@ func (tc testCase) setupDiscordRepo(ctrl *gomock.Controller) *mock.MockDiscordRe
 	return mock.NewMockDiscordRepository(ctrl)
 }
 
+func (tc testCase) expectUserRepo(ctrl *gomock.Controller) *mock.MockDiscordUserRepository {
+	discordUserRepo := mock.NewMockDiscordUserRepository(ctrl)
+	if tc.includeUser && tc.userCreateErr != nil {
+		discordUserRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
+			Return("", tc.userCreateErr).Times(1)
+	} else if tc.includeUser {
+		discordUserRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
+			Return("", nil).Times(1)
+	}
+
+	return discordUserRepo
+}
+
+func (tc testCase) expectGuildRepo(ctrl *gomock.Controller) *mock.MockDiscordGuildRepository {
+	discordGuildRepo := mock.NewMockDiscordGuildRepository(ctrl)
+	if tc.includeGuild && tc.guildCreateErr != nil {
+		discordGuildRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
+			Return("", tc.guildCreateErr).Times(1)
+	} else if tc.includeGuild && tc.userCreateErr == nil {
+		discordGuildRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
+			Return("", nil).Times(1)
+	}
+
+	return discordGuildRepo
+}
+
+func (tc testCase) expectChannelRepo(ctrl *gomock.Controller) *mock.MockDiscordChannelRepository {
+	discordChannelRepo := mock.NewMockDiscordChannelRepository(ctrl)
+	if tc.includeChannel && tc.channelCreateErr != nil {
+		discordChannelRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
+			Return("", tc.channelCreateErr).Times(1)
+	} else if tc.includeChannel && tc.userCreateErr == nil && tc.guildCreateErr == nil {
+		discordChannelRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
+			Return("", nil).Times(1)
+	}
+
+	return discordChannelRepo
+}
+
+func (tc testCase) expectMessageRepo(ctrl *gomock.Controller) *mock.MockDiscordMessageRepository {
+	discordMessageRepo := mock.NewMockDiscordMessageRepository(ctrl)
+	if tc.includeMessage && tc.messageCreateErr != nil {
+		discordMessageRepo.EXPECT().SaveMessage(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
+			Return(tc.messageCreateErr).Times(1)
+	} else if tc.includeMessage && tc.userCreateErr == nil && tc.guildCreateErr == nil && tc.channelCreateErr == nil {
+		discordMessageRepo.EXPECT().SaveMessage(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
+			Return(nil).Times(1)
+	}
+
+	return discordMessageRepo
+}
+
+func (tc testCase) expectValidationRepo(ctrl *gomock.Controller) *mock.MockValidationRepository {
+	validationRepo := mock.NewMockValidationRepository(ctrl)
+	if tc.userCreateErr == nil && tc.guildCreateErr == nil && tc.channelCreateErr == nil && tc.messageCreateErr == nil {
+		validationRepo.EXPECT().ShouldProcessMessage(gomock.Not(gomock.Nil()), defaultBotID, gomock.Not(gomock.Nil())).
+			Return(tc.shouldProcessMessage).Times(1)
+	}
+
+	return validationRepo
+}
+
 func (tc testCase) setup(ctrl *gomock.Controller) (*entity.Message, usecase.HandleMessageConfig) {
 	msg := &entity.Message{
 		ID:        defaultMessageID,
@@ -157,33 +229,14 @@ func (tc testCase) setup(ctrl *gomock.Controller) (*entity.Message, usecase.Hand
 		IsBot:     tc.isBot,
 	}
 
-	discordUserRepo := mock.NewMockDiscordUserRepository(ctrl)
-	discordUserRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
-		Return("", nil).AnyTimes()
-
-	discordMessageRepo := mock.NewMockDiscordMessageRepository(ctrl)
-	discordMessageRepo.EXPECT().SaveMessage(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).Return(nil).Times(1)
-
-	discordChannelRepo := mock.NewMockDiscordChannelRepository(ctrl)
-	discordChannelRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
-		Return("", nil).AnyTimes()
-
-	discordGuildRepo := mock.NewMockDiscordGuildRepository(ctrl)
-	discordGuildRepo.EXPECT().CreateIfNotExists(gomock.Not(gomock.Nil()), gomock.Not(gomock.Nil())).
-		Return("", nil).Times(1)
-
-	validationRepo := mock.NewMockValidationRepository(ctrl)
-	validationRepo.EXPECT().ShouldProcessMessage(gomock.Not(gomock.Nil()), defaultBotID, gomock.Not(gomock.Nil())).
-		Return(tc.shouldProcessMessage).Times(1)
-
 	config := usecase.HandleMessageConfig{
 		LLMRepo:             tc.setupLLMRepo(ctrl),
 		DiscordRepo:         tc.setupDiscordRepo(ctrl),
-		DiscordUserRepo:     discordUserRepo,
-		DiscordMessageRepo:  discordMessageRepo,
-		DiscordChannelRepo:  discordChannelRepo,
-		DiscordGuildRepo:    discordGuildRepo,
-		ValidationRepo:      validationRepo,
+		DiscordUserRepo:     tc.expectUserRepo(ctrl),
+		DiscordMessageRepo:  tc.expectMessageRepo(ctrl),
+		DiscordChannelRepo:  tc.expectChannelRepo(ctrl),
+		DiscordGuildRepo:    tc.expectGuildRepo(ctrl),
+		ValidationRepo:      tc.expectValidationRepo(ctrl),
 		CharacterRepo:       tc.setupCharacterRepo(ctrl),
 		SystemPromptRepo:    tc.setupSystemPromptRepo(ctrl),
 		DefaultCharacterID:  defaultCharacterID,
@@ -194,10 +247,43 @@ func (tc testCase) setup(ctrl *gomock.Controller) (*entity.Message, usecase.Hand
 	return msg, config
 }
 
+func buildDiscordData(testCase testCase) *service.DiscordData {
+	data := &service.DiscordData{
+		Message: &entity.Message{
+			ID:        defaultMessageID,
+			ChannelID: defaultChannelID,
+			GuildID:   defaultGuildID,
+			AuthorID:  defaultAuthorID,
+			Content:   defaultContent,
+			IsBot:     testCase.isBot,
+		},
+	}
+
+	if testCase.includeUser {
+		data.User = &entity.User{ID: defaultAuthorID}
+	}
+
+	if testCase.includeGuild {
+		data.Guild = &entity.Guild{ID: defaultGuildID}
+	}
+
+	if testCase.includeChannel {
+		data.Channel = &entity.Channel{ID: defaultChannelID, GuildID: defaultGuildID}
+	}
+
+	return data
+}
+
 func TestHandle(t *testing.T) {
 	t.Parallel()
 
 	tests := []testCase{
+		{
+			name:           "nil discord params",
+			nilDiscordData: true,
+			wantErr:        true,
+			wantErrMsg:     "discord parameter is nil",
+		},
 		{
 			name:                 "successful message handling with response",
 			isBot:                false,
@@ -211,6 +297,10 @@ func TestHandle(t *testing.T) {
 			discordErr:           nil,
 			defaultPromptIndex:   0,
 			wantErr:              false,
+			includeUser:          true,
+			includeGuild:         true,
+			includeChannel:       true,
+			includeMessage:       true,
 		},
 		{
 			name:                 "message should not be processed",
@@ -225,6 +315,50 @@ func TestHandle(t *testing.T) {
 			discordErr:           nil,
 			defaultPromptIndex:   0,
 			wantErr:              false,
+			includeUser:          true,
+			includeGuild:         true,
+			includeChannel:       true,
+			includeMessage:       true,
+		},
+		{
+			name:                 "failed to create user",
+			isBot:                false,
+			shouldProcessMessage: false,
+			userCreateErr:        errors.New("user creation failed"),
+			defaultPromptIndex:   0,
+			wantErr:              true,
+			wantErrMsg:           "get or create user",
+			includeUser:          true,
+		},
+		{
+			name:                 "failed to create guild",
+			isBot:                false,
+			shouldProcessMessage: false,
+			guildCreateErr:       errors.New("guild creation failed"),
+			defaultPromptIndex:   0,
+			wantErr:              true,
+			wantErrMsg:           "create discord guild if not exists",
+			includeGuild:         true,
+		},
+		{
+			name:                 "failed to create channel",
+			isBot:                false,
+			shouldProcessMessage: false,
+			channelCreateErr:     errors.New("channel creation failed"),
+			defaultPromptIndex:   0,
+			wantErr:              true,
+			wantErrMsg:           "create discord channel if not exists",
+			includeChannel:       true,
+		},
+		{
+			name:                 "failed to save message",
+			isBot:                false,
+			shouldProcessMessage: false,
+			messageCreateErr:     errors.New("save message failed"),
+			defaultPromptIndex:   0,
+			wantErr:              true,
+			wantErrMsg:           "save message",
+			includeMessage:       true,
 		},
 		{
 			name:                 "failed to get character",
@@ -240,6 +374,10 @@ func TestHandle(t *testing.T) {
 			defaultPromptIndex:   0,
 			wantErr:              true,
 			wantErrMsg:           "usecase: get character",
+			includeUser:          true,
+			includeGuild:         true,
+			includeChannel:       true,
+			includeMessage:       true,
 		},
 		{
 			name:                 "empty system prompt IDs",
@@ -254,6 +392,10 @@ func TestHandle(t *testing.T) {
 			discordErr:           nil,
 			defaultPromptIndex:   0,
 			wantErr:              false,
+			includeUser:          true,
+			includeGuild:         true,
+			includeChannel:       true,
+			includeMessage:       true,
 		},
 		{
 			name:                 "prompt index out of range",
@@ -268,6 +410,10 @@ func TestHandle(t *testing.T) {
 			discordErr:           nil,
 			defaultPromptIndex:   5,
 			wantErr:              false,
+			includeUser:          true,
+			includeGuild:         true,
+			includeChannel:       true,
+			includeMessage:       true,
 		},
 		{
 			name:                 "failed to generate response",
@@ -283,6 +429,10 @@ func TestHandle(t *testing.T) {
 			defaultPromptIndex:   0,
 			wantErr:              true,
 			wantErrMsg:           "usecase: generate response",
+			includeUser:          true,
+			includeGuild:         true,
+			includeChannel:       true,
+			includeMessage:       true,
 		},
 		{
 			name:                 "failed to send discord message",
@@ -298,6 +448,10 @@ func TestHandle(t *testing.T) {
 			defaultPromptIndex:   0,
 			wantErr:              true,
 			wantErrMsg:           "usecase: send message",
+			includeUser:          true,
+			includeGuild:         true,
+			includeChannel:       true,
+			includeMessage:       true,
 		},
 		{
 			name:                 "failed to get system prompt",
@@ -313,6 +467,10 @@ func TestHandle(t *testing.T) {
 			defaultPromptIndex:   0,
 			wantErr:              true,
 			wantErrMsg:           "usecase: get system prompt",
+			includeUser:          true,
+			includeGuild:         true,
+			includeChannel:       true,
+			includeMessage:       true,
 		},
 	}
 
@@ -324,32 +482,36 @@ func TestHandle(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			msg, config := testCase.setup(ctrl)
+			if testCase.nilDiscordData {
+				interactor := usecase.NewHandleMessageInteractor(setupBaseConfig(ctrl))
+				interactor.SetBotUserID(defaultBotID)
+				err := interactor.Handle(t.Context(), nil)
+				checkError(t, err, testCase.wantErr, testCase.wantErrMsg)
 
+				return
+			}
+
+			_, config := testCase.setup(ctrl)
 			interactor := usecase.NewHandleMessageInteractor(config)
 			interactor.SetBotUserID(defaultBotID)
 
-			err := interactor.Handle(
-				t.Context(),
-				&entity.User{ID: defaultAuthorID},
-				msg,
-				&entity.Channel{ID: defaultChannelID, GuildID: defaultGuildID},
-				&entity.Guild{ID: defaultGuildID},
-			)
-
-			if (err != nil) != testCase.wantErr {
-				t.Errorf("expected error: %v, got: %v", testCase.wantErr, err)
-			}
-
-			if testCase.wantErr && testCase.wantErrMsg != "" && err != nil {
-				if !strings.Contains(err.Error(), testCase.wantErrMsg) {
-					t.Errorf(
-						"expected error to contain '%s', but got '%s'",
-						testCase.wantErrMsg,
-						err.Error(),
-					)
-				}
-			}
+			data := buildDiscordData(testCase)
+			err := interactor.Handle(t.Context(), data)
+			checkError(t, err, testCase.wantErr, testCase.wantErrMsg)
 		})
+	}
+}
+
+func checkError(t *testing.T, err error, wantErr bool, wantErrMsg string) {
+	t.Helper()
+
+	if (err != nil) != wantErr {
+		t.Errorf("expected error: %v, got: %v", wantErr, err)
+	}
+
+	if wantErr && wantErrMsg != "" && err != nil {
+		if !strings.Contains(err.Error(), wantErrMsg) {
+			t.Errorf("expected error to contain '%s', but got '%s'", wantErrMsg, err.Error())
+		}
 	}
 }
