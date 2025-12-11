@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	entity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	service "github.com/kizuna-org/akari/pkg/discord/domain/service"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,17 +42,17 @@ func (m *MockHandleMessageInteractor) EXPECT() *MockHandleMessageInteractorMockR
 }
 
 // Handle mocks base method.
-func (m *MockHandleMessageInteractor) Handle(ctx context.Context, user *entity.User, message *entity.Message, channel *entity.Channel, guild *entity.Guild) error {
+func (m *MockHandleMessageInteractor) Handle(ctx context.Context, discordParams *service.DiscordData) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Handle", ctx, user, message, channel, guild)
+	ret := m.ctrl.Call(m, "Handle", ctx, discordParams)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Handle indicates an expected call of Handle.
-func (mr *MockHandleMessageInteractorMockRecorder) Handle(ctx, user, message, channel, guild any) *gomock.Call {
+func (mr *MockHandleMessageInteractorMockRecorder) Handle(ctx, discordParams any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockHandleMessageInteractor)(nil).Handle), ctx, user, message, channel, guild)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Handle", reflect.TypeOf((*MockHandleMessageInteractor)(nil).Handle), ctx, discordParams)
 }
 
 // SetBotUserID mocks base method.
