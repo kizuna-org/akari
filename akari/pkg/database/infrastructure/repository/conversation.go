@@ -11,15 +11,12 @@ import (
 
 func (r *repositoryImpl) CreateConversation(
 	ctx context.Context,
-	messageID string,
-	conversationGroupID *int,
+	params domain.Conversation,
 ) (*domain.Conversation, error) {
 	builder := r.client.ConversationClient().Create().
-		SetDiscordMessageID(messageID)
-
-	if conversationGroupID != nil {
-		builder = builder.SetConversationGroupID(*conversationGroupID)
-	}
+		SetUserID(params.UserID).
+		SetDiscordMessageID(params.DiscordMessageID).
+		SetConversationGroupID(params.ConversationGroupID)
 
 	conversation, err := builder.Save(ctx)
 	if err != nil {

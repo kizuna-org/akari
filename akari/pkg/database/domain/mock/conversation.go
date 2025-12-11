@@ -42,18 +42,18 @@ func (m *MockConversationRepository) EXPECT() *MockConversationRepositoryMockRec
 }
 
 // CreateConversation mocks base method.
-func (m *MockConversationRepository) CreateConversation(ctx context.Context, messageID string, conversationGroupID *int) (*domain.Conversation, error) {
+func (m *MockConversationRepository) CreateConversation(ctx context.Context, params domain.Conversation) (*domain.Conversation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateConversation", ctx, messageID, conversationGroupID)
+	ret := m.ctrl.Call(m, "CreateConversation", ctx, params)
 	ret0, _ := ret[0].(*domain.Conversation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateConversation indicates an expected call of CreateConversation.
-func (mr *MockConversationRepositoryMockRecorder) CreateConversation(ctx, messageID, conversationGroupID any) *gomock.Call {
+func (mr *MockConversationRepositoryMockRecorder) CreateConversation(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConversation", reflect.TypeOf((*MockConversationRepository)(nil).CreateConversation), ctx, messageID, conversationGroupID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateConversation", reflect.TypeOf((*MockConversationRepository)(nil).CreateConversation), ctx, params)
 }
 
 // DeleteConversation mocks base method.

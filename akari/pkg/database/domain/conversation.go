@@ -11,7 +11,7 @@ import (
 )
 
 type ConversationRepository interface {
-	CreateConversation(ctx context.Context, messageID string, conversationGroupID *int) (*Conversation, error)
+	CreateConversation(ctx context.Context, params Conversation) (*Conversation, error)
 	GetConversationByID(ctx context.Context, id int) (*Conversation, error)
 	ListConversations(ctx context.Context) ([]*Conversation, error)
 	DeleteConversation(ctx context.Context, id int) error
