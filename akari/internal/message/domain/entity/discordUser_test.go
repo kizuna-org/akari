@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestToUser(t *testing.T) {
+func TestToDiscordUser(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
 		user *discordEntity.User
-		want *entity.User
+		want *entity.DiscordUser
 	}{
 		{
 			name: "nil user",
@@ -25,17 +25,17 @@ func TestToUser(t *testing.T) {
 		{
 			name: "valid user",
 			user: &discordEntity.User{ID: "g-123", Username: "testuser", Bot: false},
-			want: &entity.User{ID: "g-123", Username: "testuser", Bot: false},
+			want: &entity.DiscordUser{ID: "g-123", Username: "testuser", Bot: false},
 		},
 		{
 			name: "empty user",
 			user: &discordEntity.User{ID: ""},
-			want: &entity.User{ID: ""},
+			want: &entity.DiscordUser{ID: ""},
 		},
 		{
 			name: "bot user",
 			user: &discordEntity.User{ID: "g-456", Username: "botname", Bot: true},
-			want: &entity.User{ID: "g-456", Username: "botname", Bot: true},
+			want: &entity.DiscordUser{ID: "g-456", Username: "botname", Bot: true},
 		},
 	}
 
@@ -43,23 +43,23 @@ func TestToUser(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := entity.ToUser(testCase.user)
+			got := entity.ToDiscordUser(testCase.user)
 			require.Equal(t, testCase.want, got)
 		})
 	}
 }
 
-func TestUserToDatabaseUser(t *testing.T) {
+func TestDiscordUserToDatabaseDiscordUser(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
-		g    *entity.User
+		g    *entity.DiscordUser
 		want databaseDomain.DiscordUser
 	}{
 		{
 			name: "convert user",
-			g:    &entity.User{ID: "g-123", Username: "testuser", Bot: false},
+			g:    &entity.DiscordUser{ID: "g-123", Username: "testuser", Bot: false},
 			want: databaseDomain.DiscordUser{
 				ID:       "g-123",
 				Username: "testuser",
@@ -68,12 +68,12 @@ func TestUserToDatabaseUser(t *testing.T) {
 		},
 		{
 			name: "user with empty ID",
-			g:    &entity.User{ID: ""},
+			g:    &entity.DiscordUser{ID: ""},
 			want: databaseDomain.DiscordUser{ID: ""},
 		},
 		{
 			name: "user with username and bot flag",
-			g:    &entity.User{ID: "g-456", Username: "botuser", Bot: true},
+			g:    &entity.DiscordUser{ID: "g-456", Username: "botuser", Bot: true},
 			want: databaseDomain.DiscordUser{
 				ID:       "g-456",
 				Username: "botuser",
@@ -86,7 +86,7 @@ func TestUserToDatabaseUser(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := testCase.g.ToDatabaseUser()
+			got := testCase.g.ToDatabaseDiscordUser()
 			require.Equal(t, testCase.want.ID, got.ID)
 			require.Equal(t, testCase.want.Username, got.Username)
 			require.Equal(t, testCase.want.Bot, got.Bot)

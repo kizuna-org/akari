@@ -8,7 +8,7 @@ import (
 	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
-type Channel struct {
+type DiscordChannel struct {
 	ID        string
 	Type      int
 	Name      string
@@ -16,7 +16,7 @@ type Channel struct {
 	CreatedAt time.Time
 }
 
-func (c *Channel) ToDiscordChannel() databaseDomain.DiscordChannel {
+func (c *DiscordChannel) ToDatabaseDiscordChannel() databaseDomain.DiscordChannel {
 	return databaseDomain.DiscordChannel{
 		ID:        c.ID,
 		Type:      databaseDomain.DiscordChannelType(strconv.Itoa(c.Type)),
@@ -26,12 +26,12 @@ func (c *Channel) ToDiscordChannel() databaseDomain.DiscordChannel {
 	}
 }
 
-func ToChannel(channel *discordEntity.Channel) *Channel {
+func ToDiscordChannel(channel *discordEntity.Channel) *DiscordChannel {
 	if channel == nil {
 		return nil
 	}
 
-	return &Channel{
+	return &DiscordChannel{
 		ID:        channel.ID,
 		Type:      channel.Type,
 		Name:      channel.Name,

@@ -7,7 +7,7 @@ import (
 	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
-type Message struct {
+type DiscordMessage struct {
 	ID        string
 	ChannelID string
 	GuildID   string
@@ -18,7 +18,7 @@ type Message struct {
 	Mentions  []string
 }
 
-func (m *Message) ToDiscordMessage() databaseDomain.DiscordMessage {
+func (m *DiscordMessage) ToDatabaseDiscordMessage() databaseDomain.DiscordMessage {
 	return databaseDomain.DiscordMessage{
 		ID:        m.ID,
 		ChannelID: m.ChannelID,
@@ -29,12 +29,12 @@ func (m *Message) ToDiscordMessage() databaseDomain.DiscordMessage {
 	}
 }
 
-func ToMessage(msg *discordEntity.Message) *Message {
+func ToDiscordMessage(msg *discordEntity.Message) *DiscordMessage {
 	if msg == nil {
 		return nil
 	}
 
-	return &Message{
+	return &DiscordMessage{
 		ID:        msg.ID,
 		ChannelID: msg.ChannelID,
 		GuildID:   msg.GuildID,

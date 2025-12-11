@@ -21,12 +21,12 @@ func NewDiscordMessageRepository(
 	}
 }
 
-func (r *discordMessageRepository) SaveMessage(ctx context.Context, message *entity.Message) error {
+func (r *discordMessageRepository) SaveMessage(ctx context.Context, message *entity.DiscordMessage) error {
 	if message == nil {
 		return errors.New("adapter: message is nil")
 	}
 
-	if _, err := r.discordMessageInteractor.CreateDiscordMessage(ctx, message.ToDiscordMessage()); err != nil {
+	if _, err := r.discordMessageInteractor.CreateDiscordMessage(ctx, message.ToDatabaseDiscordMessage()); err != nil {
 		return err
 	}
 

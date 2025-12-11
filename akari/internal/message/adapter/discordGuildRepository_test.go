@@ -35,7 +35,7 @@ func TestDiscordGuildRepository_CreateIfNotExists(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
 		name      string
-		guild     *entity.Guild
+		guild     *entity.DiscordGuild
 		setupMock func(*discordGuildMock.MockDiscordGuildInteractor, context.Context)
 		want      string
 		wantErr   bool
@@ -43,7 +43,7 @@ func TestDiscordGuildRepository_CreateIfNotExists(t *testing.T) {
 	}{
 		{
 			name: "guild already exists",
-			guild: &entity.Guild{
+			guild: &entity.DiscordGuild{
 				ID:        "g-001",
 				Name:      "test guild",
 				CreatedAt: now,
@@ -61,7 +61,7 @@ func TestDiscordGuildRepository_CreateIfNotExists(t *testing.T) {
 		},
 		{
 			name: "create new guild",
-			guild: &entity.Guild{
+			guild: &entity.DiscordGuild{
 				ID:        "g-002",
 				Name:      "new guild",
 				CreatedAt: now,
@@ -91,7 +91,7 @@ func TestDiscordGuildRepository_CreateIfNotExists(t *testing.T) {
 		},
 		{
 			name: "create guild error",
-			guild: &entity.Guild{
+			guild: &entity.DiscordGuild{
 				ID:        "g-003",
 				Name:      "error guild",
 				CreatedAt: now,
@@ -111,7 +111,7 @@ func TestDiscordGuildRepository_CreateIfNotExists(t *testing.T) {
 		},
 		{
 			name: "database error on get",
-			guild: &entity.Guild{
+			guild: &entity.DiscordGuild{
 				ID:        "g-004",
 				Name:      "error guild",
 				CreatedAt: now,

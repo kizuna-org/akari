@@ -15,7 +15,7 @@ func NewValidationRepository() domain.ValidationRepository {
 }
 
 func (r *validationRepository) ShouldProcessMessage(
-	message *entity.Message,
+	message *entity.DiscordMessage,
 	botUserID string,
 	botNamePatternRegex *regexp.Regexp,
 ) bool {

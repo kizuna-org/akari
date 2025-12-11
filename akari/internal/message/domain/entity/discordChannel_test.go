@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestToChannel(t *testing.T) {
+func TestToDiscordChannel(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name    string
 		channel *discordEntity.Channel
-		want    *entity.Channel
+		want    *entity.DiscordChannel
 	}{
 		{
 			name:    "nil channel",
@@ -32,7 +32,7 @@ func TestToChannel(t *testing.T) {
 				GuildID:   "g-456",
 				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
-			want: &entity.Channel{
+			want: &entity.DiscordChannel{
 				ID:        "ch-123",
 				Type:      0,
 				Name:      "general",
@@ -47,7 +47,7 @@ func TestToChannel(t *testing.T) {
 				Type: 0,
 				Name: "",
 			},
-			want: &entity.Channel{
+			want: &entity.DiscordChannel{
 				ID:   "",
 				Type: 0,
 				Name: "",
@@ -59,23 +59,23 @@ func TestToChannel(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := entity.ToChannel(testCase.channel)
+			got := entity.ToDiscordChannel(testCase.channel)
 			require.Equal(t, testCase.want, got)
 		})
 	}
 }
 
-func TestChannelToDiscordChannel(t *testing.T) {
+func TestDiscordChannelToDatabaseDiscordChannel(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
-		ch   *entity.Channel
+		ch   *entity.DiscordChannel
 		want databaseDomain.DiscordChannel
 	}{
 		{
 			name: "convert channel",
-			ch: &entity.Channel{
+			ch: &entity.DiscordChannel{
 				ID:        "ch-123",
 				Type:      0,
 				Name:      "general",
@@ -92,7 +92,7 @@ func TestChannelToDiscordChannel(t *testing.T) {
 		},
 		{
 			name: "channel with type 1",
-			ch: &entity.Channel{
+			ch: &entity.DiscordChannel{
 				ID:   "ch-789",
 				Type: 1,
 				Name: "dm",
@@ -109,7 +109,7 @@ func TestChannelToDiscordChannel(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := testCase.ch.ToDiscordChannel()
+			got := testCase.ch.ToDatabaseDiscordChannel()
 			require.Equal(t, testCase.want.ID, got.ID)
 			require.Equal(t, testCase.want.Type, got.Type)
 			require.Equal(t, testCase.want.Name, got.Name)

@@ -14,28 +14,28 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		msg       *entity.Message
+		msg       *entity.DiscordMessage
 		botUserID string
 		botName   string
 		want      bool
 	}{
 		{
 			name:      "valid message with bot mentioned",
-			msg:       &entity.Message{Content: "Hello", Mentions: []string{"bot-123"}},
+			msg:       &entity.DiscordMessage{Content: "Hello", Mentions: []string{"bot-123"}},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      true,
 		},
 		{
 			name:      "valid message with bot name",
-			msg:       &entity.Message{Content: "Hey akari, how are you?"},
+			msg:       &entity.DiscordMessage{Content: "Hey akari, how are you?"},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      true,
 		},
 		{
 			name:      "empty content",
-			msg:       &entity.Message{Content: ""},
+			msg:       &entity.DiscordMessage{Content: ""},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      false,
@@ -49,21 +49,21 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 		},
 		{
 			name:      "bot message",
-			msg:       &entity.Message{Content: "Hello", IsBot: true},
+			msg:       &entity.DiscordMessage{Content: "Hello", IsBot: true},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      false,
 		},
 		{
 			name:      "no mention and no bot name",
-			msg:       &entity.Message{Content: "Hey there"},
+			msg:       &entity.DiscordMessage{Content: "Hey there"},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      false,
 		},
 		{
 			name:      "case insensitive bot name match",
-			msg:       &entity.Message{Content: "Hey AKARI, how are you?"},
+			msg:       &entity.DiscordMessage{Content: "Hey AKARI, how are you?"},
 			botUserID: "bot-123",
 			botName:   "(?i)akari",
 			want:      true,

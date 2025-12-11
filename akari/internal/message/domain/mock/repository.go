@@ -121,7 +121,7 @@ func (m *MockDiscordUserRepository) EXPECT() *MockDiscordUserRepositoryMockRecor
 }
 
 // CreateIfNotExists mocks base method.
-func (m *MockDiscordUserRepository) CreateIfNotExists(ctx context.Context, user *entity.User) (string, error) {
+func (m *MockDiscordUserRepository) CreateIfNotExists(ctx context.Context, user *entity.DiscordUser) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateIfNotExists", ctx, user)
 	ret0, _ := ret[0].(string)
@@ -160,7 +160,7 @@ func (m *MockDiscordMessageRepository) EXPECT() *MockDiscordMessageRepositoryMoc
 }
 
 // SaveMessage mocks base method.
-func (m *MockDiscordMessageRepository) SaveMessage(ctx context.Context, message *entity.Message) error {
+func (m *MockDiscordMessageRepository) SaveMessage(ctx context.Context, message *entity.DiscordMessage) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SaveMessage", ctx, message)
 	ret0, _ := ret[0].(error)
@@ -198,7 +198,7 @@ func (m *MockDiscordChannelRepository) EXPECT() *MockDiscordChannelRepositoryMoc
 }
 
 // CreateIfNotExists mocks base method.
-func (m *MockDiscordChannelRepository) CreateIfNotExists(ctx context.Context, channel *entity.Channel) (string, error) {
+func (m *MockDiscordChannelRepository) CreateIfNotExists(ctx context.Context, channel *entity.DiscordChannel) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateIfNotExists", ctx, channel)
 	ret0, _ := ret[0].(string)
@@ -237,7 +237,7 @@ func (m *MockDiscordGuildRepository) EXPECT() *MockDiscordGuildRepositoryMockRec
 }
 
 // CreateIfNotExists mocks base method.
-func (m *MockDiscordGuildRepository) CreateIfNotExists(ctx context.Context, guild *entity.Guild) (string, error) {
+func (m *MockDiscordGuildRepository) CreateIfNotExists(ctx context.Context, guild *entity.DiscordGuild) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateIfNotExists", ctx, guild)
 	ret0, _ := ret[0].(string)
@@ -354,7 +354,7 @@ func (m *MockValidationRepository) EXPECT() *MockValidationRepositoryMockRecorde
 }
 
 // ShouldProcessMessage mocks base method.
-func (m *MockValidationRepository) ShouldProcessMessage(message *entity.Message, botUserID string, botNameRegExp *regexp.Regexp) bool {
+func (m *MockValidationRepository) ShouldProcessMessage(message *entity.DiscordMessage, botUserID string, botNameRegExp *regexp.Regexp) bool {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ShouldProcessMessage", message, botUserID, botNameRegExp)
 	ret0, _ := ret[0].(bool)

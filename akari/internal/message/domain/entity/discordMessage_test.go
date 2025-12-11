@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestToMessage(t *testing.T) {
+func TestToDiscordMessage(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
 		msg  *discordEntity.Message
-		want *entity.Message
+		want *entity.DiscordMessage
 	}{
 		{
 			name: "nil message",
@@ -35,7 +35,7 @@ func TestToMessage(t *testing.T) {
 				IsBot:     true,
 				Mentions:  []string{"user1", "user2"},
 			},
-			want: &entity.Message{
+			want: &entity.DiscordMessage{
 				ID:        "123",
 				ChannelID: "ch-456",
 				GuildID:   "g-789",
@@ -53,7 +53,7 @@ func TestToMessage(t *testing.T) {
 				Content:  "",
 				Mentions: nil,
 			},
-			want: &entity.Message{
+			want: &entity.DiscordMessage{
 				ID:       "",
 				Content:  "",
 				Mentions: nil,
@@ -65,23 +65,23 @@ func TestToMessage(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := entity.ToMessage(testCase.msg)
+			got := entity.ToDiscordMessage(testCase.msg)
 			require.Equal(t, testCase.want, got)
 		})
 	}
 }
 
-func TestMessageToDiscordMessage(t *testing.T) {
+func TestDiscordMessageToDatabaseDiscordMessage(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
-		msg  *entity.Message
+		msg  *entity.DiscordMessage
 		want databaseDomain.DiscordMessage
 	}{
 		{
 			name: "convert message",
-			msg: &entity.Message{
+			msg: &entity.DiscordMessage{
 				ID:        "msg-123",
 				ChannelID: "ch-456",
 				AuthorID:  "au-789",
@@ -99,7 +99,7 @@ func TestMessageToDiscordMessage(t *testing.T) {
 		},
 		{
 			name: "empty message",
-			msg: &entity.Message{
+			msg: &entity.DiscordMessage{
 				ID: "",
 			},
 			want: databaseDomain.DiscordMessage{
@@ -112,7 +112,7 @@ func TestMessageToDiscordMessage(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := testCase.msg.ToDiscordMessage()
+			got := testCase.msg.ToDatabaseDiscordMessage()
 			require.Equal(t, testCase.want.ID, got.ID)
 			require.Equal(t, testCase.want.ChannelID, got.ChannelID)
 			require.Equal(t, testCase.want.AuthorID, got.AuthorID)
