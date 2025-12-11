@@ -63,7 +63,10 @@ func (h *MessageHandler) HandleMessageCreate(session *discordgo.Session, message
 		return
 	}
 
-	if err := h.interactor.Handle(ctx, domainUser, domainMessage, domainChannel, domainGuild); err != nil {
+	if err := h.interactor.Handle(
+		ctx,
+		&service.DiscordData{User: domainUser, Message: domainMessage, Channel: domainChannel, Guild: domainGuild},
+	); err != nil {
 		h.logger.Error("Failed to handle message", "error", err)
 	}
 }

@@ -8,13 +8,14 @@ import (
 	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
+type DiscordData struct {
+	User    *entity.User
+	Message *entity.Message
+	Channel *entity.Channel
+	Guild   *entity.Guild
+}
+
 type HandleMessageInteractor interface {
-	Handle(
-		ctx context.Context,
-		user *entity.User,
-		message *entity.Message,
-		channel *entity.Channel,
-		guild *entity.Guild,
-	) error
+	Handle(ctx context.Context, discordParams *DiscordData) error
 	SetBotUserID(botUserID string)
 }
