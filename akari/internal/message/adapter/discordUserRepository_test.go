@@ -19,7 +19,7 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		user      *entity.User
+		user      *entity.DiscordUser
 		setupMock func(*mock.MockDiscordUserInteractor, context.Context)
 		wantID    string
 		wantErr   bool
@@ -27,7 +27,7 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 	}{
 		{
 			name: "user already exists",
-			user: &entity.User{ID: "user-001", Username: "testuser", Bot: false},
+			user: &entity.DiscordUser{ID: "user-001", Username: "testuser", Bot: false},
 			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {
 				m.EXPECT().
 					GetDiscordUserByID(ctx, "user-001").
@@ -38,7 +38,7 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 		},
 		{
 			name: "user does not exist and creates successfully",
-			user: &entity.User{ID: "user-002", Username: "newuser", Bot: false},
+			user: &entity.DiscordUser{ID: "user-002", Username: "newuser", Bot: false},
 			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {
 				m.EXPECT().
 					GetDiscordUserByID(ctx, "user-002").
@@ -52,7 +52,7 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 		},
 		{
 			name: "user does not exist and creation fails",
-			user: &entity.User{ID: "user-003", Username: "failuser", Bot: true},
+			user: &entity.DiscordUser{ID: "user-003", Username: "failuser", Bot: true},
 			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {
 				m.EXPECT().
 					GetDiscordUserByID(ctx, "user-003").
@@ -67,7 +67,7 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 		},
 		{
 			name: "get user returns non-not-found error",
-			user: &entity.User{ID: "user-004", Username: "erruser", Bot: false},
+			user: &entity.DiscordUser{ID: "user-004", Username: "erruser", Bot: false},
 			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {
 				m.EXPECT().
 					GetDiscordUserByID(ctx, "user-004").
@@ -87,7 +87,7 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 		},
 		{
 			name: "user with empty ID",
-			user: &entity.User{ID: "", Username: "emptyid", Bot: false},
+			user: &entity.DiscordUser{ID: "", Username: "emptyid", Bot: false},
 			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {
 				m.EXPECT().
 					GetDiscordUserByID(ctx, "").

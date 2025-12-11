@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestToGuild(t *testing.T) {
+func TestToDiscordGuild(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name  string
 		guild *discordEntity.Guild
-		want  *entity.Guild
+		want  *entity.DiscordGuild
 	}{
 		{
 			name:  "nil guild",
@@ -30,7 +30,7 @@ func TestToGuild(t *testing.T) {
 				Name:      "test guild",
 				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
-			want: &entity.Guild{
+			want: &entity.DiscordGuild{
 				ID:        "g-123",
 				Name:      "test guild",
 				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -42,7 +42,7 @@ func TestToGuild(t *testing.T) {
 				ID:   "",
 				Name: "",
 			},
-			want: &entity.Guild{
+			want: &entity.DiscordGuild{
 				ID:   "",
 				Name: "",
 			},
@@ -53,23 +53,23 @@ func TestToGuild(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := entity.ToGuild(testCase.guild)
+			got := entity.ToDiscordGuild(testCase.guild)
 			require.Equal(t, testCase.want, got)
 		})
 	}
 }
 
-func TestGuildToDatabaseGuild(t *testing.T) {
+func TestDiscordGuildToDatabaseDiscordGuild(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
-		g    *entity.Guild
+		g    *entity.DiscordGuild
 		want databaseDomain.DiscordGuild
 	}{
 		{
 			name: "convert guild",
-			g: &entity.Guild{
+			g: &entity.DiscordGuild{
 				ID:        "g-123",
 				Name:      "test guild",
 				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -83,7 +83,7 @@ func TestGuildToDatabaseGuild(t *testing.T) {
 		},
 		{
 			name: "guild with empty name",
-			g: &entity.Guild{
+			g: &entity.DiscordGuild{
 				ID:   "g-789",
 				Name: "",
 			},
@@ -99,7 +99,7 @@ func TestGuildToDatabaseGuild(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := testCase.g.ToDatabaseGuild()
+			got := testCase.g.ToDatabaseDiscordGuild()
 			require.Equal(t, testCase.want.ID, got.ID)
 			require.Equal(t, testCase.want.Name, got.Name)
 			require.Equal(t, testCase.want.ChannelIDs, got.ChannelIDs)

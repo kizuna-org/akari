@@ -32,14 +32,14 @@ func TestDiscordMessageRepository_SaveMessage(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
 		name      string
-		message   *entity.Message
+		message   *entity.DiscordMessage
 		setupMock func(*discordMessageMock.MockDiscordMessageInteractor)
 		wantErr   bool
 		errMsg    string
 	}{
 		{
 			name: "success",
-			message: &entity.Message{
+			message: &entity.DiscordMessage{
 				ID:        "msg-001",
 				ChannelID: "ch-001",
 				AuthorID:  "usr-001",
@@ -61,7 +61,7 @@ func TestDiscordMessageRepository_SaveMessage(t *testing.T) {
 		},
 		{
 			name: "interactor error",
-			message: &entity.Message{
+			message: &entity.DiscordMessage{
 				ID:        "msg-001",
 				ChannelID: "ch-001",
 				AuthorID:  "usr-001",
@@ -85,7 +85,7 @@ func TestDiscordMessageRepository_SaveMessage(t *testing.T) {
 		},
 		{
 			name: "empty message content",
-			message: &entity.Message{
+			message: &entity.DiscordMessage{
 				ID:        "msg-001",
 				ChannelID: "ch-001",
 				AuthorID:  "usr-001",
@@ -107,7 +107,7 @@ func TestDiscordMessageRepository_SaveMessage(t *testing.T) {
 		},
 		{
 			name: "message with mentions",
-			message: &entity.Message{
+			message: &entity.DiscordMessage{
 				ID:        "msg-002",
 				ChannelID: "ch-002",
 				AuthorID:  "usr-002",

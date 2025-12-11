@@ -7,13 +7,13 @@ import (
 	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
-type User struct {
+type DiscordUser struct {
 	ID       string
 	Username string
 	Bot      bool
 }
 
-func (u *User) ToDatabaseUser() databaseDomain.DiscordUser {
+func (u *DiscordUser) ToDatabaseDiscordUser() databaseDomain.DiscordUser {
 	return databaseDomain.DiscordUser{
 		ID:        u.ID,
 		Username:  u.Username,
@@ -23,12 +23,12 @@ func (u *User) ToDatabaseUser() databaseDomain.DiscordUser {
 	}
 }
 
-func ToUser(user *discordEntity.User) *User {
+func ToDiscordUser(user *discordEntity.User) *DiscordUser {
 	if user == nil {
 		return nil
 	}
 
-	return &User{
+	return &DiscordUser{
 		ID:       user.ID,
 		Username: user.Username,
 		Bot:      user.Bot,

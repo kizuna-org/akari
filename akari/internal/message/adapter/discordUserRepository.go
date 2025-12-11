@@ -22,7 +22,7 @@ func NewDiscordUserRepository(
 	}
 }
 
-func (r *discordUserRepository) CreateIfNotExists(ctx context.Context, user *entity.User) (string, error) {
+func (r *discordUserRepository) CreateIfNotExists(ctx context.Context, user *entity.DiscordUser) (string, error) {
 	if user == nil {
 		return "", errors.New("adapter: user is required")
 	}
@@ -33,7 +33,7 @@ func (r *discordUserRepository) CreateIfNotExists(ctx context.Context, user *ent
 		return "", fmt.Errorf("adapter: failed to get discord user by id: %w", err)
 	}
 
-	discordUser, err := r.discordUserInteractor.CreateDiscordUser(ctx, user.ToDatabaseUser())
+	discordUser, err := r.discordUserInteractor.CreateDiscordUser(ctx, user.ToDatabaseDiscordUser())
 	if err != nil {
 		return "", fmt.Errorf("adapter: failed to create discord user: %w", err)
 	}

@@ -35,7 +35,7 @@ func TestDiscordChannelRepository_CreateIfNotExists(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
 		name      string
-		channel   *entity.Channel
+		channel   *entity.DiscordChannel
 		setupMock func(*discordChannelMock.MockDiscordChannelInteractor, context.Context)
 		want      string
 		wantErr   bool
@@ -43,7 +43,7 @@ func TestDiscordChannelRepository_CreateIfNotExists(t *testing.T) {
 	}{
 		{
 			name: "channel already exists",
-			channel: &entity.Channel{
+			channel: &entity.DiscordChannel{
 				ID:        "ch-001",
 				Type:      0,
 				Name:      "general",
@@ -65,7 +65,7 @@ func TestDiscordChannelRepository_CreateIfNotExists(t *testing.T) {
 		},
 		{
 			name: "create new channel",
-			channel: &entity.Channel{
+			channel: &entity.DiscordChannel{
 				ID:        "ch-002",
 				Type:      0,
 				Name:      "random",
@@ -99,7 +99,7 @@ func TestDiscordChannelRepository_CreateIfNotExists(t *testing.T) {
 		},
 		{
 			name: "create channel error",
-			channel: &entity.Channel{
+			channel: &entity.DiscordChannel{
 				ID:        "ch-003",
 				Type:      1,
 				Name:      "dm",
@@ -121,7 +121,7 @@ func TestDiscordChannelRepository_CreateIfNotExists(t *testing.T) {
 		},
 		{
 			name: "database error on get",
-			channel: &entity.Channel{
+			channel: &entity.DiscordChannel{
 				ID:        "ch-005",
 				Type:      0,
 				Name:      "error",

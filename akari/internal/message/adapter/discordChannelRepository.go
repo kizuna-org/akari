@@ -23,7 +23,10 @@ func NewDiscordChannelRepository(
 	}
 }
 
-func (r *discordChannelRepository) CreateIfNotExists(ctx context.Context, channel *entity.Channel) (string, error) {
+func (r *discordChannelRepository) CreateIfNotExists(
+	ctx context.Context,
+	channel *entity.DiscordChannel,
+) (string, error) {
 	if channel == nil {
 		return "", errors.New("adapter: channel is required")
 	}
@@ -34,7 +37,7 @@ func (r *discordChannelRepository) CreateIfNotExists(ctx context.Context, channe
 		return "", fmt.Errorf("adapter: failed to get discord channel by id: %w", err)
 	}
 
-	discordChannel, err := r.discordChannelInteractor.CreateDiscordChannel(ctx, channel.ToDiscordChannel())
+	discordChannel, err := r.discordChannelInteractor.CreateDiscordChannel(ctx, channel.ToDatabaseDiscordChannel())
 	if err != nil {
 		return "", fmt.Errorf("adapter: failed to create discord channel: %w", err)
 	}

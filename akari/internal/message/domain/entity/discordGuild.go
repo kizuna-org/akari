@@ -7,13 +7,13 @@ import (
 	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
-type Guild struct {
+type DiscordGuild struct {
 	ID        string
 	Name      string
 	CreatedAt time.Time
 }
 
-func (g *Guild) ToDatabaseGuild() databaseDomain.DiscordGuild {
+func (g *DiscordGuild) ToDatabaseDiscordGuild() databaseDomain.DiscordGuild {
 	return databaseDomain.DiscordGuild{
 		ID:         g.ID,
 		Name:       g.Name,
@@ -22,12 +22,12 @@ func (g *Guild) ToDatabaseGuild() databaseDomain.DiscordGuild {
 	}
 }
 
-func ToGuild(guild *discordEntity.Guild) *Guild {
+func ToDiscordGuild(guild *discordEntity.Guild) *DiscordGuild {
 	if guild == nil {
 		return nil
 	}
 
-	return &Guild{
+	return &DiscordGuild{
 		ID:        guild.ID,
 		Name:      guild.Name,
 		CreatedAt: guild.CreatedAt,

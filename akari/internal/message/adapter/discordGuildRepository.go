@@ -23,7 +23,7 @@ func NewDiscordGuildRepository(
 	}
 }
 
-func (r *discordGuildRepository) CreateIfNotExists(ctx context.Context, guild *entity.Guild) (string, error) {
+func (r *discordGuildRepository) CreateIfNotExists(ctx context.Context, guild *entity.DiscordGuild) (string, error) {
 	if guild == nil {
 		return "", errors.New("adapter: guild is required")
 	}
@@ -34,7 +34,7 @@ func (r *discordGuildRepository) CreateIfNotExists(ctx context.Context, guild *e
 		return "", fmt.Errorf("adapter: failed to get discord guild by id: %w", err)
 	}
 
-	discordGuild, err := r.discordGuildInteractor.CreateDiscordGuild(ctx, guild.ToDatabaseGuild())
+	discordGuild, err := r.discordGuildInteractor.CreateDiscordGuild(ctx, guild.ToDatabaseDiscordGuild())
 	if err != nil {
 		return "", fmt.Errorf("adapter: failed to create discord guild: %w", err)
 	}

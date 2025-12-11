@@ -29,19 +29,19 @@ type DiscordRepository interface {
 }
 
 type DiscordUserRepository interface {
-	CreateIfNotExists(ctx context.Context, user *entity.User) (string, error)
+	CreateIfNotExists(ctx context.Context, user *entity.DiscordUser) (string, error)
 }
 
 type DiscordMessageRepository interface {
-	SaveMessage(ctx context.Context, message *entity.Message) error
+	SaveMessage(ctx context.Context, message *entity.DiscordMessage) error
 }
 
 type DiscordChannelRepository interface {
-	CreateIfNotExists(ctx context.Context, channel *entity.Channel) (string, error)
+	CreateIfNotExists(ctx context.Context, channel *entity.DiscordChannel) (string, error)
 }
 
 type DiscordGuildRepository interface {
-	CreateIfNotExists(ctx context.Context, guild *entity.Guild) (string, error)
+	CreateIfNotExists(ctx context.Context, guild *entity.DiscordGuild) (string, error)
 }
 
 type LLMRepository interface {
@@ -53,5 +53,5 @@ type SystemPromptRepository interface {
 }
 
 type ValidationRepository interface {
-	ShouldProcessMessage(message *entity.Message, botUserID string, botNameRegExp *regexp.Regexp) bool
+	ShouldProcessMessage(message *entity.DiscordMessage, botUserID string, botNameRegExp *regexp.Regexp) bool
 }

@@ -82,7 +82,7 @@ func (i *handleMessageInteractorImpl) Handle(
 		return err
 	}
 
-	domainMessage := entity.ToMessage(discordParams.Message)
+	domainMessage := entity.ToDiscordMessage(discordParams.Message)
 
 	if !i.validationRepo.ShouldProcessMessage(domainMessage, i.botUserID, i.botNamePatternRegex) {
 		return nil
@@ -96,25 +96,25 @@ func (i *handleMessageInteractorImpl) saveDiscordEntities(
 	params *discordService.DiscordData,
 ) error {
 	if params.User != nil {
-		if _, err := i.discordUserRepo.CreateIfNotExists(ctx, entity.ToUser(params.User)); err != nil {
+		if _, err := i.discordUserRepo.CreateIfNotExists(ctx, entity.ToDiscordUser(params.User)); err != nil {
 			return fmt.Errorf("usecase: get or create user: %w", err)
 		}
 	}
 
 	if params.Guild != nil {
-		if _, err := i.discordGuildRepo.CreateIfNotExists(ctx, entity.ToGuild(params.Guild)); err != nil {
+		if _, err := i.discordGuildRepo.CreateIfNotExists(ctx, entity.ToDiscordGuild(params.Guild)); err != nil {
 			return fmt.Errorf("usecase: create discord guild if not exists: %w", err)
 		}
 	}
 
 	if params.Channel != nil {
-		if _, err := i.discordChannelRepo.CreateIfNotExists(ctx, entity.ToChannel(params.Channel)); err != nil {
+		if _, err := i.discordChannelRepo.CreateIfNotExists(ctx, entity.ToDiscordChannel(params.Channel)); err != nil {
 			return fmt.Errorf("usecase: create discord channel if not exists: %w", err)
 		}
 	}
 
 	if params.Message != nil {
-		if err := i.discordMessageRepo.SaveMessage(ctx, entity.ToMessage(params.Message)); err != nil {
+		if err := i.discordMessageRepo.SaveMessage(ctx, entity.ToDiscordMessage(params.Message)); err != nil {
 			return fmt.Errorf("usecase: save message: %w", err)
 		}
 	}
@@ -124,7 +124,7 @@ func (i *handleMessageInteractorImpl) saveDiscordEntities(
 
 func (i *handleMessageInteractorImpl) generateAndSendResponse(
 	ctx context.Context,
-	message *entity.Message,
+	message *entity.DiscordMessage,
 ) error {
 	character, err := i.characterRepo.Get(ctx, i.defaultCharacterID)
 	if err != nil {
