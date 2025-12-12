@@ -6,7 +6,6 @@ import (
 
 	"github.com/kizuna-org/akari/internal/message/domain/entity"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
-	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +14,7 @@ func TestToDiscordGuild(t *testing.T) {
 
 	tests := []struct {
 		name  string
-		guild *discordEntity.Guild
+		guild *databaseDomain.DiscordGuild
 		want  *entity.DiscordGuild
 	}{
 		{
@@ -25,7 +24,7 @@ func TestToDiscordGuild(t *testing.T) {
 		},
 		{
 			name: "valid guild",
-			guild: &discordEntity.Guild{
+			guild: &databaseDomain.DiscordGuild{
 				ID:        "g-123",
 				Name:      "test guild",
 				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -38,7 +37,7 @@ func TestToDiscordGuild(t *testing.T) {
 		},
 		{
 			name: "empty guild",
-			guild: &discordEntity.Guild{
+			guild: &databaseDomain.DiscordGuild{
 				ID:   "",
 				Name: "",
 			},

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	"github.com/kizuna-org/akari/pkg/database/domain"
 	servicemock "github.com/kizuna-org/akari/pkg/discord/domain/service/mock"
 	"github.com/kizuna-org/akari/pkg/discord/usecase/interactor"
 	"github.com/stretchr/testify/assert"
@@ -39,7 +39,7 @@ func TestDiscordInteractor_SendMessage(t *testing.T) {
 			content:   "Hello",
 			mockSetup: func(m *servicemock.MockDiscordService) {
 				m.EXPECT().SendMessage(gomock.Any(), "123", "Hello").
-					Return(&entity.Message{
+					Return(&domain.DiscordMessage{
 						ID:        "msg-1",
 						ChannelID: "123",
 						Content:   "Hello",
@@ -98,7 +98,7 @@ func TestDiscordInteractor_GetMessage(t *testing.T) {
 			messageID: "msg-1",
 			mockSetup: func(m *servicemock.MockDiscordService) {
 				m.EXPECT().GetMessage(gomock.Any(), "123", "msg-1").
-					Return(&entity.Message{
+					Return(&domain.DiscordMessage{
 						ID:        "msg-1",
 						ChannelID: "123",
 						Timestamp: time.Now(),

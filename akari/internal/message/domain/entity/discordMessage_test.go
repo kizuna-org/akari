@@ -6,7 +6,6 @@ import (
 
 	"github.com/kizuna-org/akari/internal/message/domain/entity"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
-	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +14,7 @@ func TestToDiscordMessage(t *testing.T) {
 
 	tests := []struct {
 		name string
-		msg  *discordEntity.Message
+		msg  *databaseDomain.DiscordMessage
 		want *entity.DiscordMessage
 	}{
 		{
@@ -25,38 +24,30 @@ func TestToDiscordMessage(t *testing.T) {
 		},
 		{
 			name: "valid message",
-			msg: &discordEntity.Message{
+			msg: &databaseDomain.DiscordMessage{
 				ID:        "123",
 				ChannelID: "ch-456",
-				GuildID:   "g-789",
 				AuthorID:  "au-123",
 				Content:   "hello",
 				Timestamp: time.Date(2025, 12, 10, 12, 0, 0, 0, time.UTC),
-				IsBot:     true,
-				Mentions:  []string{"user1", "user2"},
 			},
 			want: &entity.DiscordMessage{
 				ID:        "123",
 				ChannelID: "ch-456",
-				GuildID:   "g-789",
 				AuthorID:  "au-123",
 				Content:   "hello",
 				Timestamp: time.Date(2025, 12, 10, 12, 0, 0, 0, time.UTC),
-				IsBot:     true,
-				Mentions:  []string{"user1", "user2"},
 			},
 		},
 		{
 			name: "empty message",
-			msg: &discordEntity.Message{
-				ID:       "",
-				Content:  "",
-				Mentions: nil,
+			msg: &databaseDomain.DiscordMessage{
+				ID:      "",
+				Content: "",
 			},
 			want: &entity.DiscordMessage{
-				ID:       "",
-				Content:  "",
-				Mentions: nil,
+				ID:      "",
+				Content: "",
 			},
 		},
 	}
@@ -87,7 +78,6 @@ func TestDiscordMessageToDatabaseDiscordMessage(t *testing.T) {
 				AuthorID:  "au-789",
 				Content:   "test content",
 				Timestamp: time.Date(2025, 12, 10, 12, 0, 0, 0, time.UTC),
-				IsBot:     false,
 			},
 			want: databaseDomain.DiscordMessage{
 				ID:        "msg-123",

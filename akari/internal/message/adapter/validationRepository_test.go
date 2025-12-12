@@ -14,14 +14,18 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 
 	tests := []struct {
 		name      string
+		user      *entity.DiscordUser
 		msg       *entity.DiscordMessage
+		mentions  []string
 		botUserID string
 		botName   string
 		want      bool
 	}{
 		{
 			name:      "valid message with bot mentioned",
-			msg:       &entity.DiscordMessage{Content: "Hello", Mentions: []string{"bot-123"}},
+			msg:       &entity.DiscordMessage{Content: "Hello"},
+			user:      &entity.DiscordUser{Bot: false},
+			mentions:  []string{"bot-123"},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      true,
@@ -29,6 +33,8 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 		{
 			name:      "valid message with bot name",
 			msg:       &entity.DiscordMessage{Content: "Hey akari, how are you?"},
+			user:      &entity.DiscordUser{Bot: false},
+			mentions:  []string{},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      true,
@@ -36,6 +42,8 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 		{
 			name:      "empty content",
 			msg:       &entity.DiscordMessage{Content: ""},
+			user:      &entity.DiscordUser{Bot: false},
+			mentions:  []string{},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      false,
@@ -43,13 +51,17 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 		{
 			name:      "nil message",
 			msg:       nil,
+			user:      nil,
+			mentions:  []string{},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      false,
 		},
 		{
 			name:      "bot message",
-			msg:       &entity.DiscordMessage{Content: "Hello", IsBot: true},
+			msg:       &entity.DiscordMessage{Content: "Hello"},
+			user:      &entity.DiscordUser{Bot: true},
+			mentions:  []string{},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      false,
@@ -57,6 +69,8 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 		{
 			name:      "no mention and no bot name",
 			msg:       &entity.DiscordMessage{Content: "Hey there"},
+			user:      &entity.DiscordUser{Bot: false},
+			mentions:  []string{},
 			botUserID: "bot-123",
 			botName:   "akari",
 			want:      false,
@@ -64,6 +78,8 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 		{
 			name:      "case insensitive bot name match",
 			msg:       &entity.DiscordMessage{Content: "Hey AKARI, how are you?"},
+			user:      &entity.DiscordUser{Bot: false},
+			mentions:  []string{},
 			botUserID: "bot-123",
 			botName:   "(?i)akari",
 			want:      true,
@@ -76,7 +92,7 @@ func TestValidationRepository_ShouldProcessMessage(t *testing.T) {
 
 			repo := adapter.NewValidationRepository()
 			botNameRegex := regexp.MustCompile(testCase.botName)
-			result := repo.ShouldProcessMessage(testCase.msg, testCase.botUserID, botNameRegex)
+			result := repo.ShouldProcessMessage(testCase.user, testCase.msg, testCase.mentions, testCase.botUserID, botNameRegex)
 
 			assert.Equal(t, testCase.want, result)
 		})
