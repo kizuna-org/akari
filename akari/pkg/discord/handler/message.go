@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/discord/domain/service"
 	"github.com/kizuna-org/akari/pkg/discord/infrastructure"
 )
@@ -40,7 +41,7 @@ func (h *MessageHandler) HandleMessageCreate(session *discordgo.Session, message
 	)
 
 	ctx := context.Background()
-	domainMessage := buildDomainMessage(message)
+	domainMessage, mentions := buildDomainMessage(message)
 
 	domainChannel, err := fetchChannel(session, message)
 	if err != nil {
@@ -63,10 +64,15 @@ func (h *MessageHandler) HandleMessageCreate(session *discordgo.Session, message
 		return
 	}
 
-	if err := h.interactor.Handle(
-		ctx,
-		&service.DiscordData{User: domainUser, Message: domainMessage, Channel: domainChannel, Guild: domainGuild},
-	); err != nil {
+	data := &service.DiscordData{
+		User:     domainUser,
+		Message:  domainMessage,
+		Mentions: mentions,
+		Channel:  domainChannel,
+		Guild:    domainGuild,
+	}
+
+	if err := h.interactor.Handle(ctx, data); err != nil {
 		h.logger.Error("Failed to handle message", "error", err)
 	}
 }
@@ -80,25 +86,26 @@ func (h *MessageHandler) GetSession() *discordgo.Session {
 	return h.client.Session
 }
 
-func buildDomainMessage(message *discordgo.MessageCreate) *entity.Message {
+func buildDomainMessage(message *discordgo.MessageCreate) (*databaseDomain.DiscordMessage, []string) {
 	mentions := make([]string, len(message.Mentions))
 	for i, mention := range message.Mentions {
 		mentions[i] = mention.ID
 	}
 
-	return &entity.Message{
+	return &databaseDomain.DiscordMessage{
 		ID:        message.ID,
 		ChannelID: message.ChannelID,
-		GuildID:   message.GuildID,
 		AuthorID:  message.Author.ID,
 		Content:   message.Content,
 		Timestamp: message.Timestamp,
-		IsBot:     message.Author.Bot,
-		Mentions:  mentions,
-	}
+		CreatedAt: time.Now(),
+	}, mentions
 }
 
-func fetchChannel(session *discordgo.Session, message *discordgo.MessageCreate) (*entity.Channel, error) {
+func fetchChannel(
+	session *discordgo.Session,
+	message *discordgo.MessageCreate,
+) (*databaseDomain.DiscordChannel, error) {
 	if session == nil {
 		return nil, errors.New("handler: session not found")
 	}
@@ -113,16 +120,16 @@ func fetchChannel(session *discordgo.Session, message *discordgo.MessageCreate) 
 		return nil, fmt.Errorf("handler: failed to parse channel timestamp: %w", err)
 	}
 
-	return &entity.Channel{
+	return &databaseDomain.DiscordChannel{
 		ID:        discordgoChannel.ID,
-		Type:      int(discordgoChannel.Type),
+		Type:      databaseDomain.DiscordgoChannelTypeToDomainChannelType(discordgoChannel.Type),
 		Name:      discordgoChannel.Name,
 		GuildID:   discordgoChannel.GuildID,
 		CreatedAt: createdAt,
 	}, nil
 }
 
-func fetchGuild(session *discordgo.Session, message *discordgo.MessageCreate) (*entity.Guild, error) {
+func fetchGuild(session *discordgo.Session, message *discordgo.MessageCreate) (*databaseDomain.DiscordGuild, error) {
 	if session == nil {
 		return nil, errors.New("handler: session not found")
 	}
@@ -137,14 +144,15 @@ func fetchGuild(session *discordgo.Session, message *discordgo.MessageCreate) (*
 		return nil, fmt.Errorf("handler: failed to parse guild timestamp: %w", err)
 	}
 
-	return &entity.Guild{
-		ID:        discordgoGuild.ID,
-		Name:      discordgoGuild.Name,
-		CreatedAt: createdAt,
+	return &databaseDomain.DiscordGuild{
+		ID:         discordgoGuild.ID,
+		Name:       discordgoGuild.Name,
+		ChannelIDs: []string{},
+		CreatedAt:  createdAt,
 	}, nil
 }
 
-func fetchUser(session *discordgo.Session, message *discordgo.MessageCreate) (*entity.User, error) {
+func fetchUser(session *discordgo.Session, message *discordgo.MessageCreate) (*databaseDomain.DiscordUser, error) {
 	if session == nil {
 		return nil, errors.New("handler: session not found")
 	}
@@ -154,9 +162,11 @@ func fetchUser(session *discordgo.Session, message *discordgo.MessageCreate) (*e
 		return nil, fmt.Errorf("handler: %w", err)
 	}
 
-	return &entity.User{
-		ID:       discordgoUser.ID,
-		Username: discordgoUser.Username,
-		Bot:      discordgoUser.Bot,
+	return &databaseDomain.DiscordUser{
+		ID:        discordgoUser.ID,
+		Username:  discordgoUser.Username,
+		Bot:       discordgoUser.Bot,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}, nil
 }

@@ -53,5 +53,11 @@ type SystemPromptRepository interface {
 }
 
 type ValidationRepository interface {
-	ShouldProcessMessage(message *entity.DiscordMessage, botUserID string, botNameRegExp *regexp.Regexp) bool
+	ShouldProcessMessage(
+		user *entity.DiscordUser,
+		message *entity.DiscordMessage,
+		mentions []string,
+		botUserID string,
+		botNamePatternRegex *regexp.Regexp,
+	) bool
 }

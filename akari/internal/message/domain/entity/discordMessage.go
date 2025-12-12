@@ -4,18 +4,14 @@ import (
 	"time"
 
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
-	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
 type DiscordMessage struct {
 	ID        string
 	ChannelID string
-	GuildID   string
 	AuthorID  string
 	Content   string
 	Timestamp time.Time
-	IsBot     bool
-	Mentions  []string
 }
 
 func (m *DiscordMessage) ToDatabaseDiscordMessage() databaseDomain.DiscordMessage {
@@ -29,7 +25,7 @@ func (m *DiscordMessage) ToDatabaseDiscordMessage() databaseDomain.DiscordMessag
 	}
 }
 
-func ToDiscordMessage(msg *discordEntity.Message) *DiscordMessage {
+func ToDiscordMessage(msg *databaseDomain.DiscordMessage) *DiscordMessage {
 	if msg == nil {
 		return nil
 	}
@@ -37,11 +33,8 @@ func ToDiscordMessage(msg *discordEntity.Message) *DiscordMessage {
 	return &DiscordMessage{
 		ID:        msg.ID,
 		ChannelID: msg.ChannelID,
-		GuildID:   msg.GuildID,
 		AuthorID:  msg.AuthorID,
 		Content:   msg.Content,
 		Timestamp: msg.Timestamp,
-		IsBot:     msg.IsBot,
-		Mentions:  msg.Mentions,
 	}
 }

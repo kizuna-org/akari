@@ -82,9 +82,17 @@ func (i *handleMessageInteractorImpl) Handle(
 		return err
 	}
 
+	domainUser := entity.ToDiscordUser(discordParams.User)
+
 	domainMessage := entity.ToDiscordMessage(discordParams.Message)
 
-	if !i.validationRepo.ShouldProcessMessage(domainMessage, i.botUserID, i.botNamePatternRegex) {
+	if !i.validationRepo.ShouldProcessMessage(
+		domainUser,
+		domainMessage,
+		discordParams.Mentions,
+		i.botUserID,
+		i.botNamePatternRegex,
+	) {
 		return nil
 	}
 

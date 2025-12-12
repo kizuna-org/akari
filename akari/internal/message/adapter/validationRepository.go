@@ -15,7 +15,9 @@ func NewValidationRepository() domain.ValidationRepository {
 }
 
 func (r *validationRepository) ShouldProcessMessage(
+	user *entity.DiscordUser,
 	message *entity.DiscordMessage,
+	mentions []string,
 	botUserID string,
 	botNamePatternRegex *regexp.Regexp,
 ) bool {
@@ -23,13 +25,15 @@ func (r *validationRepository) ShouldProcessMessage(
 		return false
 	}
 
-	if message.IsBot {
+	if user == nil || user.Bot {
 		return false
 	}
 
+	mentioned := slices.Contains(mentions, botUserID)
+
 	if botNamePatternRegex == nil {
-		return slices.Contains(message.Mentions, botUserID)
+		return mentioned
 	}
 
-	return slices.Contains(message.Mentions, botUserID) || botNamePatternRegex.MatchString(message.Content)
+	return mentioned || botNamePatternRegex.MatchString(message.Content)
 }

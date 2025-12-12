@@ -1,16 +1,14 @@
 package entity
 
 import (
-	"strconv"
 	"time"
 
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
-	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
 type DiscordChannel struct {
 	ID        string
-	Type      int
+	Type      string
 	Name      string
 	GuildID   string
 	CreatedAt time.Time
@@ -19,21 +17,21 @@ type DiscordChannel struct {
 func (c *DiscordChannel) ToDatabaseDiscordChannel() databaseDomain.DiscordChannel {
 	return databaseDomain.DiscordChannel{
 		ID:        c.ID,
-		Type:      databaseDomain.DiscordChannelType(strconv.Itoa(c.Type)),
+		Type:      databaseDomain.DiscordChannelType(c.Type),
 		Name:      c.Name,
 		GuildID:   c.GuildID,
 		CreatedAt: c.CreatedAt,
 	}
 }
 
-func ToDiscordChannel(channel *discordEntity.Channel) *DiscordChannel {
+func ToDiscordChannel(channel *databaseDomain.DiscordChannel) *DiscordChannel {
 	if channel == nil {
 		return nil
 	}
 
 	return &DiscordChannel{
 		ID:        channel.ID,
-		Type:      channel.Type,
+		Type:      string(channel.Type),
 		Name:      channel.Name,
 		GuildID:   channel.GuildID,
 		CreatedAt: channel.CreatedAt,
