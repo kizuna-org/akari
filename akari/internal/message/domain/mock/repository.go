@@ -354,15 +354,15 @@ func (m *MockValidationRepository) EXPECT() *MockValidationRepositoryMockRecorde
 }
 
 // ShouldProcessMessage mocks base method.
-func (m *MockValidationRepository) ShouldProcessMessage(message *entity.DiscordMessage, botUserID string, botNameRegExp *regexp.Regexp) bool {
+func (m *MockValidationRepository) ShouldProcessMessage(user *entity.DiscordUser, message *entity.DiscordMessage, mentions []string, botUserID string, botNamePatternRegex *regexp.Regexp) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ShouldProcessMessage", message, botUserID, botNameRegExp)
+	ret := m.ctrl.Call(m, "ShouldProcessMessage", user, message, mentions, botUserID, botNamePatternRegex)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // ShouldProcessMessage indicates an expected call of ShouldProcessMessage.
-func (mr *MockValidationRepositoryMockRecorder) ShouldProcessMessage(message, botUserID, botNameRegExp any) *gomock.Call {
+func (mr *MockValidationRepositoryMockRecorder) ShouldProcessMessage(user, message, mentions, botUserID, botNamePatternRegex any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShouldProcessMessage", reflect.TypeOf((*MockValidationRepository)(nil).ShouldProcessMessage), message, botUserID, botNameRegExp)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShouldProcessMessage", reflect.TypeOf((*MockValidationRepository)(nil).ShouldProcessMessage), user, message, mentions, botUserID, botNamePatternRegex)
 }

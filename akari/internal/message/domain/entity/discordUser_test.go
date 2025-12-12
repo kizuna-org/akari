@@ -5,7 +5,6 @@ import (
 
 	"github.com/kizuna-org/akari/internal/message/domain/entity"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
-	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +13,7 @@ func TestToDiscordUser(t *testing.T) {
 
 	tests := []struct {
 		name string
-		user *discordEntity.User
+		user *databaseDomain.DiscordUser
 		want *entity.DiscordUser
 	}{
 		{
@@ -24,17 +23,17 @@ func TestToDiscordUser(t *testing.T) {
 		},
 		{
 			name: "valid user",
-			user: &discordEntity.User{ID: "g-123", Username: "testuser", Bot: false},
+			user: &databaseDomain.DiscordUser{ID: "g-123", Username: "testuser", Bot: false},
 			want: &entity.DiscordUser{ID: "g-123", Username: "testuser", Bot: false},
 		},
 		{
 			name: "empty user",
-			user: &discordEntity.User{ID: ""},
+			user: &databaseDomain.DiscordUser{ID: ""},
 			want: &entity.DiscordUser{ID: ""},
 		},
 		{
 			name: "bot user",
-			user: &discordEntity.User{ID: "g-456", Username: "botname", Bot: true},
+			user: &databaseDomain.DiscordUser{ID: "g-456", Username: "botname", Bot: true},
 			want: &entity.DiscordUser{ID: "g-456", Username: "botname", Bot: true},
 		},
 	}

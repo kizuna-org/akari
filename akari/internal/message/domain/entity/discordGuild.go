@@ -4,7 +4,6 @@ import (
 	"time"
 
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
-	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 )
 
 type DiscordGuild struct {
@@ -22,7 +21,7 @@ func (g *DiscordGuild) ToDatabaseDiscordGuild() databaseDomain.DiscordGuild {
 	}
 }
 
-func ToDiscordGuild(guild *discordEntity.Guild) *DiscordGuild {
+func ToDiscordGuild(guild *databaseDomain.DiscordGuild) *DiscordGuild {
 	if guild == nil {
 		return nil
 	}

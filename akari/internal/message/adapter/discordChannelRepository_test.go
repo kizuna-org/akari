@@ -45,7 +45,7 @@ func TestDiscordChannelRepository_CreateIfNotExists(t *testing.T) {
 			name: "channel already exists",
 			channel: &entity.DiscordChannel{
 				ID:        "ch-001",
-				Type:      0,
+				Type:      "0",
 				Name:      "general",
 				GuildID:   "g-001",
 				CreatedAt: now,
@@ -67,7 +67,7 @@ func TestDiscordChannelRepository_CreateIfNotExists(t *testing.T) {
 			name: "create new channel",
 			channel: &entity.DiscordChannel{
 				ID:        "ch-002",
-				Type:      0,
+				Type:      "0",
 				Name:      "random",
 				GuildID:   "g-001",
 				CreatedAt: now,
@@ -101,7 +101,7 @@ func TestDiscordChannelRepository_CreateIfNotExists(t *testing.T) {
 			name: "create channel error",
 			channel: &entity.DiscordChannel{
 				ID:        "ch-003",
-				Type:      1,
+				Type:      "1",
 				Name:      "dm",
 				GuildID:   "g-001",
 				CreatedAt: now,
@@ -123,7 +123,7 @@ func TestDiscordChannelRepository_CreateIfNotExists(t *testing.T) {
 			name: "database error on get",
 			channel: &entity.DiscordChannel{
 				ID:        "ch-005",
-				Type:      0,
+				Type:      "0",
 				Name:      "error",
 				GuildID:   "g-001",
 				CreatedAt: now,

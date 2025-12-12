@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	entity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	domain "github.com/kizuna-org/akari/pkg/database/domain"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,10 +42,10 @@ func (m *MockDiscordService) EXPECT() *MockDiscordServiceMockRecorder {
 }
 
 // GetMessage mocks base method.
-func (m *MockDiscordService) GetMessage(ctx context.Context, channelID, messageID string) (*entity.Message, error) {
+func (m *MockDiscordService) GetMessage(ctx context.Context, channelID, messageID string) (*domain.DiscordMessage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMessage", ctx, channelID, messageID)
-	ret0, _ := ret[0].(*entity.Message)
+	ret0, _ := ret[0].(*domain.DiscordMessage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -57,10 +57,10 @@ func (mr *MockDiscordServiceMockRecorder) GetMessage(ctx, channelID, messageID a
 }
 
 // SendMessage mocks base method.
-func (m *MockDiscordService) SendMessage(ctx context.Context, channelID, content string) (*entity.Message, error) {
+func (m *MockDiscordService) SendMessage(ctx context.Context, channelID, content string) (*domain.DiscordMessage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendMessage", ctx, channelID, content)
-	ret0, _ := ret[0].(*entity.Message)
+	ret0, _ := ret[0].(*domain.DiscordMessage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

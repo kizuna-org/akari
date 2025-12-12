@@ -5,14 +5,15 @@ package service
 import (
 	"context"
 
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 )
 
 type DiscordData struct {
-	User    *entity.User
-	Message *entity.Message
-	Channel *entity.Channel
-	Guild   *entity.Guild
+	User     *databaseDomain.DiscordUser
+	Message  *databaseDomain.DiscordMessage
+	Mentions []string
+	Channel  *databaseDomain.DiscordChannel
+	Guild    *databaseDomain.DiscordGuild
 }
 
 type HandleMessageInteractor interface {

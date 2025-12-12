@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/kizuna-org/akari/gen/ent"
 )
 
@@ -27,6 +28,26 @@ const (
 	DiscordChannelTypeGuildForum         DiscordChannelType = "GUILD_FORUM"
 	DiscordChannelTypeGuildMedia         DiscordChannelType = "GUILD_MEDIA"
 )
+
+func DiscordgoChannelTypeToDomainChannelType(channelType discordgo.ChannelType) DiscordChannelType {
+	channelTypeMap := map[discordgo.ChannelType]DiscordChannelType{
+		discordgo.ChannelTypeGuildText:          DiscordChannelTypeGuildText,
+		discordgo.ChannelTypeDM:                 DiscordChannelTypeDM,
+		discordgo.ChannelTypeGuildVoice:         DiscordChannelTypeGuildVoice,
+		discordgo.ChannelTypeGroupDM:            DiscordChannelTypeGroupDM,
+		discordgo.ChannelTypeGuildCategory:      DiscordChannelTypeGuildCategory,
+		discordgo.ChannelTypeGuildNews:          DiscordChannelTypeGuildAnnouncement,
+		discordgo.ChannelTypeGuildNewsThread:    DiscordChannelTypeAnnouncementThread,
+		discordgo.ChannelTypeGuildPublicThread:  DiscordChannelTypePublicThread,
+		discordgo.ChannelTypeGuildPrivateThread: DiscordChannelTypePrivateThread,
+		discordgo.ChannelTypeGuildStageVoice:    DiscordChannelTypeGuildStageVoice,
+		discordgo.ChannelTypeGuildDirectory:     DiscordChannelTypeGuildDirectory,
+		discordgo.ChannelTypeGuildForum:         DiscordChannelTypeGuildForum,
+		discordgo.ChannelTypeGuildMedia:         DiscordChannelTypeGuildMedia,
+	}
+
+	return channelTypeMap[channelType]
+}
 
 type DiscordChannelRepository interface {
 	CreateDiscordChannel(ctx context.Context, params DiscordChannel) (*DiscordChannel, error)

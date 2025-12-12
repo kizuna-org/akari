@@ -6,7 +6,6 @@ import (
 
 	"github.com/kizuna-org/akari/internal/message/domain/entity"
 	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
-	discordEntity "github.com/kizuna-org/akari/pkg/discord/domain/entity"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,7 +14,7 @@ func TestToDiscordChannel(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		channel *discordEntity.Channel
+		channel *databaseDomain.DiscordChannel
 		want    *entity.DiscordChannel
 	}{
 		{
@@ -25,16 +24,16 @@ func TestToDiscordChannel(t *testing.T) {
 		},
 		{
 			name: "valid channel",
-			channel: &discordEntity.Channel{
+			channel: &databaseDomain.DiscordChannel{
 				ID:        "ch-123",
-				Type:      0,
+				Type:      "0",
 				Name:      "general",
 				GuildID:   "g-456",
 				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 			},
 			want: &entity.DiscordChannel{
 				ID:        "ch-123",
-				Type:      0,
+				Type:      "0",
 				Name:      "general",
 				GuildID:   "g-456",
 				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -42,14 +41,14 @@ func TestToDiscordChannel(t *testing.T) {
 		},
 		{
 			name: "empty channel",
-			channel: &discordEntity.Channel{
+			channel: &databaseDomain.DiscordChannel{
 				ID:   "",
-				Type: 0,
+				Type: "",
 				Name: "",
 			},
 			want: &entity.DiscordChannel{
 				ID:   "",
-				Type: 0,
+				Type: "",
 				Name: "",
 			},
 		},
@@ -77,7 +76,7 @@ func TestDiscordChannelToDatabaseDiscordChannel(t *testing.T) {
 			name: "convert channel",
 			ch: &entity.DiscordChannel{
 				ID:        "ch-123",
-				Type:      0,
+				Type:      "0",
 				Name:      "general",
 				GuildID:   "g-456",
 				CreatedAt: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
@@ -94,7 +93,7 @@ func TestDiscordChannelToDatabaseDiscordChannel(t *testing.T) {
 			name: "channel with type 1",
 			ch: &entity.DiscordChannel{
 				ID:   "ch-789",
-				Type: 1,
+				Type: "1",
 				Name: "dm",
 			},
 			want: databaseDomain.DiscordChannel{

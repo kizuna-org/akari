@@ -106,14 +106,13 @@ func TestDiscordMessageRepository_SaveMessage(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "message with mentions",
+			name: "message with content",
 			message: &entity.DiscordMessage{
 				ID:        "msg-002",
 				ChannelID: "ch-002",
 				AuthorID:  "usr-002",
 				Content:   "Hello @user1 @user2",
 				Timestamp: now,
-				Mentions:  []string{"usr-002", "usr-003"},
 			},
 			setupMock: func(m *discordMessageMock.MockDiscordMessageInteractor) {
 				m.EXPECT().

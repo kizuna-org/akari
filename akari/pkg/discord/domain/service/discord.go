@@ -6,13 +6,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/discord/domain/repository"
 )
 
 type DiscordService interface {
-	SendMessage(ctx context.Context, channelID string, content string) (*entity.Message, error)
-	GetMessage(ctx context.Context, channelID string, messageID string) (*entity.Message, error)
+	SendMessage(ctx context.Context, channelID string, content string) (*databaseDomain.DiscordMessage, error)
+	GetMessage(ctx context.Context, channelID string, messageID string) (*databaseDomain.DiscordMessage, error)
 }
 
 type discordServiceImpl struct {
@@ -29,7 +29,7 @@ func (s *discordServiceImpl) SendMessage(
 	ctx context.Context,
 	channelID string,
 	content string,
-) (*entity.Message, error) {
+) (*databaseDomain.DiscordMessage, error) {
 	if channelID == "" {
 		return nil, errors.New("channel ID is required")
 	}
@@ -45,7 +45,7 @@ func (s *discordServiceImpl) GetMessage(
 	ctx context.Context,
 	channelID string,
 	messageID string,
-) (*entity.Message, error) {
+) (*databaseDomain.DiscordMessage, error) {
 	if channelID == "" {
 		return nil, errors.New("channel ID is required")
 	}

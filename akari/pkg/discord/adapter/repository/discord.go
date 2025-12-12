@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kizuna-org/akari/pkg/discord/domain/entity"
+	databaseDomain "github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/discord/domain/repository"
 	"github.com/kizuna-org/akari/pkg/discord/infrastructure"
 )
@@ -35,21 +35,19 @@ func (r *discordRepositoryImpl) SendMessage(
 	ctx context.Context,
 	channelID string,
 	content string,
-) (*entity.Message, error) {
+) (*databaseDomain.DiscordMessage, error) {
 	msg, err := r.client.Session.ChannelMessageSend(channelID, content)
 	if err != nil {
 		return nil, fmt.Errorf("repository: failed to send message: %w", err)
 	}
 
-	return &entity.Message{
+	return &databaseDomain.DiscordMessage{
 		ID:        msg.ID,
 		ChannelID: msg.ChannelID,
-		GuildID:   msg.GuildID,
 		AuthorID:  msg.Author.ID,
 		Content:   msg.Content,
 		Timestamp: msg.Timestamp,
-		IsBot:     msg.Author.Bot,
-		Mentions:  make([]string, 0),
+		CreatedAt: time.Now(),
 	}, nil
 }
 
@@ -57,21 +55,19 @@ func (r *discordRepositoryImpl) GetMessage(
 	ctx context.Context,
 	channelID string,
 	messageID string,
-) (*entity.Message, error) {
+) (*databaseDomain.DiscordMessage, error) {
 	msg, err := r.client.Session.ChannelMessage(channelID, messageID)
 	if err != nil {
 		return nil, fmt.Errorf("repository: failed to get message: %w", err)
 	}
 
-	return &entity.Message{
+	return &databaseDomain.DiscordMessage{
 		ID:        msg.ID,
 		ChannelID: msg.ChannelID,
-		GuildID:   msg.GuildID,
 		AuthorID:  msg.Author.ID,
 		Content:   msg.Content,
 		Timestamp: msg.Timestamp,
-		IsBot:     msg.Author.Bot,
-		Mentions:  make([]string, 0),
+		CreatedAt: time.Now(),
 	}, nil
 }
 
