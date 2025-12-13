@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: akari
+  namespace: akari
+  labels:
+    app.kubernetes.io/name: akari
+    app.kubernetes.io/component: bot
+    app.kubernetes.io/part-of: akari
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: akari
+      app.kubernetes.io/component: bot
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: akari
+        app.kubernetes.io/component: bot
+        app.kubernetes.io/part-of: akari
+    spec:
+      serviceAccountName: akari
+      containers:
+        - name: akari
+          image: ghcr.io/kizuna-org/akari:v0.1.1
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: akari-config
+            - secretRef:
+                name: akari-secrets
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+      terminationGracePeriodSeconds: 30
