@@ -17,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/fx v1.24.0
 	go.uber.org/mock v0.6.0
-	google.golang.org/genai v1.38.0
+	google.golang.org/genai v1.39.0
 )
 
 require (
