@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: akari
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: akari
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/kizuna-org/akari.git
+    targetRevision: main
+    path: k8s/apps/akari
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: akari
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+  revisionHistoryLimit: 5
