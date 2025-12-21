@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.2.0](https://github.com/kizuna-org/akari/compare/v0.1.1...v0.2.0) (2025-12-21)
+
+
+### Features
+
+* **akari/internal/message:** Create Discord channel if not exist ([#108](https://github.com/kizuna-org/akari/issues/108)) ([5e728ff](https://github.com/kizuna-org/akari/commit/5e728ffe51054fa2e9fa1db79d6834bbc511d279))
+* **akari/internal/message:** Create Discord guild if not exist ([#109](https://github.com/kizuna-org/akari/issues/109)) ([3ad82e0](https://github.com/kizuna-org/akari/commit/3ad82e019a16b12b449ba5b4325250f8affbb648))
+* **akari/internal/message:** Create Discord user if not exist ([#110](https://github.com/kizuna-org/akari/issues/110)) ([61fdc57](https://github.com/kizuna-org/akari/commit/61fdc57b2b1ccf3c6652dcdcd9d50679c6b662fc))
+* **akari/pkg/database:** Set user ID to conversation as well ([#115](https://github.com/kizuna-org/akari/issues/115)) ([f155b85](https://github.com/kizuna-org/akari/commit/f155b854ebc811509a32f822ba64d38dbf7f42e1))
+* **akari:** Store all Discord messages ([#99](https://github.com/kizuna-org/akari/issues/99)) ([9eea981](https://github.com/kizuna-org/akari/commit/9eea981b494d6080495cf3d094afaf678f70d819))
+
+
+### Bug Fixes
+
+* **deps:** update module google.golang.org/genai to v1.36.0 ([#92](https://github.com/kizuna-org/akari/issues/92)) ([2529e37](https://github.com/kizuna-org/akari/commit/2529e37bdee818a9b9705c8a97475ae8b95a5d23))
+* **deps:** update module google.golang.org/genai to v1.37.0 ([#105](https://github.com/kizuna-org/akari/issues/105)) ([10105e0](https://github.com/kizuna-org/akari/commit/10105e013225deb687c59fa0856cdf3d14fa34b8))
+* **deps:** update module google.golang.org/genai to v1.38.0 ([#117](https://github.com/kizuna-org/akari/issues/117)) ([9918f7d](https://github.com/kizuna-org/akari/commit/9918f7d0a4f154bc2408e00bae6806e57ae7262a))
+* **deps:** update module google.golang.org/genai to v1.39.0 ([#121](https://github.com/kizuna-org/akari/issues/121)) ([552fe2d](https://github.com/kizuna-org/akari/commit/552fe2d9e5e57d15216dd21e2300705a2eb1302d))
+* **deps:** update module google.golang.org/genai to v1.40.0 ([#126](https://github.com/kizuna-org/akari/issues/126)) ([0448837](https://github.com/kizuna-org/akari/commit/0448837bf62ae8ce34689f66157930984e38137b))
+
 ## [0.1.1](https://github.com/kizuna-org/akari/compare/v0.1.0...v0.1.1) (2025-11-20)
 
 
