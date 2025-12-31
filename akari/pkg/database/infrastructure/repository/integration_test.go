@@ -1099,3 +1099,165 @@ func TestRepository_SystemPrompt_Integration(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to get system prompt by id")
 	})
 }
+
+func TestRepository_Transactions_Integration(t *testing.T) {
+	t.Parallel()
+
+	_, repo, _ := setupTestDB(t)
+	ctx := context.Background()
+
+	t.Run("successful transaction commit", func(t *testing.T) {
+		t.Parallel()
+
+		err := repo.WithTransaction(ctx, func(ctx context.Context, tx *domain.Tx) error {
+			// Create multiple entities in a transaction
+			user1, err := repo.CreateAkariUser(ctx)
+			if err != nil {
+				return err
+			}
+
+			user2, err := repo.CreateAkariUser(ctx)
+			if err != nil {
+				return err
+			}
+
+			// Verify both users are created
+			_, err = repo.GetAkariUserByID(ctx, user1.ID)
+			if err != nil {
+				return err
+			}
+
+			_, err = repo.GetAkariUserByID(ctx, user2.ID)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+
+		require.NoError(t, err)
+	})
+
+	t.Run("transaction rollback on error", func(t *testing.T) {
+		t.Parallel()
+
+		// Create a user before transaction
+		userBefore, err := repo.CreateAkariUser(ctx)
+		require.NoError(t, err)
+
+		err = repo.WithTransaction(ctx, func(ctx context.Context, tx *domain.Tx) error {
+			// Try to create another user
+			_, createErr := repo.CreateAkariUser(ctx)
+			if createErr != nil {
+				return createErr
+			}
+
+			// Return an error to trigger rollback
+			return errors.New("transaction error")
+		})
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "transaction error")
+
+		// Verify user created before transaction still exists
+		_, err = repo.GetAkariUserByID(ctx, userBefore.ID)
+		require.NoError(t, err)
+	})
+
+	t.Run("multiple entities in transaction", func(t *testing.T) {
+		t.Parallel()
+
+		gofakeit.Seed(time.Now().UnixNano())
+
+		err := repo.WithTransaction(ctx, func(ctx context.Context, tx *domain.Tx) error {
+			// Create DiscordUser
+			discordUser := RandomDiscordUser()
+			createdUser, err := repo.CreateDiscordUser(ctx, discordUser)
+			if err != nil {
+				return err
+			}
+
+			// Create DiscordGuild
+			guild := RandomDiscordGuild()
+			createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+			if err != nil {
+				return err
+			}
+
+			// Create DiscordChannel
+			channel := RandomDiscordChannel(createdGuild.ID)
+			createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
+			if err != nil {
+				return err
+			}
+
+			// Create DiscordMessage
+			message := RandomDiscordMessage(createdUser.ID, createdChannel.ID)
+			createdMessage, err := repo.CreateDiscordMessage(ctx, message)
+			if err != nil {
+				return err
+			}
+
+			// Verify all entities are created
+			_, err = repo.GetDiscordUserByID(ctx, createdUser.ID)
+			if err != nil {
+				return err
+			}
+
+			_, err = repo.GetDiscordGuildByID(ctx, createdGuild.ID)
+			if err != nil {
+				return err
+			}
+
+			_, err = repo.GetDiscordChannelByID(ctx, createdChannel.ID)
+			if err != nil {
+				return err
+			}
+
+			_, err = repo.GetDiscordMessageByID(ctx, createdMessage.ID)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+
+		require.NoError(t, err)
+	})
+
+	t.Run("transaction rollback with multiple entities", func(t *testing.T) {
+		t.Parallel()
+
+		gofakeit.Seed(time.Now().UnixNano())
+
+		// Create entities before transaction
+		discordUserBefore := RandomDiscordUser()
+		createdUserBefore, err := repo.CreateDiscordUser(ctx, discordUserBefore)
+		require.NoError(t, err)
+
+		err = repo.WithTransaction(ctx, func(ctx context.Context, tx *domain.Tx) error {
+			// Create multiple entities in transaction
+			guild := RandomDiscordGuild()
+			_, createErr := repo.CreateDiscordGuild(ctx, guild)
+			if createErr != nil {
+				return createErr
+			}
+
+			channel := RandomDiscordChannel(guild.ID)
+			_, createErr = repo.CreateDiscordChannel(ctx, channel)
+			if createErr != nil {
+				return createErr
+			}
+
+			// Return error to trigger rollback
+			return errors.New("transaction rollback test")
+		})
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "transaction rollback test")
+
+		// Verify entity created before transaction still exists
+		_, err = repo.GetDiscordUserByID(ctx, createdUserBefore.ID)
+		require.NoError(t, err)
+	})
+}
