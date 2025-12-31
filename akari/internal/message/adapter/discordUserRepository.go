@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kizuna-org/akari/gen/ent"
+	"github.com/kizuna-org/akari/internal/message/domain"
 	"github.com/kizuna-org/akari/internal/message/domain/entity"
 	databaseInteractor "github.com/kizuna-org/akari/pkg/database/usecase/interactor"
 )
@@ -16,7 +17,7 @@ type discordUserRepository struct {
 
 func NewDiscordUserRepository(
 	discordUserInteractor databaseInteractor.DiscordUserInteractor,
-) *discordUserRepository {
+) domain.DiscordUserRepository {
 	return &discordUserRepository{
 		discordUserInteractor: discordUserInteractor,
 	}
