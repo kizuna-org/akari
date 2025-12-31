@@ -1,0 +1,32 @@
+FROM golang:1.25.5-alpine AS builder
+
+WORKDIR /build
+
+RUN apk add --no-cache git make
+
+COPY akari/go.mod akari/go.sum ./
+RUN go mod download
+
+COPY akari/ .
+
+RUN make generate
+
+RUN go install ariga.io/atlas/cmd/atlas@latest
+
+FROM alpine:3.23@sha256:51183f2cfa6320055da30872f211093f9ff1d3cf06f39a0bdb212314c5dc7375
+
+WORKDIR /app
+
+RUN apk add --no-cache ca-certificates tzdata postgresql-client
+
+COPY --from=builder /go/bin/atlas /usr/local/bin/atlas
+
+COPY --from=builder /build /app
+
+ENV TZ=UTC
+
+RUN echo '#!/bin/sh' > /app/migrate.sh && \
+    echo 'atlas migrate apply --env=dev' >> /app/migrate.sh && \
+    chmod +x /app/migrate.sh
+
+ENTRYPOINT ["/app/migrate.sh"]
