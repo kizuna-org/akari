@@ -255,3 +255,88 @@ func TestRepository_AkariUser_Integration(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to get akari user")
 	})
 }
+
+func TestRepository_DiscordUser_Integration(t *testing.T) {
+	t.Parallel()
+
+	_, repo, _ := setupTestDB(t)
+	ctx := context.Background()
+
+	t.Run("CreateDiscordUser", func(t *testing.T) {
+		t.Parallel()
+
+		params := RandomDiscordUser()
+		user, err := repo.CreateDiscordUser(ctx, params)
+		require.NoError(t, err)
+		assert.Equal(t, params.ID, user.ID)
+		assert.Equal(t, params.Username, user.Username)
+		assert.Equal(t, params.Bot, user.Bot)
+		assert.NotZero(t, user.CreatedAt)
+	})
+
+	t.Run("GetDiscordUserByID", func(t *testing.T) {
+		t.Parallel()
+
+		params := RandomDiscordUser()
+		created, err := repo.CreateDiscordUser(ctx, params)
+		require.NoError(t, err)
+
+		got, err := repo.GetDiscordUserByID(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, created.ID, got.ID)
+		assert.Equal(t, created.Username, got.Username)
+		assert.Equal(t, created.Bot, got.Bot)
+	})
+
+	t.Run("GetDiscordUserByID - not found", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := repo.GetDiscordUserByID(ctx, RandomDiscordID())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get discord user by id")
+	})
+
+	t.Run("ListDiscordUsers", func(t *testing.T) {
+		t.Parallel()
+
+		user1 := RandomDiscordUser()
+		created1, err := repo.CreateDiscordUser(ctx, user1)
+		require.NoError(t, err)
+
+		user2 := RandomDiscordUser()
+		created2, err := repo.CreateDiscordUser(ctx, user2)
+		require.NoError(t, err)
+
+		users, err := repo.ListDiscordUsers(ctx)
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, len(users), 2)
+
+		found1 := false
+		found2 := false
+		for _, u := range users {
+			if u.ID == created1.ID {
+				found1 = true
+			}
+			if u.ID == created2.ID {
+				found2 = true
+			}
+		}
+		assert.True(t, found1, "user1 should be in the list")
+		assert.True(t, found2, "user2 should be in the list")
+	})
+
+	t.Run("DeleteDiscordUser", func(t *testing.T) {
+		t.Parallel()
+
+		params := RandomDiscordUser()
+		created, err := repo.CreateDiscordUser(ctx, params)
+		require.NoError(t, err)
+
+		err = repo.DeleteDiscordUser(ctx, created.ID)
+		require.NoError(t, err)
+
+		_, err = repo.GetDiscordUserByID(ctx, created.ID)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get discord user by id")
+	})
+}
