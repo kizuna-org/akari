@@ -6,7 +6,10 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
+	"github.com/brianvoe/gofakeit/v7"
+	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -65,4 +68,79 @@ func TestRepository_WithTransaction_Integration(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRepository_Character_Integration(t *testing.T) {
+	t.Parallel()
+
+	_, repo, entClient := setupTestDB(t)
+	ctx := context.Background()
+
+	t.Run("GetCharacterByID - not found", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := repo.GetCharacterByID(ctx, 99999)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get character")
+	})
+
+	t.Run("ListCharacters - empty", func(t *testing.T) {
+		t.Parallel()
+
+		characters, err := repo.ListCharacters(ctx)
+		require.NoError(t, err)
+		assert.Empty(t, characters)
+	})
+
+	t.Run("GetCharacterByID and ListCharacters - with data", func(t *testing.T) {
+		t.Parallel()
+
+		gofakeit.Seed(time.Now().UnixNano())
+
+		// Create CharacterConfig
+		config, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		// Create SystemPrompt
+		systemPrompt, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		// Create Character with Config and SystemPrompt
+		character, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config).
+			AddSystemPrompts(systemPrompt).
+			Save(ctx)
+		require.NoError(t, err)
+
+		// Test GetCharacterByID
+		got, err := repo.GetCharacterByID(ctx, character.ID)
+		require.NoError(t, err)
+		assert.Equal(t, character.ID, got.ID)
+		assert.Equal(t, character.Name, got.Name)
+		assert.NotNil(t, got.Config)
+		assert.Len(t, got.SystemPromptIDs, 1)
+		assert.Equal(t, systemPrompt.ID, got.SystemPromptIDs[0])
+
+		// Test ListCharacters
+		characters, err := repo.ListCharacters(ctx)
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, len(characters), 1)
+
+		found := false
+		for _, c := range characters {
+			if c.ID == character.ID {
+				found = true
+				assert.Equal(t, character.Name, c.Name)
+				break
+			}
+		}
+		assert.True(t, found, "created character should be in the list")
+	})
 }
