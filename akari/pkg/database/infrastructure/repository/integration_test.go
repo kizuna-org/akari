@@ -340,3 +340,762 @@ func TestRepository_DiscordUser_Integration(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to get discord user by id")
 	})
 }
+
+func TestRepository_DiscordGuild_Integration(t *testing.T) {
+	t.Parallel()
+
+	_, repo, _ := setupTestDB(t)
+	ctx := context.Background()
+
+	t.Run("CreateDiscordGuild", func(t *testing.T) {
+		t.Parallel()
+
+		params := RandomDiscordGuild()
+		guild, err := repo.CreateDiscordGuild(ctx, params)
+		require.NoError(t, err)
+		assert.Equal(t, params.ID, guild.ID)
+		assert.Equal(t, params.Name, guild.Name)
+	})
+
+	t.Run("GetDiscordGuildByID", func(t *testing.T) {
+		t.Parallel()
+
+		params := RandomDiscordGuild()
+		created, err := repo.CreateDiscordGuild(ctx, params)
+		require.NoError(t, err)
+
+		got, err := repo.GetDiscordGuildByID(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, created.ID, got.ID)
+		assert.Equal(t, created.Name, got.Name)
+	})
+
+	t.Run("GetDiscordGuildByID - not found", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := repo.GetDiscordGuildByID(ctx, RandomDiscordID())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get discord guild by id")
+	})
+
+	t.Run("ListDiscordGuilds", func(t *testing.T) {
+		t.Parallel()
+
+		guild1 := RandomDiscordGuild()
+		created1, err := repo.CreateDiscordGuild(ctx, guild1)
+		require.NoError(t, err)
+
+		guild2 := RandomDiscordGuild()
+		created2, err := repo.CreateDiscordGuild(ctx, guild2)
+		require.NoError(t, err)
+
+		guilds, err := repo.ListDiscordGuilds(ctx)
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, len(guilds), 2)
+
+		found1 := false
+		found2 := false
+		for _, g := range guilds {
+			if g.ID == created1.ID {
+				found1 = true
+			}
+			if g.ID == created2.ID {
+				found2 = true
+			}
+		}
+		assert.True(t, found1, "guild1 should be in the list")
+		assert.True(t, found2, "guild2 should be in the list")
+	})
+
+	t.Run("DeleteDiscordGuild", func(t *testing.T) {
+		t.Parallel()
+
+		params := RandomDiscordGuild()
+		created, err := repo.CreateDiscordGuild(ctx, params)
+		require.NoError(t, err)
+
+		err = repo.DeleteDiscordGuild(ctx, created.ID)
+		require.NoError(t, err)
+
+		_, err = repo.GetDiscordGuildByID(ctx, created.ID)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get discord guild by id")
+	})
+}
+
+func TestRepository_DiscordChannel_Integration(t *testing.T) {
+	t.Parallel()
+
+	_, repo, entClient := setupTestDB(t)
+	ctx := context.Background()
+
+	t.Run("CreateDiscordChannel", func(t *testing.T) {
+		t.Parallel()
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		params := RandomDiscordChannel(createdGuild.ID)
+		channel, err := repo.CreateDiscordChannel(ctx, params)
+		require.NoError(t, err)
+		assert.Equal(t, params.ID, channel.ID)
+		assert.Equal(t, params.Type, channel.Type)
+		assert.Equal(t, params.Name, channel.Name)
+		assert.Equal(t, params.GuildID, channel.GuildID)
+	})
+
+	t.Run("GetDiscordChannelByID", func(t *testing.T) {
+		t.Parallel()
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		params := RandomDiscordChannel(createdGuild.ID)
+		created, err := repo.CreateDiscordChannel(ctx, params)
+		require.NoError(t, err)
+
+		got, err := repo.GetDiscordChannelByID(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, created.ID, got.ID)
+		assert.Equal(t, created.Type, got.Type)
+		assert.Equal(t, created.Name, got.Name)
+		assert.Equal(t, created.GuildID, got.GuildID)
+	})
+
+	t.Run("GetDiscordChannelByID - not found", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := repo.GetDiscordChannelByID(ctx, RandomDiscordID())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get discord channel by id")
+	})
+
+	t.Run("GetDiscordChannelsByGuildID", func(t *testing.T) {
+		t.Parallel()
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		channel1 := RandomDiscordChannel(createdGuild.ID)
+		created1, err := repo.CreateDiscordChannel(ctx, channel1)
+		require.NoError(t, err)
+
+		channel2 := RandomDiscordChannel(createdGuild.ID)
+		created2, err := repo.CreateDiscordChannel(ctx, channel2)
+		require.NoError(t, err)
+
+		channels, err := repo.GetDiscordChannelsByGuildID(ctx, createdGuild.ID)
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, len(channels), 2)
+
+		found1 := false
+		found2 := false
+		for _, c := range channels {
+			if c.ID == created1.ID {
+				found1 = true
+			}
+			if c.ID == created2.ID {
+				found2 = true
+			}
+		}
+		assert.True(t, found1, "channel1 should be in the list")
+		assert.True(t, found2, "channel2 should be in the list")
+	})
+
+	t.Run("DeleteDiscordChannel", func(t *testing.T) {
+		t.Parallel()
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		params := RandomDiscordChannel(createdGuild.ID)
+		created, err := repo.CreateDiscordChannel(ctx, params)
+		require.NoError(t, err)
+
+		err = repo.DeleteDiscordChannel(ctx, created.ID)
+		require.NoError(t, err)
+
+		_, err = repo.GetDiscordChannelByID(ctx, created.ID)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get discord channel by id")
+	})
+}
+
+func TestRepository_DiscordMessage_Integration(t *testing.T) {
+	t.Parallel()
+
+	_, repo, _ := setupTestDB(t)
+	ctx := context.Background()
+
+	t.Run("CreateDiscordMessage", func(t *testing.T) {
+		t.Parallel()
+
+		// Setup dependencies
+		discordUser := RandomDiscordUser()
+		createdUser, err := repo.CreateDiscordUser(ctx, discordUser)
+		require.NoError(t, err)
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		channel := RandomDiscordChannel(createdGuild.ID)
+		createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
+		require.NoError(t, err)
+
+		params := RandomDiscordMessage(createdUser.ID, createdChannel.ID)
+		message, err := repo.CreateDiscordMessage(ctx, params)
+		require.NoError(t, err)
+		assert.Equal(t, params.ID, message.ID)
+		assert.Equal(t, params.AuthorID, message.AuthorID)
+		assert.Equal(t, params.ChannelID, message.ChannelID)
+		assert.Equal(t, params.Content, message.Content)
+	})
+
+	t.Run("GetDiscordMessageByID", func(t *testing.T) {
+		t.Parallel()
+
+		// Setup dependencies
+		discordUser := RandomDiscordUser()
+		createdUser, err := repo.CreateDiscordUser(ctx, discordUser)
+		require.NoError(t, err)
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		channel := RandomDiscordChannel(createdGuild.ID)
+		createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
+		require.NoError(t, err)
+
+		params := RandomDiscordMessage(createdUser.ID, createdChannel.ID)
+		created, err := repo.CreateDiscordMessage(ctx, params)
+		require.NoError(t, err)
+
+		got, err := repo.GetDiscordMessageByID(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, created.ID, got.ID)
+		assert.Equal(t, created.AuthorID, got.AuthorID)
+		assert.Equal(t, created.ChannelID, got.ChannelID)
+		assert.Equal(t, created.Content, got.Content)
+	})
+
+	t.Run("GetDiscordMessageByID - not found", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := repo.GetDiscordMessageByID(ctx, RandomDiscordID())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get discord message by id")
+	})
+
+	t.Run("DeleteDiscordMessage", func(t *testing.T) {
+		t.Parallel()
+
+		// Setup dependencies
+		discordUser := RandomDiscordUser()
+		createdUser, err := repo.CreateDiscordUser(ctx, discordUser)
+		require.NoError(t, err)
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		channel := RandomDiscordChannel(createdGuild.ID)
+		createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
+		require.NoError(t, err)
+
+		params := RandomDiscordMessage(createdUser.ID, createdChannel.ID)
+		created, err := repo.CreateDiscordMessage(ctx, params)
+		require.NoError(t, err)
+
+		err = repo.DeleteDiscordMessage(ctx, created.ID)
+		require.NoError(t, err)
+
+		_, err = repo.GetDiscordMessageByID(ctx, created.ID)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get discord message by id")
+	})
+}
+
+func TestRepository_ConversationGroup_Integration(t *testing.T) {
+	t.Parallel()
+
+	_, repo, entClient := setupTestDB(t)
+	ctx := context.Background()
+
+	t.Run("CreateConversationGroup", func(t *testing.T) {
+		t.Parallel()
+
+		gofakeit.Seed(time.Now().UnixNano())
+
+		// Create Character with Config
+		config, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		systemPrompt, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		character, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config).
+			AddSystemPrompts(systemPrompt).
+			Save(ctx)
+		require.NoError(t, err)
+
+		group, err := repo.CreateConversationGroup(ctx, character.ID)
+		require.NoError(t, err)
+		assert.Greater(t, group.ID, 0)
+		assert.Equal(t, character.ID, group.CharacterID)
+		assert.NotZero(t, group.CreatedAt)
+	})
+
+	t.Run("GetConversationGroupByID", func(t *testing.T) {
+		t.Parallel()
+
+		gofakeit.Seed(time.Now().UnixNano())
+
+		config, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		systemPrompt, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		character, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config).
+			AddSystemPrompts(systemPrompt).
+			Save(ctx)
+		require.NoError(t, err)
+
+		created, err := repo.CreateConversationGroup(ctx, character.ID)
+		require.NoError(t, err)
+
+		got, err := repo.GetConversationGroupByID(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, created.ID, got.ID)
+		assert.Equal(t, created.CharacterID, got.CharacterID)
+	})
+
+	t.Run("GetConversationGroupByID - not found", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := repo.GetConversationGroupByID(ctx, 99999)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get conversation group by id")
+	})
+
+	t.Run("ListConversationGroups", func(t *testing.T) {
+		t.Parallel()
+
+		gofakeit.Seed(time.Now().UnixNano())
+
+		config1, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		systemPrompt1, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		character1, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config1).
+			AddSystemPrompts(systemPrompt1).
+			Save(ctx)
+		require.NoError(t, err)
+
+		group1, err := repo.CreateConversationGroup(ctx, character1.ID)
+		require.NoError(t, err)
+
+		config2, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		systemPrompt2, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		character2, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config2).
+			AddSystemPrompts(systemPrompt2).
+			Save(ctx)
+		require.NoError(t, err)
+
+		group2, err := repo.CreateConversationGroup(ctx, character2.ID)
+		require.NoError(t, err)
+
+		groups, err := repo.ListConversationGroups(ctx)
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, len(groups), 2)
+
+		found1 := false
+		found2 := false
+		for _, g := range groups {
+			if g.ID == group1.ID {
+				found1 = true
+			}
+			if g.ID == group2.ID {
+				found2 = true
+			}
+		}
+		assert.True(t, found1, "group1 should be in the list")
+		assert.True(t, found2, "group2 should be in the list")
+	})
+
+	t.Run("DeleteConversationGroup", func(t *testing.T) {
+		t.Parallel()
+
+		gofakeit.Seed(time.Now().UnixNano())
+
+		config, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		systemPrompt, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		character, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config).
+			AddSystemPrompts(systemPrompt).
+			Save(ctx)
+		require.NoError(t, err)
+
+		created, err := repo.CreateConversationGroup(ctx, character.ID)
+		require.NoError(t, err)
+
+		err = repo.DeleteConversationGroup(ctx, created.ID)
+		require.NoError(t, err)
+
+		_, err = repo.GetConversationGroupByID(ctx, created.ID)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get conversation group by id")
+	})
+}
+
+func TestRepository_Conversation_Integration(t *testing.T) {
+	t.Parallel()
+
+	_, repo, entClient := setupTestDB(t)
+	ctx := context.Background()
+
+	t.Run("CreateConversation", func(t *testing.T) {
+		t.Parallel()
+
+		// Setup dependencies
+		akariUser, err := repo.CreateAkariUser(ctx)
+		require.NoError(t, err)
+
+		discordUser := RandomDiscordUser()
+		createdDiscordUser, err := repo.CreateDiscordUser(ctx, discordUser)
+		require.NoError(t, err)
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		channel := RandomDiscordChannel(createdGuild.ID)
+		createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
+		require.NoError(t, err)
+
+		message := RandomDiscordMessage(createdDiscordUser.ID, createdChannel.ID)
+		createdMessage, err := repo.CreateDiscordMessage(ctx, message)
+		require.NoError(t, err)
+
+		gofakeit.Seed(time.Now().UnixNano())
+		config, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		systemPrompt, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		character, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config).
+			AddSystemPrompts(systemPrompt).
+			Save(ctx)
+		require.NoError(t, err)
+
+		conversationGroup, err := repo.CreateConversationGroup(ctx, character.ID)
+		require.NoError(t, err)
+
+		params := RandomConversation(akariUser.ID, createdMessage.ID, conversationGroup.ID)
+		conversation, err := repo.CreateConversation(ctx, params)
+		require.NoError(t, err)
+		assert.Greater(t, conversation.ID, 0)
+		assert.Equal(t, params.UserID, conversation.UserID)
+		assert.Equal(t, params.DiscordMessageID, conversation.DiscordMessageID)
+		assert.Equal(t, params.ConversationGroupID, conversation.ConversationGroupID)
+	})
+
+	t.Run("GetConversationByID", func(t *testing.T) {
+		t.Parallel()
+
+		// Setup dependencies
+		akariUser, err := repo.CreateAkariUser(ctx)
+		require.NoError(t, err)
+
+		discordUser := RandomDiscordUser()
+		createdDiscordUser, err := repo.CreateDiscordUser(ctx, discordUser)
+		require.NoError(t, err)
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		channel := RandomDiscordChannel(createdGuild.ID)
+		createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
+		require.NoError(t, err)
+
+		message := RandomDiscordMessage(createdDiscordUser.ID, createdChannel.ID)
+		createdMessage, err := repo.CreateDiscordMessage(ctx, message)
+		require.NoError(t, err)
+
+		gofakeit.Seed(time.Now().UnixNano())
+		config, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		systemPrompt, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		character, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config).
+			AddSystemPrompts(systemPrompt).
+			Save(ctx)
+		require.NoError(t, err)
+
+		conversationGroup, err := repo.CreateConversationGroup(ctx, character.ID)
+		require.NoError(t, err)
+
+		params := RandomConversation(akariUser.ID, createdMessage.ID, conversationGroup.ID)
+		created, err := repo.CreateConversation(ctx, params)
+		require.NoError(t, err)
+
+		got, err := repo.GetConversationByID(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, created.ID, got.ID)
+		assert.Equal(t, created.UserID, got.UserID)
+		assert.Equal(t, created.DiscordMessageID, got.DiscordMessageID)
+		assert.Equal(t, created.ConversationGroupID, got.ConversationGroupID)
+	})
+
+	t.Run("GetConversationByID - not found", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := repo.GetConversationByID(ctx, 99999)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get conversation by id")
+	})
+
+	t.Run("ListConversations", func(t *testing.T) {
+		t.Parallel()
+
+		// Setup dependencies
+		akariUser, err := repo.CreateAkariUser(ctx)
+		require.NoError(t, err)
+
+		discordUser := RandomDiscordUser()
+		createdDiscordUser, err := repo.CreateDiscordUser(ctx, discordUser)
+		require.NoError(t, err)
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		channel := RandomDiscordChannel(createdGuild.ID)
+		createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
+		require.NoError(t, err)
+
+		gofakeit.Seed(time.Now().UnixNano())
+		config, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		systemPrompt, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		character, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config).
+			AddSystemPrompts(systemPrompt).
+			Save(ctx)
+		require.NoError(t, err)
+
+		conversationGroup, err := repo.CreateConversationGroup(ctx, character.ID)
+		require.NoError(t, err)
+
+		message1 := RandomDiscordMessage(createdDiscordUser.ID, createdChannel.ID)
+		createdMessage1, err := repo.CreateDiscordMessage(ctx, message1)
+		require.NoError(t, err)
+
+		params1 := RandomConversation(akariUser.ID, createdMessage1.ID, conversationGroup.ID)
+		conv1, err := repo.CreateConversation(ctx, params1)
+		require.NoError(t, err)
+
+		message2 := RandomDiscordMessage(createdDiscordUser.ID, createdChannel.ID)
+		createdMessage2, err := repo.CreateDiscordMessage(ctx, message2)
+		require.NoError(t, err)
+
+		params2 := RandomConversation(akariUser.ID, createdMessage2.ID, conversationGroup.ID)
+		conv2, err := repo.CreateConversation(ctx, params2)
+		require.NoError(t, err)
+
+		conversations, err := repo.ListConversations(ctx)
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, len(conversations), 2)
+
+		found1 := false
+		found2 := false
+		for _, c := range conversations {
+			if c.ID == conv1.ID {
+				found1 = true
+			}
+			if c.ID == conv2.ID {
+				found2 = true
+			}
+		}
+		assert.True(t, found1, "conv1 should be in the list")
+		assert.True(t, found2, "conv2 should be in the list")
+	})
+
+	t.Run("DeleteConversation", func(t *testing.T) {
+		t.Parallel()
+
+		// Setup dependencies
+		akariUser, err := repo.CreateAkariUser(ctx)
+		require.NoError(t, err)
+
+		discordUser := RandomDiscordUser()
+		createdDiscordUser, err := repo.CreateDiscordUser(ctx, discordUser)
+		require.NoError(t, err)
+
+		guild := RandomDiscordGuild()
+		createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+		require.NoError(t, err)
+
+		channel := RandomDiscordChannel(createdGuild.ID)
+		createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
+		require.NoError(t, err)
+
+		message := RandomDiscordMessage(createdDiscordUser.ID, createdChannel.ID)
+		createdMessage, err := repo.CreateDiscordMessage(ctx, message)
+		require.NoError(t, err)
+
+		gofakeit.Seed(time.Now().UnixNano())
+		config, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		systemPrompt, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		character, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config).
+			AddSystemPrompts(systemPrompt).
+			Save(ctx)
+		require.NoError(t, err)
+
+		conversationGroup, err := repo.CreateConversationGroup(ctx, character.ID)
+		require.NoError(t, err)
+
+		params := RandomConversation(akariUser.ID, createdMessage.ID, conversationGroup.ID)
+		created, err := repo.CreateConversation(ctx, params)
+		require.NoError(t, err)
+
+		err = repo.DeleteConversation(ctx, created.ID)
+		require.NoError(t, err)
+
+		_, err = repo.GetConversationByID(ctx, created.ID)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get conversation by id")
+	})
+}
+
+func TestRepository_SystemPrompt_Integration(t *testing.T) {
+	t.Parallel()
+
+	_, repo, entClient := setupTestDB(t)
+	ctx := context.Background()
+
+	t.Run("GetSystemPromptByID", func(t *testing.T) {
+		t.Parallel()
+
+		gofakeit.Seed(time.Now().UnixNano())
+
+		systemPrompt, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		got, err := repo.GetSystemPromptByID(ctx, systemPrompt.ID)
+		require.NoError(t, err)
+		assert.Equal(t, systemPrompt.ID, got.ID)
+		assert.Equal(t, systemPrompt.Title, got.Title)
+		assert.Equal(t, string(systemPrompt.Purpose), got.Purpose)
+		assert.Equal(t, systemPrompt.Prompt, got.Prompt)
+	})
+
+	t.Run("GetSystemPromptByID - not found", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := repo.GetSystemPromptByID(ctx, 99999)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get system prompt by id")
+	})
+}
