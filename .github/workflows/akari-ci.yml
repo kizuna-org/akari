@@ -202,7 +202,7 @@ jobs:
           echo "gcl_version=$(golangci-lint --version | sed 's/,/./g')" >> "$GITHUB_OUTPUT"
       - name: Cache custom-gcl
         id: cache-custom-gcl
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ./custom-gcl
           key: ${{ runner.os }}-${{ steps.versions.outputs.go_version }}-${{ steps.versions.outputs.gcl_version }}-${{ hashFiles('.custom-gcl.yml') }}
@@ -257,7 +257,7 @@ jobs:
           echo "$TEST_OUT" | tee /tmp/gotest.log | gotestfmt
           exit "$TEST_EXIT"
         continue-on-error: true
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: test-log-${{ matrix.run }}
           path: /tmp/gotest.log
