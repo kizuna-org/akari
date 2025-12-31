@@ -144,3 +144,114 @@ func TestRepository_Character_Integration(t *testing.T) {
 		assert.True(t, found, "created character should be in the list")
 	})
 }
+
+func TestRepository_AkariUser_Integration(t *testing.T) {
+	t.Parallel()
+
+	_, repo, entClient := setupTestDB(t)
+	ctx := context.Background()
+
+	t.Run("CreateAkariUser", func(t *testing.T) {
+		t.Parallel()
+
+		user, err := repo.CreateAkariUser(ctx)
+		require.NoError(t, err)
+		assert.Greater(t, user.ID, 0)
+		assert.NotZero(t, user.CreatedAt)
+		assert.NotZero(t, user.UpdatedAt)
+	})
+
+	t.Run("GetAkariUserByID", func(t *testing.T) {
+		t.Parallel()
+
+		created, err := repo.CreateAkariUser(ctx)
+		require.NoError(t, err)
+
+		got, err := repo.GetAkariUserByID(ctx, created.ID)
+		require.NoError(t, err)
+		assert.Equal(t, created.ID, got.ID)
+		assert.Equal(t, created.CreatedAt, got.CreatedAt)
+	})
+
+	t.Run("GetAkariUserByID - not found", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := repo.GetAkariUserByID(ctx, 99999)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get akari user")
+	})
+
+	t.Run("GetAkariUserByDiscordUserID", func(t *testing.T) {
+		t.Parallel()
+
+		gofakeit.Seed(time.Now().UnixNano())
+
+		// Create DiscordUser
+		discordUser, err := entClient.DiscordUser.Create().
+			SetID(RandomDiscordID()).
+			SetUsername(RandomDiscordUsername()).
+			SetBot(gofakeit.Bool()).
+			Save(ctx)
+		require.NoError(t, err)
+
+		// Create AkariUser with DiscordUser
+		akariUser, err := entClient.AkariUser.Create().
+			SetDiscordUser(discordUser).
+			Save(ctx)
+		require.NoError(t, err)
+
+		got, err := repo.GetAkariUserByDiscordUserID(ctx, discordUser.ID)
+		require.NoError(t, err)
+		assert.Equal(t, akariUser.ID, got.ID)
+	})
+
+	t.Run("GetAkariUserByDiscordUserID - not found", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := repo.GetAkariUserByDiscordUserID(ctx, RandomDiscordID())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get akari user by discord id")
+	})
+
+	t.Run("ListAkariUsers", func(t *testing.T) {
+		t.Parallel()
+
+		// Create multiple users
+		user1, err := repo.CreateAkariUser(ctx)
+		require.NoError(t, err)
+
+		user2, err := repo.CreateAkariUser(ctx)
+		require.NoError(t, err)
+
+		users, err := repo.ListAkariUsers(ctx)
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, len(users), 2)
+
+		found1 := false
+		found2 := false
+		for _, u := range users {
+			if u.ID == user1.ID {
+				found1 = true
+			}
+			if u.ID == user2.ID {
+				found2 = true
+			}
+		}
+		assert.True(t, found1, "user1 should be in the list")
+		assert.True(t, found2, "user2 should be in the list")
+	})
+
+	t.Run("DeleteAkariUser", func(t *testing.T) {
+		t.Parallel()
+
+		user, err := repo.CreateAkariUser(ctx)
+		require.NoError(t, err)
+
+		err = repo.DeleteAkariUser(ctx, user.ID)
+		require.NoError(t, err)
+
+		_, err = repo.GetAkariUserByID(ctx, user.ID)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to get akari user")
+	})
+}
