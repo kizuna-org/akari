@@ -30,13 +30,12 @@ func FromEntDiscordGuild(entDiscordGuild *ent.DiscordGuild) (*DiscordGuild, erro
 		return nil, errors.New("discordGuild is nil")
 	}
 
-	if entDiscordGuild.Edges.Channels == nil {
-		return nil, errors.New("discordGuild.Channels edge is nil")
-	}
-
-	discordChannelIDs := make([]string, len(entDiscordGuild.Edges.Channels))
-	for i, discordChannel := range entDiscordGuild.Edges.Channels {
-		discordChannelIDs[i] = discordChannel.ID
+	var discordChannelIDs []string
+	if entDiscordGuild.Edges.Channels != nil {
+		discordChannelIDs = make([]string, len(entDiscordGuild.Edges.Channels))
+		for i, discordChannel := range entDiscordGuild.Edges.Channels {
+			discordChannelIDs[i] = discordChannel.ID
+		}
 	}
 
 	return &DiscordGuild{

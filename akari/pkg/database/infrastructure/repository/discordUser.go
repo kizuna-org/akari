@@ -13,11 +13,16 @@ func (r *repositoryImpl) CreateDiscordUser(
 	ctx context.Context,
 	params domain.DiscordUser,
 ) (*domain.DiscordUser, error) {
-	user, err := r.client.DiscordUserClient().Create().
+	create := r.client.DiscordUserClient().Create().
 		SetID(params.ID).
 		SetUsername(params.Username).
-		SetBot(params.Bot).
-		Save(ctx)
+		SetBot(params.Bot)
+
+	if params.AkariUserID != nil {
+		create = create.SetAkariUserID(*params.AkariUserID)
+	}
+
+	user, err := create.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discord user: %w", err)
 	}

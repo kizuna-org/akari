@@ -27,24 +27,20 @@ func (r *repositoryImpl) CreateDiscordMessage(
 
 	r.logger.Info("Discord message created",
 		slog.String("message_id", message.ID),
-		slog.String("author_id", func() string {
-			if message != nil && message.Edges.Author != nil {
-				return message.Edges.Author.ID
-			}
-
-			return ""
-		}()),
-		slog.String("channel_id", func() string {
-			if message != nil && message.Edges.Channel != nil {
-				return message.Edges.Channel.ID
-			}
-
-			return ""
-		}()),
+		slog.String("author_id", params.AuthorID),
+		slog.String("channel_id", params.ChannelID),
 		slog.String("timestamp", message.Timestamp.String()),
 	)
 
-	return domain.FromEntDiscordMessage(message)
+	// Create domain object directly since we already have AuthorID and ChannelID
+	return &domain.DiscordMessage{
+		ID:        message.ID,
+		AuthorID:  params.AuthorID,
+		ChannelID: params.ChannelID,
+		Content:   message.Content,
+		Timestamp: message.Timestamp,
+		CreatedAt: message.CreatedAt,
+	}, nil
 }
 
 func (r *repositoryImpl) GetDiscordMessageByID(

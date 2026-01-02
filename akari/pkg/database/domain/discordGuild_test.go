@@ -27,7 +27,7 @@ func TestFromEntDiscordGuild_IncludesChannels(t *testing.T) {
 		input   *ent.DiscordGuild
 		wantErr bool
 	}{
-		{name: "channels nil edge", input: &ent.DiscordGuild{ID: "g1", Name: "n1", CreatedAt: now}, wantErr: true},
+		{name: "channels nil edge", input: &ent.DiscordGuild{ID: "g1", Name: "n1", CreatedAt: now}, wantErr: false},
 		{name: "with channels", input: entDiscordGuild, wantErr: false},
 		{name: "nil input", input: nil, wantErr: true},
 	}

@@ -17,11 +17,12 @@ type DiscordUserRepository interface {
 }
 
 type DiscordUser struct {
-	ID        string
-	Username  string
-	Bot       bool
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID         string
+	Username   string
+	Bot        bool
+	AkariUserID *int
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 func FromEntDiscordUser(entDiscordUser *ent.DiscordUser) *DiscordUser {

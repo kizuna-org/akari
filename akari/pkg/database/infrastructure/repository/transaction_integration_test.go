@@ -91,7 +91,13 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 			fn: func(ctx context.Context, tx *domain.Tx, setup interface{}) error {
 				gofakeit.Seed(time.Now().UnixNano())
 
+				akariUser, err := repo.CreateAkariUser(ctx)
+				if err != nil {
+					return err
+				}
+
 				discordUser := RandomDiscordUser()
+				discordUser.AkariUserID = &akariUser.ID
 				createdUser, err := repo.CreateDiscordUser(ctx, discordUser)
 				if err != nil {
 					return err
@@ -142,7 +148,11 @@ func TestRepository_Transactions_Integration(t *testing.T) {
 		{
 			name: "transaction rollback with multiple entities",
 			setup: func() interface{} {
+				akariUser, err := repo.CreateAkariUser(ctx)
+				require.NoError(t, err)
+
 				discordUserBefore := RandomDiscordUser()
+				discordUserBefore.AkariUserID = &akariUser.ID
 				createdUserBefore, err := repo.CreateDiscordUser(ctx, discordUserBefore)
 				require.NoError(t, err)
 				return createdUserBefore.ID

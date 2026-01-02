@@ -23,7 +23,12 @@ func TestRepository_CreateDiscordUser_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() domain.DiscordUser {
-				return RandomDiscordUser()
+				akariUser, err := repo.CreateAkariUser(ctx)
+				require.NoError(t, err)
+
+				discordUser := RandomDiscordUser()
+				discordUser.AkariUserID = &akariUser.ID
+				return discordUser
 			},
 			validate: func(t *testing.T, got *domain.DiscordUser, expected domain.DiscordUser) {
 				assert.Equal(t, expected.ID, got.ID)
@@ -74,7 +79,11 @@ func TestRepository_GetDiscordUserByID_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() string {
+				akariUser, err := repo.CreateAkariUser(ctx)
+				require.NoError(t, err)
+
 				params := RandomDiscordUser()
+				params.AkariUserID = &akariUser.ID
 				created, err := repo.CreateDiscordUser(ctx, params)
 				require.NoError(t, err)
 				return created.ID
@@ -125,11 +134,19 @@ func TestRepository_ListDiscordUsers_Integration(t *testing.T) {
 		{
 			name: "with multiple users",
 			setup: func() []string {
+				akariUser1, err := repo.CreateAkariUser(ctx)
+				require.NoError(t, err)
+
+				akariUser2, err := repo.CreateAkariUser(ctx)
+				require.NoError(t, err)
+
 				user1 := RandomDiscordUser()
+				user1.AkariUserID = &akariUser1.ID
 				created1, err := repo.CreateDiscordUser(ctx, user1)
 				require.NoError(t, err)
 
 				user2 := RandomDiscordUser()
+				user2.AkariUserID = &akariUser2.ID
 				created2, err := repo.CreateDiscordUser(ctx, user2)
 				require.NoError(t, err)
 
@@ -187,7 +204,11 @@ func TestRepository_DeleteDiscordUser_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() string {
+				akariUser, err := repo.CreateAkariUser(ctx)
+				require.NoError(t, err)
+
 				params := RandomDiscordUser()
+				params.AkariUserID = &akariUser.ID
 				created, err := repo.CreateDiscordUser(ctx, params)
 				require.NoError(t, err)
 				return created.ID

@@ -23,7 +23,11 @@ func TestRepository_CreateDiscordMessage_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() domain.DiscordMessage {
+				akariUser, err := repo.CreateAkariUser(ctx)
+				require.NoError(t, err)
+
 				discordUser := RandomDiscordUser()
+				discordUser.AkariUserID = &akariUser.ID
 				createdUser, err := repo.CreateDiscordUser(ctx, discordUser)
 				require.NoError(t, err)
 
@@ -86,7 +90,11 @@ func TestRepository_GetDiscordMessageByID_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() string {
+				akariUser, err := repo.CreateAkariUser(ctx)
+				require.NoError(t, err)
+
 				discordUser := RandomDiscordUser()
+				discordUser.AkariUserID = &akariUser.ID
 				createdUser, err := repo.CreateDiscordUser(ctx, discordUser)
 				require.NoError(t, err)
 
@@ -151,7 +159,11 @@ func TestRepository_DeleteDiscordMessage_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() string {
+				akariUser, err := repo.CreateAkariUser(ctx)
+				require.NoError(t, err)
+
 				discordUser := RandomDiscordUser()
+				discordUser.AkariUserID = &akariUser.ID
 				createdUser, err := repo.CreateDiscordUser(ctx, discordUser)
 				require.NoError(t, err)
 

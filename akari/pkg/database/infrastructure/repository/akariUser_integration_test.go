@@ -130,15 +130,15 @@ func TestRepository_GetAkariUserByDiscordUserID_Integration(t *testing.T) {
 			setup: func() string {
 				gofakeit.Seed(time.Now().UnixNano())
 
+				akariUser, err := entClient.AkariUser.Create().
+					Save(ctx)
+				require.NoError(t, err)
+
 				discordUser, err := entClient.DiscordUser.Create().
 					SetID(RandomDiscordID()).
 					SetUsername(RandomDiscordUsername()).
 					SetBot(gofakeit.Bool()).
-					Save(ctx)
-				require.NoError(t, err)
-
-				_, err = entClient.AkariUser.Create().
-					SetDiscordUser(discordUser).
+					SetAkariUser(akariUser).
 					Save(ctx)
 				require.NoError(t, err)
 

@@ -29,6 +29,7 @@ func TestRepository_CreateConversation_Integration(t *testing.T) {
 				require.NoError(t, err)
 
 				discordUser := RandomDiscordUser()
+				discordUser.AkariUserID = &akariUser.ID
 				createdDiscordUser, err := repo.CreateDiscordUser(ctx, discordUser)
 				require.NoError(t, err)
 
@@ -122,6 +123,7 @@ func TestRepository_GetConversationByID_Integration(t *testing.T) {
 				require.NoError(t, err)
 
 				discordUser := RandomDiscordUser()
+				discordUser.AkariUserID = &akariUser.ID
 				createdDiscordUser, err := repo.CreateDiscordUser(ctx, discordUser)
 				require.NoError(t, err)
 
@@ -216,6 +218,7 @@ func TestRepository_ListConversations_Integration(t *testing.T) {
 				require.NoError(t, err)
 
 				discordUser := RandomDiscordUser()
+				discordUser.AkariUserID = &akariUser.ID
 				createdDiscordUser, err := repo.CreateDiscordUser(ctx, discordUser)
 				require.NoError(t, err)
 
@@ -322,6 +325,7 @@ func TestRepository_DeleteConversation_Integration(t *testing.T) {
 				require.NoError(t, err)
 
 				discordUser := RandomDiscordUser()
+				discordUser.AkariUserID = &akariUser.ID
 				createdDiscordUser, err := repo.CreateDiscordUser(ctx, discordUser)
 				require.NoError(t, err)
 
