@@ -24,8 +24,9 @@ import (
 func setupTestDB(t *testing.T) (infrastructure.Client, repository.Repository, *ent.Client) {
 	t.Helper()
 
-	cfg := getTestDBConfig()
-	dsn := cfg.BuildDSN()
+	cfgRepo := config.NewConfigRepository()
+	dbCfg := cfgRepo.GetConfig().Database
+	dsn := dbCfg.BuildDSN()
 
 	drv, err := sql.Open(dialect.Postgres, dsn)
 	if err != nil {
@@ -48,38 +49,6 @@ func setupTestDB(t *testing.T) (infrastructure.Client, repository.Repository, *e
 	return client, repo, entClient
 }
 
-// getTestDBConfig returns database configuration for testing.
-func getTestDBConfig() config.DatabaseConfig {
-	cfg := config.DatabaseConfig{
-		Host:     getEnvOrDefault("POSTGRES_HOST", "localhost"),
-		Port:     getEnvAsIntOrDefault("POSTGRES_PORT", 5432),
-		User:     getEnvOrDefault("POSTGRES_USER", "postgres"),
-		Password: getEnvOrDefault("POSTGRES_PASSWORD", "postgres"),
-		Database: getEnvOrDefault("POSTGRES_DB", "akari_test"),
-		SSLMode:  getEnvOrDefault("POSTGRES_SSLMODE", "disable"),
-	}
-
-	return cfg
-}
-
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-
-	return defaultValue
-}
-
-func getEnvAsIntOrDefault(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		var intValue int
-		if _, err := fmt.Sscanf(value, "%d", &intValue); err == nil {
-			return intValue
-		}
-	}
-
-	return defaultValue
-}
 
 // testClientWrapper wraps ent.Client to implement infrastructure.Client interface.
 type testClientWrapper struct {
@@ -275,8 +244,9 @@ var (
 // TestMain sets up and tears down the test database.
 func TestMain(m *testing.M) {
 	// Setup: Create a test client for cleanup
-	cfg := getTestDBConfig()
-	dsn := cfg.BuildDSN()
+	cfgRepo := config.NewConfigRepository()
+	dbCfg := cfgRepo.GetConfig().Database
+	dsn := dbCfg.BuildDSN()
 
 	drv, err := sql.Open(dialect.Postgres, dsn)
 	if err != nil {
