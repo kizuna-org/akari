@@ -41,3 +41,4 @@ runs:
       working-directory: ${{ inputs.working-directory }}
       run: |
         make migrate-apply
+        make migrate-apply ENV=test
