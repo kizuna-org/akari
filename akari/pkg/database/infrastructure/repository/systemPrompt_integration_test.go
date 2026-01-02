@@ -1,5 +1,3 @@
-//go:build integration
-
 package repository_test
 
 import (
@@ -8,7 +6,6 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
-	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
