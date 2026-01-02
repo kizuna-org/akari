@@ -426,7 +426,7 @@ func TestRepository_DiscordGuild_Integration(t *testing.T) {
 func TestRepository_DiscordChannel_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
+	_, repo, _ := setupTestDB(t)
 	ctx := context.Background()
 
 	t.Run("CreateDiscordChannel", func(t *testing.T) {
