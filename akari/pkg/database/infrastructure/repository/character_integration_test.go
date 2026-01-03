@@ -93,40 +93,32 @@ func TestRepository_GetCharacterByID_Integration(t *testing.T) {
 	}
 }
 
-func TestRepository_ListCharacters_Integration(t *testing.T) { //nolint:paralleltest,tparallel
+func TestRepository_ListCharacters_Integration(t *testing.T) {
+	t.Parallel()
+
 	repo, entClient := setupTestDB(t)
 	ctx := t.Context()
 
 	tests := []struct {
 		name     string
-		setup    func() []int
+		setup    func() ([]int, func())
 		validate func(t *testing.T, got []*domain.Character, expectedIDs []int)
 	}{
 		{
-			name: "empty",
-			setup: func() []int {
-				cleanupTestDB(ctx, entClient)
-
-				return []int{}
-			},
-			validate: func(t *testing.T, got []*domain.Character, expectedIDs []int) {
-				t.Helper()
-				assert.Empty(t, got)
-			},
-		},
-		{
 			name: "with data",
-			setup: func() []int {
-				cleanupTestDB(ctx, entClient)
+			setup: func() ([]int, func()) {
 				_ = gofakeit.Seed(time.Now().UnixNano())
 
 				var characterIDs []int
+				var systemPromptIDs []int
+				var configIDs []int
 
 				for range 2 {
 					config, err := entClient.CharacterConfig.Create().
 						SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 						Save(ctx)
 					require.NoError(t, err)
+					configIDs = append(configIDs, config.ID)
 
 					systemPrompt, err := entClient.SystemPrompt.Create().
 						SetTitle(gofakeit.Word()).
@@ -134,6 +126,7 @@ func TestRepository_ListCharacters_Integration(t *testing.T) { //nolint:parallel
 						SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
 						Save(ctx)
 					require.NoError(t, err)
+					systemPromptIDs = append(systemPromptIDs, systemPrompt.ID)
 
 					character, err := entClient.Character.Create().
 						SetName(gofakeit.Name()).
@@ -141,11 +134,22 @@ func TestRepository_ListCharacters_Integration(t *testing.T) { //nolint:parallel
 						AddSystemPrompts(systemPrompt).
 						Save(ctx)
 					require.NoError(t, err)
-
 					characterIDs = append(characterIDs, character.ID)
 				}
 
-				return characterIDs
+				cleanup := func() {
+					for _, id := range characterIDs {
+						_ = entClient.Character.DeleteOneID(id).Exec(ctx)
+					}
+					for _, id := range systemPromptIDs {
+						_ = entClient.SystemPrompt.DeleteOneID(id).Exec(ctx)
+					}
+					for _, id := range configIDs {
+						_ = entClient.CharacterConfig.DeleteOneID(id).Exec(ctx)
+					}
+				}
+
+				return characterIDs, cleanup
 			},
 			validate: func(t *testing.T, got []*domain.Character, expectedIDs []int) {
 				t.Helper()
@@ -173,7 +177,8 @@ func TestRepository_ListCharacters_Integration(t *testing.T) { //nolint:parallel
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			expectedIDs := testCase.setup()
+			expectedIDs, cleanup := testCase.setup()
+			defer cleanup()
 
 			got, err := repo.ListCharacters(ctx)
 			require.NoError(t, err)
@@ -183,4 +188,15 @@ func TestRepository_ListCharacters_Integration(t *testing.T) { //nolint:parallel
 			}
 		})
 	}
+}
+
+func TestRepository_ListCharacters_Empty_Integration(t *testing.T) {
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
+
+	cleanupTestDB(ctx, entClient)
+
+	got, err := repo.ListCharacters(ctx)
+	require.NoError(t, err)
+	assert.Empty(t, got)
 }
