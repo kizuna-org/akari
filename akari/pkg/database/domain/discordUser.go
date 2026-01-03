@@ -30,11 +30,16 @@ func FromEntDiscordUser(entDiscordUser *ent.DiscordUser) *DiscordUser {
 		return nil
 	}
 
+	var akariUserID *int
+	if entDiscordUser.Edges.AkariUser != nil {
+		akariUserID = &entDiscordUser.Edges.AkariUser.ID
+	}
+
 	return &DiscordUser{
 		ID:          entDiscordUser.ID,
 		Username:    entDiscordUser.Username,
 		Bot:         entDiscordUser.Bot,
-		AkariUserID: nil,
+		AkariUserID: akariUserID,
 		CreatedAt:   entDiscordUser.CreatedAt,
 		UpdatedAt:   entDiscordUser.UpdatedAt,
 	}

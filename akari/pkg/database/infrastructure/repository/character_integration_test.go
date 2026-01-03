@@ -105,7 +105,7 @@ func TestRepository_ListCharacters_Integration(t *testing.T) { //nolint:parallel
 		{
 			name: "empty",
 			setup: func() []int {
-				cleanupTestDB(entClient)
+				cleanupTestDB(ctx, entClient)
 
 				return []int{}
 			},
@@ -117,6 +117,7 @@ func TestRepository_ListCharacters_Integration(t *testing.T) { //nolint:parallel
 		{
 			name: "with data",
 			setup: func() []int {
+				cleanupTestDB(ctx, entClient)
 				_ = gofakeit.Seed(time.Now().UnixNano())
 
 				var characterIDs []int
@@ -151,6 +152,9 @@ func TestRepository_ListCharacters_Integration(t *testing.T) { //nolint:parallel
 				assert.GreaterOrEqual(t, len(got), len(expectedIDs))
 
 				found := make(map[int]bool)
+				for _, id := range expectedIDs {
+					found[id] = false
+				}
 
 				for _, c := range got {
 					if _, exists := found[c.ID]; exists {

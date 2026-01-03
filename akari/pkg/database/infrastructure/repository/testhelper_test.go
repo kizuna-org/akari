@@ -251,7 +251,7 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 
 	// Cleanup: Delete all test data
-	cleanupTestDB(entClient)
+	cleanupTestDB(context.Background(), entClient)
 
 	// Close connections
 	_ = entClient.Close()
@@ -261,9 +261,7 @@ func TestMain(m *testing.M) {
 }
 
 // cleanupTestDB cleans up all test data from the database.
-func cleanupTestDB(client *ent.Client) {
-	ctx := context.Background()
-
+func cleanupTestDB(ctx context.Context, client *ent.Client) {
 	// Delete in reverse order of dependencies
 	_, _ = client.Conversation.Delete().Exec(ctx)
 	_, _ = client.ConversationGroup.Delete().Exec(ctx)
