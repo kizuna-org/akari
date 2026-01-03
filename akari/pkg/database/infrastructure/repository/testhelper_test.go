@@ -265,32 +265,14 @@ func cleanupTestDB(client *ent.Client) {
 	ctx := context.Background()
 
 	// Delete in reverse order of dependencies
-	if _, err := client.Conversation.Delete().Exec(ctx); err != nil {
-		// Ignore errors during cleanup
-		_ = err
-	}
-
-	if _, err := client.ConversationGroup.Delete().Exec(ctx); err != nil {
-		_ = err
-	}
-
-	if _, err := client.DiscordMessage.Delete().Exec(ctx); err != nil {
-		_ = err
-	}
-
-	if _, err := client.DiscordChannel.Delete().Exec(ctx); err != nil {
-		_ = err
-	}
-
-	if _, err := client.DiscordGuild.Delete().Exec(ctx); err != nil {
-		_ = err
-	}
-
-	if _, err := client.AkariUser.Delete().Exec(ctx); err != nil {
-		_ = err
-	}
-
-	if _, err := client.DiscordUser.Delete().Exec(ctx); err != nil {
-		_ = err
-	}
+	_, _ = client.Conversation.Delete().Exec(ctx)
+	_, _ = client.ConversationGroup.Delete().Exec(ctx)
+	_, _ = client.DiscordMessage.Delete().Exec(ctx)
+	_, _ = client.DiscordChannel.Delete().Exec(ctx)
+	_, _ = client.DiscordGuild.Delete().Exec(ctx)
+	_, _ = client.AkariUser.Delete().Exec(ctx)
+	_, _ = client.DiscordUser.Delete().Exec(ctx)
+	_, _ = client.Character.Delete().Exec(ctx)
+	_, _ = client.CharacterConfig.Delete().Exec(ctx)
+	_, _ = client.SystemPrompt.Delete().Exec(ctx)
 }

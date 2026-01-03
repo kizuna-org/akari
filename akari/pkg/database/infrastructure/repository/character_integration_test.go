@@ -93,9 +93,7 @@ func TestRepository_GetCharacterByID_Integration(t *testing.T) {
 	}
 }
 
-func TestRepository_ListCharacters_Integration(t *testing.T) {
-	t.Parallel()
-
+func TestRepository_ListCharacters_Integration(t *testing.T) { //nolint:paralleltest,tparallel
 	repo, entClient := setupTestDB(t)
 	ctx := t.Context()
 
@@ -107,6 +105,8 @@ func TestRepository_ListCharacters_Integration(t *testing.T) {
 		{
 			name: "empty",
 			setup: func() []int {
+				cleanupTestDB(entClient)
+
 				return []int{}
 			},
 			validate: func(t *testing.T, got []*domain.Character, expectedIDs []int) {

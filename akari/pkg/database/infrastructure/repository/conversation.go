@@ -18,16 +18,27 @@ func (r *repositoryImpl) CreateConversation(
 		SetDiscordMessageID(params.DiscordMessageID).
 		SetConversationGroupID(params.ConversationGroupID)
 
-	conversation, err := builder.Save(ctx)
+	conversationEnt, err := builder.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create conversation: %w", err)
 	}
 
+	conversationEnt, err = r.client.ConversationClient().
+		Query().
+		Where(conversation.IDEQ(conversationEnt.ID)).
+		WithUser().
+		WithDiscordMessage().
+		WithConversationGroup().
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load conversation with edges: %w", err)
+	}
+
 	r.logger.Info("Conversation created",
-		slog.Int("id", conversation.ID),
+		slog.Int("id", conversationEnt.ID),
 	)
 
-	return domain.FromEntConversation(conversation)
+	return domain.FromEntConversation(conversationEnt)
 }
 
 func (r *repositoryImpl) GetConversationByID(ctx context.Context, id int) (*domain.Conversation, error) {
