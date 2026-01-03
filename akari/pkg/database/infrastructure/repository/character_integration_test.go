@@ -1,10 +1,12 @@
 package repository_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
+	"github.com/kizuna-org/akari/gen/ent"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,69 +109,9 @@ func TestRepository_ListCharacters_Integration(t *testing.T) {
 		{
 			name: "with data",
 			setup: func() ([]int, func()) {
-				_ = gofakeit.Seed(time.Now().UnixNano())
-
-				var characterIDs []int
-				var systemPromptIDs []int
-				var configIDs []int
-
-				for range 2 {
-					config, err := entClient.CharacterConfig.Create().
-						SetDefaultSystemPrompt(gofakeit.Sentence(10)).
-						Save(ctx)
-					require.NoError(t, err)
-					configIDs = append(configIDs, config.ID)
-
-					systemPrompt, err := entClient.SystemPrompt.Create().
-						SetTitle(gofakeit.Word()).
-						SetPurpose("text_chat").
-						SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
-						Save(ctx)
-					require.NoError(t, err)
-					systemPromptIDs = append(systemPromptIDs, systemPrompt.ID)
-
-					character, err := entClient.Character.Create().
-						SetName(gofakeit.Name()).
-						SetConfig(config).
-						AddSystemPrompts(systemPrompt).
-						Save(ctx)
-					require.NoError(t, err)
-					characterIDs = append(characterIDs, character.ID)
-				}
-
-				cleanup := func() {
-					for _, id := range characterIDs {
-						_ = entClient.Character.DeleteOneID(id).Exec(ctx)
-					}
-					for _, id := range systemPromptIDs {
-						_ = entClient.SystemPrompt.DeleteOneID(id).Exec(ctx)
-					}
-					for _, id := range configIDs {
-						_ = entClient.CharacterConfig.DeleteOneID(id).Exec(ctx)
-					}
-				}
-
-				return characterIDs, cleanup
+				return setupTestCharacters(t, ctx, entClient)
 			},
-			validate: func(t *testing.T, got []*domain.Character, expectedIDs []int) {
-				t.Helper()
-				assert.GreaterOrEqual(t, len(got), len(expectedIDs))
-
-				found := make(map[int]bool)
-				for _, id := range expectedIDs {
-					found[id] = false
-				}
-
-				for _, c := range got {
-					if _, exists := found[c.ID]; exists {
-						found[c.ID] = true
-					}
-				}
-
-				for id, wasFound := range found {
-					assert.True(t, wasFound, "character %d should be in the list", id)
-				}
-			},
+			validate: validateCharacterList,
 		},
 	}
 
@@ -190,7 +132,82 @@ func TestRepository_ListCharacters_Integration(t *testing.T) {
 	}
 }
 
+func setupTestCharacters(t *testing.T, ctx context.Context, entClient *ent.Client) ([]int, func()) {
+	t.Helper()
+
+	_ = gofakeit.Seed(time.Now().UnixNano())
+
+	characterIDs := make([]int, 0, 2)
+	systemPromptIDs := make([]int, 0, 2)
+	configIDs := make([]int, 0, 2)
+
+	for range 2 {
+		config, err := entClient.CharacterConfig.Create().
+			SetDefaultSystemPrompt(gofakeit.Sentence(10)).
+			Save(ctx)
+		require.NoError(t, err)
+
+		configIDs = append(configIDs, config.ID)
+
+		systemPrompt, err := entClient.SystemPrompt.Create().
+			SetTitle(gofakeit.Word()).
+			SetPurpose("text_chat").
+			SetPrompt(gofakeit.Paragraph(3, 5, 10, "\n")).
+			Save(ctx)
+		require.NoError(t, err)
+
+		systemPromptIDs = append(systemPromptIDs, systemPrompt.ID)
+
+		character, err := entClient.Character.Create().
+			SetName(gofakeit.Name()).
+			SetConfig(config).
+			AddSystemPrompts(systemPrompt).
+			Save(ctx)
+		require.NoError(t, err)
+
+		characterIDs = append(characterIDs, character.ID)
+	}
+
+	cleanup := func() {
+		for _, id := range characterIDs {
+			_ = entClient.Character.DeleteOneID(id).Exec(ctx)
+		}
+
+		for _, id := range systemPromptIDs {
+			_ = entClient.SystemPrompt.DeleteOneID(id).Exec(ctx)
+		}
+
+		for _, id := range configIDs {
+			_ = entClient.CharacterConfig.DeleteOneID(id).Exec(ctx)
+		}
+	}
+
+	return characterIDs, cleanup
+}
+
+func validateCharacterList(t *testing.T, got []*domain.Character, expectedIDs []int) {
+	t.Helper()
+	assert.GreaterOrEqual(t, len(got), len(expectedIDs))
+
+	found := make(map[int]bool)
+	for _, id := range expectedIDs {
+		found[id] = false
+	}
+
+	for _, c := range got {
+		if _, exists := found[c.ID]; exists {
+			found[c.ID] = true
+		}
+	}
+
+	for id, wasFound := range found {
+		assert.True(t, wasFound, "character %d should be in the list", id)
+	}
+}
+
 func TestRepository_ListCharacters_Empty_Integration(t *testing.T) {
+	t.Parallel()
+
 	repo, entClient := setupTestDB(t)
 	ctx := t.Context()
 
