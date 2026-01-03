@@ -1,7 +1,6 @@
 package repository_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/kizuna-org/akari/pkg/database/domain"
@@ -12,8 +11,8 @@ import (
 func TestRepository_CreateDiscordGuild_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -21,11 +20,10 @@ func TestRepository_CreateDiscordGuild_Integration(t *testing.T) {
 		validate func(t *testing.T, got *domain.DiscordGuild, expected domain.DiscordGuild)
 	}{
 		{
-			name: "success",
-			setup: func() domain.DiscordGuild {
-				return RandomDiscordGuild()
-			},
+			name:  "success",
+			setup: RandomDiscordGuild,
 			validate: func(t *testing.T, got *domain.DiscordGuild, expected domain.DiscordGuild) {
+				t.Helper()
 				assert.Equal(t, expected.ID, got.ID)
 				assert.Equal(t, expected.Name, got.Name)
 			},
@@ -51,8 +49,8 @@ func TestRepository_CreateDiscordGuild_Integration(t *testing.T) {
 func TestRepository_GetDiscordGuildByID_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -62,10 +60,8 @@ func TestRepository_GetDiscordGuildByID_Integration(t *testing.T) {
 		validate func(t *testing.T, got *domain.DiscordGuild, expectedID string)
 	}{
 		{
-			name: "not found",
-			setup: func() string {
-				return RandomDiscordID()
-			},
+			name:    "not found",
+			setup:   RandomDiscordID,
 			wantErr: true,
 			errMsg:  "failed to get discord guild by id",
 		},
@@ -75,10 +71,12 @@ func TestRepository_GetDiscordGuildByID_Integration(t *testing.T) {
 				params := RandomDiscordGuild()
 				created, err := repo.CreateDiscordGuild(ctx, params)
 				require.NoError(t, err)
+
 				return created.ID
 			},
 			wantErr: false,
 			validate: func(t *testing.T, got *domain.DiscordGuild, expectedID string) {
+				t.Helper()
 				assert.Equal(t, expectedID, got.ID)
 				assert.NotEmpty(t, got.Name)
 			},
@@ -95,11 +93,13 @@ func TestRepository_GetDiscordGuildByID_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}
 			} else {
 				require.NoError(t, err)
+
 				if testCase.validate != nil {
 					testCase.validate(t, got, guildID)
 				}
@@ -111,8 +111,8 @@ func TestRepository_GetDiscordGuildByID_Integration(t *testing.T) {
 func TestRepository_ListDiscordGuilds_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -133,6 +133,7 @@ func TestRepository_ListDiscordGuilds_Integration(t *testing.T) {
 				return []string{created1.ID, created2.ID}
 			},
 			validate: func(t *testing.T, got []*domain.DiscordGuild, expectedIDs []string) {
+				t.Helper()
 				assert.GreaterOrEqual(t, len(got), len(expectedIDs))
 
 				found := make(map[string]bool)
@@ -172,8 +173,8 @@ func TestRepository_ListDiscordGuilds_Integration(t *testing.T) {
 func TestRepository_DeleteDiscordGuild_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name    string
@@ -187,6 +188,7 @@ func TestRepository_DeleteDiscordGuild_Integration(t *testing.T) {
 				params := RandomDiscordGuild()
 				created, err := repo.CreateDiscordGuild(ctx, params)
 				require.NoError(t, err)
+
 				return created.ID
 			},
 			wantErr: false,
@@ -203,6 +205,7 @@ func TestRepository_DeleteDiscordGuild_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}

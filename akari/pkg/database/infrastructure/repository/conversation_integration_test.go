@@ -1,7 +1,6 @@
 package repository_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -14,8 +13,8 @@ import (
 func TestRepository_CreateConversation_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -45,7 +44,7 @@ func TestRepository_CreateConversation_Integration(t *testing.T) {
 				createdMessage, err := repo.CreateDiscordMessage(ctx, message)
 				require.NoError(t, err)
 
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)
@@ -71,7 +70,8 @@ func TestRepository_CreateConversation_Integration(t *testing.T) {
 				return RandomConversation(akariUser.ID, createdMessage.ID, conversationGroup.ID)
 			},
 			validate: func(t *testing.T, got *domain.Conversation, expected domain.Conversation) {
-				assert.Greater(t, got.ID, 0)
+				t.Helper()
+				assert.Positive(t, got.ID)
 				assert.Equal(t, expected.UserID, got.UserID)
 				assert.Equal(t, expected.DiscordMessageID, got.DiscordMessageID)
 				assert.Equal(t, expected.ConversationGroupID, got.ConversationGroupID)
@@ -98,8 +98,8 @@ func TestRepository_CreateConversation_Integration(t *testing.T) {
 func TestRepository_GetConversationByID_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -139,7 +139,7 @@ func TestRepository_GetConversationByID_Integration(t *testing.T) {
 				createdMessage, err := repo.CreateDiscordMessage(ctx, message)
 				require.NoError(t, err)
 
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)
@@ -165,14 +165,16 @@ func TestRepository_GetConversationByID_Integration(t *testing.T) {
 				params := RandomConversation(akariUser.ID, createdMessage.ID, conversationGroup.ID)
 				created, err := repo.CreateConversation(ctx, params)
 				require.NoError(t, err)
+
 				return created.ID
 			},
 			wantErr: false,
 			validate: func(t *testing.T, got *domain.Conversation, expectedID int) {
+				t.Helper()
 				assert.Equal(t, expectedID, got.ID)
-				assert.Greater(t, got.UserID, 0)
+				assert.Positive(t, got.UserID)
 				assert.NotEmpty(t, got.DiscordMessageID)
-				assert.Greater(t, got.ConversationGroupID, 0)
+				assert.Positive(t, got.ConversationGroupID)
 			},
 		},
 	}
@@ -187,11 +189,13 @@ func TestRepository_GetConversationByID_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}
 			} else {
 				require.NoError(t, err)
+
 				if testCase.validate != nil {
 					testCase.validate(t, got, conversationID)
 				}
@@ -203,8 +207,8 @@ func TestRepository_GetConversationByID_Integration(t *testing.T) {
 func TestRepository_ListConversations_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -230,7 +234,7 @@ func TestRepository_ListConversations_Integration(t *testing.T) {
 				createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
 				require.NoError(t, err)
 
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)
@@ -255,7 +259,7 @@ func TestRepository_ListConversations_Integration(t *testing.T) {
 
 				var conversationIDs []int
 
-				for i := 0; i < 2; i++ {
+				for range 2 {
 					message := RandomDiscordMessage(createdDiscordUser.ID, createdChannel.ID)
 					createdMessage, err := repo.CreateDiscordMessage(ctx, message)
 					require.NoError(t, err)
@@ -270,8 +274,7 @@ func TestRepository_ListConversations_Integration(t *testing.T) {
 				return conversationIDs
 			},
 			validate: func(t *testing.T, got []*domain.Conversation, expectedIDs []int) {
-				assert.GreaterOrEqual(t, len(got), len(expectedIDs))
-
+				t.Helper()
 				found := make(map[int]bool)
 				for _, id := range expectedIDs {
 					found[id] = false
@@ -309,8 +312,8 @@ func TestRepository_ListConversations_Integration(t *testing.T) {
 func TestRepository_DeleteConversation_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name    string
@@ -341,7 +344,7 @@ func TestRepository_DeleteConversation_Integration(t *testing.T) {
 				createdMessage, err := repo.CreateDiscordMessage(ctx, message)
 				require.NoError(t, err)
 
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)
@@ -367,6 +370,7 @@ func TestRepository_DeleteConversation_Integration(t *testing.T) {
 				params := RandomConversation(akariUser.ID, createdMessage.ID, conversationGroup.ID)
 				created, err := repo.CreateConversation(ctx, params)
 				require.NoError(t, err)
+
 				return created.ID
 			},
 			wantErr: false,
@@ -383,6 +387,7 @@ func TestRepository_DeleteConversation_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}

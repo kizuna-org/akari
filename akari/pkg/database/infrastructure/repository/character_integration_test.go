@@ -1,7 +1,6 @@
 package repository_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -14,8 +13,8 @@ import (
 func TestRepository_GetCharacterByID_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -35,7 +34,7 @@ func TestRepository_GetCharacterByID_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() int {
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
@@ -60,7 +59,8 @@ func TestRepository_GetCharacterByID_Integration(t *testing.T) {
 			},
 			wantErr: false,
 			validate: func(t *testing.T, got *domain.Character) {
-				assert.Greater(t, got.ID, 0)
+				t.Helper()
+				assert.Positive(t, got.ID)
 				assert.NotEmpty(t, got.Name)
 				assert.NotNil(t, got.Config)
 				assert.GreaterOrEqual(t, len(got.SystemPromptIDs), 1)
@@ -78,11 +78,13 @@ func TestRepository_GetCharacterByID_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}
 			} else {
 				require.NoError(t, err)
+
 				if testCase.validate != nil {
 					testCase.validate(t, got)
 				}
@@ -94,8 +96,8 @@ func TestRepository_GetCharacterByID_Integration(t *testing.T) {
 func TestRepository_ListCharacters_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -108,17 +110,18 @@ func TestRepository_ListCharacters_Integration(t *testing.T) {
 				return []int{}
 			},
 			validate: func(t *testing.T, got []*domain.Character, expectedIDs []int) {
+				t.Helper()
 				assert.Empty(t, got)
 			},
 		},
 		{
 			name: "with data",
 			setup: func() []int {
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 
 				var characterIDs []int
 
-				for i := 0; i < 2; i++ {
+				for range 2 {
 					config, err := entClient.CharacterConfig.Create().
 						SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 						Save(ctx)
@@ -144,12 +147,10 @@ func TestRepository_ListCharacters_Integration(t *testing.T) {
 				return characterIDs
 			},
 			validate: func(t *testing.T, got []*domain.Character, expectedIDs []int) {
+				t.Helper()
 				assert.GreaterOrEqual(t, len(got), len(expectedIDs))
 
 				found := make(map[int]bool)
-				for _, id := range expectedIDs {
-					found[id] = false
-				}
 
 				for _, c := range got {
 					if _, exists := found[c.ID]; exists {

@@ -1,7 +1,6 @@
 package repository_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -14,8 +13,8 @@ import (
 func TestRepository_GetSystemPromptByID_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -35,7 +34,7 @@ func TestRepository_GetSystemPromptByID_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() int {
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 
 				systemPrompt, err := entClient.SystemPrompt.Create().
 					SetTitle(gofakeit.Word()).
@@ -48,6 +47,7 @@ func TestRepository_GetSystemPromptByID_Integration(t *testing.T) {
 			},
 			wantErr: false,
 			validate: func(t *testing.T, got *domain.SystemPrompt, expectedID int) {
+				t.Helper()
 				assert.Equal(t, expectedID, got.ID)
 				assert.NotEmpty(t, got.Title)
 				assert.NotEmpty(t, got.Purpose)
@@ -66,11 +66,13 @@ func TestRepository_GetSystemPromptByID_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}
 			} else {
 				require.NoError(t, err)
+
 				if testCase.validate != nil {
 					testCase.validate(t, got, systemPromptID)
 				}

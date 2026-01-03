@@ -1,7 +1,6 @@
 package repository_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -14,8 +13,8 @@ import (
 func TestRepository_CreateAkariUser_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -24,7 +23,8 @@ func TestRepository_CreateAkariUser_Integration(t *testing.T) {
 		{
 			name: "success",
 			validate: func(t *testing.T, got *domain.AkariUser) {
-				assert.Greater(t, got.ID, 0)
+				t.Helper()
+				assert.Positive(t, got.ID)
 				assert.NotZero(t, got.CreatedAt)
 				assert.NotZero(t, got.UpdatedAt)
 			},
@@ -48,8 +48,8 @@ func TestRepository_CreateAkariUser_Integration(t *testing.T) {
 func TestRepository_GetAkariUserByID_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -71,10 +71,12 @@ func TestRepository_GetAkariUserByID_Integration(t *testing.T) {
 			setup: func() int {
 				created, err := repo.CreateAkariUser(ctx)
 				require.NoError(t, err)
+
 				return created.ID
 			},
 			wantErr: false,
 			validate: func(t *testing.T, got *domain.AkariUser, expectedID int) {
+				t.Helper()
 				assert.Equal(t, expectedID, got.ID)
 				assert.NotZero(t, got.CreatedAt)
 			},
@@ -91,11 +93,13 @@ func TestRepository_GetAkariUserByID_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}
 			} else {
 				require.NoError(t, err)
+
 				if testCase.validate != nil {
 					testCase.validate(t, got, userID)
 				}
@@ -107,8 +111,8 @@ func TestRepository_GetAkariUserByID_Integration(t *testing.T) {
 func TestRepository_GetAkariUserByDiscordUserID_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -118,17 +122,15 @@ func TestRepository_GetAkariUserByDiscordUserID_Integration(t *testing.T) {
 		validate func(t *testing.T, got *domain.AkariUser, expectedDiscordID string)
 	}{
 		{
-			name: "not found",
-			setup: func() string {
-				return RandomDiscordID()
-			},
+			name:    "not found",
+			setup:   RandomDiscordID,
 			wantErr: true,
 			errMsg:  "failed to get akari user by discord id",
 		},
 		{
 			name: "success",
 			setup: func() string {
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 
 				akariUser, err := entClient.AkariUser.Create().
 					Save(ctx)
@@ -146,7 +148,8 @@ func TestRepository_GetAkariUserByDiscordUserID_Integration(t *testing.T) {
 			},
 			wantErr: false,
 			validate: func(t *testing.T, got *domain.AkariUser, expectedDiscordID string) {
-				assert.Greater(t, got.ID, 0)
+				t.Helper()
+				assert.Positive(t, got.ID)
 			},
 		},
 	}
@@ -161,11 +164,13 @@ func TestRepository_GetAkariUserByDiscordUserID_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}
 			} else {
 				require.NoError(t, err)
+
 				if testCase.validate != nil {
 					testCase.validate(t, got, discordID)
 				}
@@ -177,8 +182,8 @@ func TestRepository_GetAkariUserByDiscordUserID_Integration(t *testing.T) {
 func TestRepository_ListAkariUsers_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -197,8 +202,7 @@ func TestRepository_ListAkariUsers_Integration(t *testing.T) {
 				return []int{user1.ID, user2.ID}
 			},
 			validate: func(t *testing.T, got []*domain.AkariUser, expectedIDs []int) {
-				assert.GreaterOrEqual(t, len(got), len(expectedIDs))
-
+				t.Helper()
 				found := make(map[int]bool)
 				for _, id := range expectedIDs {
 					found[id] = false
@@ -236,8 +240,8 @@ func TestRepository_ListAkariUsers_Integration(t *testing.T) {
 func TestRepository_DeleteAkariUser_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name    string
@@ -250,6 +254,7 @@ func TestRepository_DeleteAkariUser_Integration(t *testing.T) {
 			setup: func() int {
 				user, err := repo.CreateAkariUser(ctx)
 				require.NoError(t, err)
+
 				return user.ID
 			},
 			wantErr: false,
@@ -266,6 +271,7 @@ func TestRepository_DeleteAkariUser_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}

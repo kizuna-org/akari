@@ -1,7 +1,6 @@
 package repository_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -14,8 +13,8 @@ import (
 func TestRepository_CreateConversationGroup_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -25,7 +24,7 @@ func TestRepository_CreateConversationGroup_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() int {
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
@@ -49,7 +48,8 @@ func TestRepository_CreateConversationGroup_Integration(t *testing.T) {
 				return character.ID
 			},
 			validate: func(t *testing.T, got *domain.ConversationGroup, expectedCharacterID int) {
-				assert.Greater(t, got.ID, 0)
+				t.Helper()
+				assert.Positive(t, got.ID)
 				assert.Equal(t, expectedCharacterID, got.CharacterID)
 				assert.NotZero(t, got.CreatedAt)
 			},
@@ -75,8 +75,8 @@ func TestRepository_CreateConversationGroup_Integration(t *testing.T) {
 func TestRepository_GetConversationGroupByID_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -96,7 +96,7 @@ func TestRepository_GetConversationGroupByID_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() int {
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
@@ -119,12 +119,14 @@ func TestRepository_GetConversationGroupByID_Integration(t *testing.T) {
 
 				created, err := repo.CreateConversationGroup(ctx, character.ID)
 				require.NoError(t, err)
+
 				return created.ID
 			},
 			wantErr: false,
 			validate: func(t *testing.T, got *domain.ConversationGroup, expectedID int) {
+				t.Helper()
 				assert.Equal(t, expectedID, got.ID)
-				assert.Greater(t, got.CharacterID, 0)
+				assert.Positive(t, got.CharacterID)
 			},
 		},
 	}
@@ -139,11 +141,13 @@ func TestRepository_GetConversationGroupByID_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}
 			} else {
 				require.NoError(t, err)
+
 				if testCase.validate != nil {
 					testCase.validate(t, got, groupID)
 				}
@@ -155,8 +159,8 @@ func TestRepository_GetConversationGroupByID_Integration(t *testing.T) {
 func TestRepository_ListConversationGroups_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -166,11 +170,11 @@ func TestRepository_ListConversationGroups_Integration(t *testing.T) {
 		{
 			name: "with multiple groups",
 			setup: func() []int {
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 
 				var groupIDs []int
 
-				for i := 0; i < 2; i++ {
+				for range 2 {
 					config, err := entClient.CharacterConfig.Create().
 						SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 						Save(ctx)
@@ -199,8 +203,7 @@ func TestRepository_ListConversationGroups_Integration(t *testing.T) {
 				return groupIDs
 			},
 			validate: func(t *testing.T, got []*domain.ConversationGroup, expectedIDs []int) {
-				assert.GreaterOrEqual(t, len(got), len(expectedIDs))
-
+				t.Helper()
 				found := make(map[int]bool)
 				for _, id := range expectedIDs {
 					found[id] = false
@@ -238,8 +241,8 @@ func TestRepository_ListConversationGroups_Integration(t *testing.T) {
 func TestRepository_DeleteConversationGroup_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, entClient := setupTestDB(t)
-	ctx := context.Background()
+	repo, entClient := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name    string
@@ -250,7 +253,7 @@ func TestRepository_DeleteConversationGroup_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() int {
-				gofakeit.Seed(time.Now().UnixNano())
+				_ = gofakeit.Seed(time.Now().UnixNano())
 
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
@@ -273,6 +276,7 @@ func TestRepository_DeleteConversationGroup_Integration(t *testing.T) {
 
 				created, err := repo.CreateConversationGroup(ctx, character.ID)
 				require.NoError(t, err)
+
 				return created.ID
 			},
 			wantErr: false,
@@ -289,6 +293,7 @@ func TestRepository_DeleteConversationGroup_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}

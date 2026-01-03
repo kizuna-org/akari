@@ -121,11 +121,13 @@ func (c *configRepositoryImpl) LoadConfig() error {
 
 	if envFile != "" {
 		loadPath := envFile
+
 		if !filepath.IsAbs(envFile) {
 			wd, _ := os.Getwd()
 			projectRoot := c.findProjectRoot(wd)
 			loadPath = filepath.Join(projectRoot, envFile)
 		}
+
 		err := godotenv.Load(loadPath)
 		if err != nil {
 			return err
@@ -174,17 +176,21 @@ func (c *configRepositoryImpl) determineEnvMode() (EnvMode, string) {
 
 func (c *configRepositoryImpl) findProjectRoot(startDir string) string {
 	dir := startDir
+
 	for {
 		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
 			return dir
 		}
+
 		parent := filepath.Dir(dir)
 		if parent == dir {
 			// Reached root directory
 			break
 		}
+
 		dir = parent
 	}
+
 	return startDir
 }
 

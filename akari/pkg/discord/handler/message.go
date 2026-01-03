@@ -163,10 +163,11 @@ func fetchUser(session *discordgo.Session, message *discordgo.MessageCreate) (*d
 	}
 
 	return &databaseDomain.DiscordUser{
-		ID:        discordgoUser.ID,
-		Username:  discordgoUser.Username,
-		Bot:       discordgoUser.Bot,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		ID:          discordgoUser.ID,
+		Username:    discordgoUser.Username,
+		Bot:         discordgoUser.Bot,
+		AkariUserID: nil,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}, nil
 }

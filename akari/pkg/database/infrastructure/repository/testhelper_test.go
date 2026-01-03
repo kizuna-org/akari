@@ -15,13 +15,12 @@ import (
 	"github.com/kizuna-org/akari/gen/ent/enttest"
 	"github.com/kizuna-org/akari/pkg/config"
 	"github.com/kizuna-org/akari/pkg/database/domain"
-	"github.com/kizuna-org/akari/pkg/database/infrastructure"
 	"github.com/kizuna-org/akari/pkg/database/infrastructure/repository"
 	_ "github.com/lib/pq"
 )
 
 // setupTestDB creates a test database client and repository.
-func setupTestDB(t *testing.T) (infrastructure.Client, repository.Repository, *ent.Client) {
+func setupTestDB(t *testing.T) (repository.Repository, *ent.Client) {
 	t.Helper()
 
 	cfgRepo := config.NewConfigRepository()
@@ -46,9 +45,8 @@ func setupTestDB(t *testing.T) (infrastructure.Client, repository.Repository, *e
 
 	repo := repository.NewRepository(client, logger)
 
-	return client, repo, entClient
+	return repo, entClient
 }
-
 
 // testClientWrapper wraps ent.Client to implement infrastructure.Client interface.
 type testClientWrapper struct {
@@ -133,49 +131,49 @@ func (c *testClientWrapper) SystemPromptClient() *ent.SystemPromptClient {
 
 // RandomDiscordID generates a random Discord ID (18-digit numeric string).
 func RandomDiscordID() string {
-	gofakeit.Seed(time.Now().UnixNano())
+	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	return gofakeit.Numerify("##################")
 }
 
 // RandomDiscordUsername generates a random Discord username.
 func RandomDiscordUsername() string {
-	gofakeit.Seed(time.Now().UnixNano())
+	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	return gofakeit.Username()
 }
 
 // RandomChannelName generates a random channel name.
 func RandomChannelName() string {
-	gofakeit.Seed(time.Now().UnixNano())
+	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	return gofakeit.Word()
 }
 
 // RandomGuildName generates a random guild name.
 func RandomGuildName() string {
-	gofakeit.Seed(time.Now().UnixNano())
+	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	return gofakeit.Company()
 }
 
 // RandomMessageContent generates random message content.
 func RandomMessageContent() string {
-	gofakeit.Seed(time.Now().UnixNano())
+	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	return gofakeit.Sentence(10)
 }
 
 // RandomTimestamp generates a random timestamp.
 func RandomTimestamp() time.Time {
-	gofakeit.Seed(time.Now().UnixNano())
+	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	return gofakeit.Date()
 }
 
 // RandomDiscordUser creates a random DiscordUser domain object.
 func RandomDiscordUser() domain.DiscordUser {
-	gofakeit.Seed(time.Now().UnixNano())
+	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	return domain.DiscordUser{
 		ID:       RandomDiscordID(),
@@ -186,7 +184,7 @@ func RandomDiscordUser() domain.DiscordUser {
 
 // RandomDiscordGuild creates a random DiscordGuild domain object.
 func RandomDiscordGuild() domain.DiscordGuild {
-	gofakeit.Seed(time.Now().UnixNano())
+	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	return domain.DiscordGuild{
 		ID:   RandomDiscordID(),
@@ -196,7 +194,7 @@ func RandomDiscordGuild() domain.DiscordGuild {
 
 // RandomDiscordChannel creates a random DiscordChannel domain object.
 func RandomDiscordChannel(guildID string) domain.DiscordChannel {
-	gofakeit.Seed(time.Now().UnixNano())
+	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	channelTypes := []domain.DiscordChannelType{
 		domain.DiscordChannelTypeGuildText,
@@ -215,7 +213,7 @@ func RandomDiscordChannel(guildID string) domain.DiscordChannel {
 
 // RandomDiscordMessage creates a random DiscordMessage domain object.
 func RandomDiscordMessage(authorID, channelID string) domain.DiscordMessage {
-	gofakeit.Seed(time.Now().UnixNano())
+	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	return domain.DiscordMessage{
 		ID:        RandomDiscordID(),
@@ -235,12 +233,6 @@ func RandomConversation(userID int, discordMessageID string, conversationGroupID
 	}
 }
 
-var (
-	testClient    infrastructure.Client
-	testRepo      repository.Repository
-	testEntClient *ent.Client
-)
-
 // TestMain sets up and tears down the test database.
 func TestMain(m *testing.M) {
 	// Setup: Create a test client for cleanup
@@ -254,18 +246,16 @@ func TestMain(m *testing.M) {
 	}
 
 	entClient := ent.NewClient(ent.Driver(drv))
-	defer func() {
-		_ = entClient.Close()
-		_ = drv.Close()
-	}()
-
-	testEntClient = entClient
 
 	// Run tests
 	code := m.Run()
 
 	// Cleanup: Delete all test data
 	cleanupTestDB(entClient)
+
+	// Close connections
+	_ = entClient.Close()
+	_ = drv.Close()
 
 	os.Exit(code)
 }

@@ -1,7 +1,6 @@
 package repository_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/kizuna-org/akari/pkg/database/domain"
@@ -12,8 +11,8 @@ import (
 func TestRepository_CreateDiscordUser_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -28,9 +27,11 @@ func TestRepository_CreateDiscordUser_Integration(t *testing.T) {
 
 				discordUser := RandomDiscordUser()
 				discordUser.AkariUserID = &akariUser.ID
+
 				return discordUser
 			},
 			validate: func(t *testing.T, got *domain.DiscordUser, expected domain.DiscordUser) {
+				t.Helper()
 				assert.Equal(t, expected.ID, got.ID)
 				assert.Equal(t, expected.Username, got.Username)
 				assert.Equal(t, expected.Bot, got.Bot)
@@ -58,8 +59,8 @@ func TestRepository_CreateDiscordUser_Integration(t *testing.T) {
 func TestRepository_GetDiscordUserByID_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -69,10 +70,8 @@ func TestRepository_GetDiscordUserByID_Integration(t *testing.T) {
 		validate func(t *testing.T, got *domain.DiscordUser, expectedID string)
 	}{
 		{
-			name: "not found",
-			setup: func() string {
-				return RandomDiscordID()
-			},
+			name:    "not found",
+			setup:   RandomDiscordID,
 			wantErr: true,
 			errMsg:  "failed to get discord user by id",
 		},
@@ -86,10 +85,12 @@ func TestRepository_GetDiscordUserByID_Integration(t *testing.T) {
 				params.AkariUserID = &akariUser.ID
 				created, err := repo.CreateDiscordUser(ctx, params)
 				require.NoError(t, err)
+
 				return created.ID
 			},
 			wantErr: false,
 			validate: func(t *testing.T, got *domain.DiscordUser, expectedID string) {
+				t.Helper()
 				assert.Equal(t, expectedID, got.ID)
 				assert.NotEmpty(t, got.Username)
 				assert.NotZero(t, got.CreatedAt)
@@ -107,11 +108,13 @@ func TestRepository_GetDiscordUserByID_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}
 			} else {
 				require.NoError(t, err)
+
 				if testCase.validate != nil {
 					testCase.validate(t, got, userID)
 				}
@@ -123,8 +126,8 @@ func TestRepository_GetDiscordUserByID_Integration(t *testing.T) {
 func TestRepository_ListDiscordUsers_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name     string
@@ -153,6 +156,7 @@ func TestRepository_ListDiscordUsers_Integration(t *testing.T) {
 				return []string{created1.ID, created2.ID}
 			},
 			validate: func(t *testing.T, got []*domain.DiscordUser, expectedIDs []string) {
+				t.Helper()
 				assert.GreaterOrEqual(t, len(got), len(expectedIDs))
 
 				found := make(map[string]bool)
@@ -192,8 +196,8 @@ func TestRepository_ListDiscordUsers_Integration(t *testing.T) {
 func TestRepository_DeleteDiscordUser_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
-	ctx := context.Background()
+	repo, _ := setupTestDB(t)
+	ctx := t.Context()
 
 	tests := []struct {
 		name    string
@@ -211,6 +215,7 @@ func TestRepository_DeleteDiscordUser_Integration(t *testing.T) {
 				params.AkariUserID = &akariUser.ID
 				created, err := repo.CreateDiscordUser(ctx, params)
 				require.NoError(t, err)
+
 				return created.ID
 			},
 			wantErr: false,
@@ -227,6 +232,7 @@ func TestRepository_DeleteDiscordUser_Integration(t *testing.T) {
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}

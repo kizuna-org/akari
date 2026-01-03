@@ -13,9 +13,9 @@ import (
 func TestRepository_HealthCheck_Integration(t *testing.T) {
 	t.Parallel()
 
-	_, repo, _ := setupTestDB(t)
+	repo, _ := setupTestDB(t)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	err := repo.HealthCheck(ctx)
 	assert.NoError(t, err)
@@ -51,14 +51,15 @@ func TestRepository_WithTransaction_Integration(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, repo, _ := setupTestDB(t)
+			repo, _ := setupTestDB(t)
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			err := repo.WithTransaction(ctx, testCase.fn)
 
 			if testCase.wantErr {
 				require.Error(t, err)
+
 				if testCase.errMsg != "" {
 					assert.Contains(t, err.Error(), testCase.errMsg)
 				}
