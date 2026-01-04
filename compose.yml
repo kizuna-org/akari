@@ -7,9 +7,11 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      NOCODB_DB: ${NOCODB_DB:-nocodb}
       TZ: UTC
     volumes:
       - db-store:/var/lib/postgresql
+      - ./init-db:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -96,7 +98,7 @@ services:
     # ports:
     #   - "8080:8080"
     environment:
-      NC_DB: "pg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@akari-db:5432/${POSTGRES_DB}"
+      NC_DB: "pg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@akari-db:5432/${NOCODB_DB:-nocodb}"
       NC_AUTH_JWT_SECRET: ${NC_AUTH_JWT_SECRET}
       NC_SENTRY_DSN: ${NC_SENTRY_DSN:-}
       NC_DISABLE_TELE: ${NC_DISABLE_TELE:-true}
