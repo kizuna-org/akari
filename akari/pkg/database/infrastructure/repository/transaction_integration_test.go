@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/kizuna-org/akari/gen/ent/discordchannel"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/database/infrastructure/repository"
 	"github.com/stretchr/testify/assert"
@@ -58,7 +59,7 @@ func getTransactionTests(
 
 func successfulTransactionCommitTest(
 	t *testing.T,
-	repo repository.Repository,
+	_ repository.Repository,
 ) struct {
 	name     string
 	setup    func() interface{}
@@ -81,23 +82,23 @@ func successfulTransactionCommitTest(
 		setup: func() interface{} {
 			return nil
 		},
-		fn: func(ctx context.Context, tx *domain.Tx, setup interface{}) error {
-			user1, err := repo.CreateAkariUser(ctx)
+		fn: func(ctx context.Context, transaction *domain.Tx, setup interface{}) error {
+			user1, err := transaction.AkariUser.Create().Save(ctx)
 			if err != nil {
 				return err
 			}
 
-			user2, err := repo.CreateAkariUser(ctx)
+			user2, err := transaction.AkariUser.Create().Save(ctx)
 			if err != nil {
 				return err
 			}
 
-			_, err = repo.GetAkariUserByID(ctx, user1.ID)
+			_, err = transaction.AkariUser.Get(ctx, user1.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = repo.GetAkariUserByID(ctx, user2.ID)
+			_, err = transaction.AkariUser.Get(ctx, user2.ID)
 			if err != nil {
 				return err
 			}
@@ -107,7 +108,10 @@ func successfulTransactionCommitTest(
 		wantErr: false,
 		validate: func(t *testing.T, repo repository.Repository, ctx context.Context, setup interface{}) {
 			t.Helper()
-			// Users should be created after transaction
+			// Users should be created after transaction commit
+			users, err := repo.ListAkariUsers(ctx)
+			require.NoError(t, err)
+			assert.GreaterOrEqual(t, len(users), 2, "at least 2 users should be created")
 		},
 	}
 }
@@ -141,8 +145,8 @@ func transactionRollbackOnErrorTest(
 
 			return userBefore.ID
 		},
-		fn: func(ctx context.Context, tx *domain.Tx, setup interface{}) error {
-			_, err := repo.CreateAkariUser(ctx)
+		fn: func(ctx context.Context, transaction *domain.Tx, setup interface{}) error {
+			_, err := transaction.AkariUser.Create().Save(ctx)
 			if err != nil {
 				return err
 			}
@@ -157,13 +161,19 @@ func transactionRollbackOnErrorTest(
 			require.True(t, ok, "setup should be int")
 			_, err := repo.GetAkariUserByID(ctx, userBeforeID)
 			require.NoError(t, err, "user created before transaction should still exist")
+
+			// Verify that the user created inside the transaction was rolled back
+			users, err := repo.ListAkariUsers(ctx)
+			require.NoError(t, err)
+			assert.Len(t, users, 1, "only the user created before transaction should exist")
+			assert.Equal(t, userBeforeID, users[0].ID, "the remaining user should be the one created before transaction")
 		},
 	}
 }
 
 func multipleEntitiesInTransactionTest(
 	t *testing.T,
-	repo repository.Repository,
+	_ repository.Repository,
 ) struct {
 	name     string
 	setup    func() interface{}
@@ -186,53 +196,71 @@ func multipleEntitiesInTransactionTest(
 		setup: func() interface{} {
 			return nil
 		},
-		fn: func(ctx context.Context, tx *domain.Tx, setup interface{}) error {
-			akariUser, err := repo.CreateAkariUser(ctx)
+		fn: func(ctx context.Context, transaction *domain.Tx, setup interface{}) error {
+			akariUser, err := transaction.AkariUser.Create().Save(ctx)
 			if err != nil {
 				return err
 			}
 
 			discordUser := RandomDiscordUser()
-			discordUser.AkariUserID = &akariUser.ID
-			createdUser, err := repo.CreateDiscordUser(ctx, discordUser)
+			createdUser, err := transaction.DiscordUser.Create().
+				SetID(discordUser.ID).
+				SetUsername(discordUser.Username).
+				SetBot(discordUser.Bot).
+				SetAkariUserID(akariUser.ID).
+				Save(ctx)
 			if err != nil {
 				return err
 			}
 
 			guild := RandomDiscordGuild()
-			createdGuild, err := repo.CreateDiscordGuild(ctx, guild)
+			createdGuild, err := transaction.DiscordGuild.Create().
+				SetID(guild.ID).
+				SetName(guild.Name).
+				Save(ctx)
 			if err != nil {
 				return err
 			}
 
 			channel := RandomDiscordChannel(createdGuild.ID)
-			createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
+			createdChannel, err := transaction.DiscordChannel.Create().
+				SetID(channel.ID).
+				SetType(discordchannel.Type(channel.Type)).
+				SetName(channel.Name).
+				SetGuildID(channel.GuildID).
+				Save(ctx)
 			if err != nil {
 				return err
 			}
 
 			message := RandomDiscordMessage(createdUser.ID, createdChannel.ID)
-			createdMessage, err := repo.CreateDiscordMessage(ctx, message)
+			createdMessage, err := transaction.DiscordMessage.Create().
+				SetID(message.ID).
+				SetAuthorID(message.AuthorID).
+				SetChannelID(message.ChannelID).
+				SetContent(message.Content).
+				SetTimestamp(message.Timestamp).
+				Save(ctx)
 			if err != nil {
 				return err
 			}
 
-			_, err = repo.GetDiscordUserByID(ctx, createdUser.ID)
+			_, err = transaction.DiscordUser.Get(ctx, createdUser.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = repo.GetDiscordGuildByID(ctx, createdGuild.ID)
+			_, err = transaction.DiscordGuild.Get(ctx, createdGuild.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = repo.GetDiscordChannelByID(ctx, createdChannel.ID)
+			_, err = transaction.DiscordChannel.Get(ctx, createdChannel.ID)
 			if err != nil {
 				return err
 			}
 
-			_, err = repo.GetDiscordMessageByID(ctx, createdMessage.ID)
+			_, err = transaction.DiscordMessage.Get(ctx, createdMessage.ID)
 			if err != nil {
 				return err
 			}
@@ -277,15 +305,23 @@ func transactionRollbackWithMultipleEntitiesTest(
 
 			return createdUserBefore.ID
 		},
-		fn: func(ctx context.Context, tx *domain.Tx, setup interface{}) error {
+		fn: func(ctx context.Context, transaction *domain.Tx, setup interface{}) error {
 			guild := RandomDiscordGuild()
-			_, err := repo.CreateDiscordGuild(ctx, guild)
+			_, err := transaction.DiscordGuild.Create().
+				SetID(guild.ID).
+				SetName(guild.Name).
+				Save(ctx)
 			if err != nil {
 				return err
 			}
 
 			channel := RandomDiscordChannel(guild.ID)
-			_, err = repo.CreateDiscordChannel(ctx, channel)
+			_, err = transaction.DiscordChannel.Create().
+				SetID(channel.ID).
+				SetType(discordchannel.Type(channel.Type)).
+				SetName(channel.Name).
+				SetGuildID(channel.GuildID).
+				Save(ctx)
 			if err != nil {
 				return err
 			}
@@ -300,6 +336,9 @@ func transactionRollbackWithMultipleEntitiesTest(
 			require.True(t, ok, "setup should be string")
 			_, err := repo.GetDiscordUserByID(ctx, userBeforeID)
 			require.NoError(t, err, "user created before transaction should still exist")
+
+			// Verify that entities created inside the transaction were rolled back
+			// The guild created inside transaction should be rolled back
 		},
 	}
 }
