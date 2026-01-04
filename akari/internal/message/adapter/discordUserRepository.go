@@ -44,6 +44,7 @@ func (r *discordUserRepository) CreateIfNotExists(ctx context.Context, user *ent
 		if err != nil {
 			return "", fmt.Errorf("adapter: failed to create akari user: %w", err)
 		}
+
 		dbUser.AkariUserID = &akariUser.ID
 	}
 

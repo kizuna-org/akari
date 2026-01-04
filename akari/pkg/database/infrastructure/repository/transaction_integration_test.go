@@ -172,6 +172,7 @@ func transactionRollbackOnErrorTest(
 			for _, user := range users {
 				if user.ID == userBeforeID {
 					found = true
+
 					break
 				}
 			}
