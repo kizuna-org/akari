@@ -9,6 +9,7 @@ tool (
 
 require (
 	entgo.io/ent v0.14.5
+	github.com/brianvoe/gofakeit/v7 v7.9.0
 	github.com/bwmarrin/discordgo v0.29.0
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0

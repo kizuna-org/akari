@@ -22,6 +22,15 @@ func (r *repositoryImpl) CreateConversationGroup(
 		return nil, fmt.Errorf("failed to create conversation group: %w", err)
 	}
 
+	conversationGroup, err = r.client.ConversationGroupClient().
+		Query().
+		Where(conversationgroup.IDEQ(conversationGroup.ID)).
+		WithCharacter().
+		Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load conversation group with character: %w", err)
+	}
+
 	r.logger.Info("Conversation group created",
 		slog.Int("id", conversationGroup.ID),
 	)

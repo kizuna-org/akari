@@ -14,11 +14,12 @@ type DiscordUser struct {
 
 func (u *DiscordUser) ToDatabaseDiscordUser() databaseDomain.DiscordUser {
 	return databaseDomain.DiscordUser{
-		ID:        u.ID,
-		Username:  u.Username,
-		Bot:       u.Bot,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		ID:          u.ID,
+		Username:    u.Username,
+		Bot:         u.Bot,
+		AkariUserID: nil,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}
 }
 
