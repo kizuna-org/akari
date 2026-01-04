@@ -13,13 +13,16 @@ import (
 
 type discordUserRepository struct {
 	discordUserInteractor databaseInteractor.DiscordUserInteractor
+	akariUserInteractor   databaseInteractor.AkariUserInteractor
 }
 
 func NewDiscordUserRepository(
 	discordUserInteractor databaseInteractor.DiscordUserInteractor,
+	akariUserInteractor databaseInteractor.AkariUserInteractor,
 ) domain.DiscordUserRepository {
 	return &discordUserRepository{
 		discordUserInteractor: discordUserInteractor,
+		akariUserInteractor:   akariUserInteractor,
 	}
 }
 
@@ -34,7 +37,17 @@ func (r *discordUserRepository) CreateIfNotExists(ctx context.Context, user *ent
 		return "", fmt.Errorf("adapter: failed to get discord user by id: %w", err)
 	}
 
-	discordUser, err := r.discordUserInteractor.CreateDiscordUser(ctx, user.ToDatabaseDiscordUser())
+	dbUser := user.ToDatabaseDiscordUser()
+
+	if dbUser.AkariUserID == nil {
+		akariUser, err := r.akariUserInteractor.CreateAkariUser(ctx)
+		if err != nil {
+			return "", fmt.Errorf("adapter: failed to create akari user: %w", err)
+		}
+		dbUser.AkariUserID = &akariUser.ID
+	}
+
+	discordUser, err := r.discordUserInteractor.CreateDiscordUser(ctx, dbUser)
 	if err != nil {
 		return "", fmt.Errorf("adapter: failed to create discord user: %w", err)
 	}
