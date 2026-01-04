@@ -123,7 +123,11 @@ func (c *configRepositoryImpl) LoadConfig() error {
 		loadPath := envFile
 
 		if !filepath.IsAbs(envFile) {
-			wd, _ := os.Getwd()
+			wd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("config: failed to get working directory: %w", err)
+			}
+
 			projectRoot := c.findProjectRoot(wd)
 			loadPath = filepath.Join(projectRoot, envFile)
 		}

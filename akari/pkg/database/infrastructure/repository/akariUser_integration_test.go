@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/kizuna-org/akari/pkg/database/domain"
@@ -130,8 +129,6 @@ func TestRepository_GetAkariUserByDiscordUserID_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() string {
-				_ = gofakeit.Seed(time.Now().UnixNano())
-
 				akariUser, err := entClient.AkariUser.Create().
 					Save(ctx)
 				require.NoError(t, err)

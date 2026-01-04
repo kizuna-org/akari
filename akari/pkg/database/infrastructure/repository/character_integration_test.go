@@ -3,7 +3,6 @@ package repository_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/kizuna-org/akari/gen/ent"
@@ -36,8 +35,6 @@ func TestRepository_GetCharacterByID_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() int {
-				_ = gofakeit.Seed(time.Now().UnixNano())
-
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)
@@ -134,8 +131,6 @@ func TestRepository_ListCharacters_Integration(t *testing.T) {
 
 func setupTestCharacters(t *testing.T, ctx context.Context, entClient *ent.Client) ([]int, func()) {
 	t.Helper()
-
-	_ = gofakeit.Seed(time.Now().UnixNano())
 
 	characterIDs := make([]int, 0, 2)
 	systemPromptIDs := make([]int, 0, 2)

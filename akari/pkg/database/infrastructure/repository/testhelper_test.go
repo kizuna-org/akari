@@ -59,7 +59,11 @@ func (c *testClientWrapper) Ping(ctx context.Context) error {
 }
 
 func (c *testClientWrapper) Close() error {
-	return c.Client.Close()
+	if err := c.Client.Close(); err != nil {
+		return err
+	}
+
+	return c.driver.Close()
 }
 
 func (c *testClientWrapper) WithTx(ctx context.Context, txFunc domain.TxFunc) error {
@@ -131,50 +135,36 @@ func (c *testClientWrapper) SystemPromptClient() *ent.SystemPromptClient {
 
 // RandomDiscordID generates a random Discord ID (18-digit numeric string).
 func RandomDiscordID() string {
-	_ = gofakeit.Seed(time.Now().UnixNano())
-
 	return gofakeit.Numerify("##################")
 }
 
 // RandomDiscordUsername generates a random Discord username.
 func RandomDiscordUsername() string {
-	_ = gofakeit.Seed(time.Now().UnixNano())
-
 	return gofakeit.Username()
 }
 
 // RandomChannelName generates a random channel name.
 func RandomChannelName() string {
-	_ = gofakeit.Seed(time.Now().UnixNano())
-
 	return gofakeit.Word()
 }
 
 // RandomGuildName generates a random guild name.
 func RandomGuildName() string {
-	_ = gofakeit.Seed(time.Now().UnixNano())
-
 	return gofakeit.Company()
 }
 
 // RandomMessageContent generates random message content.
 func RandomMessageContent() string {
-	_ = gofakeit.Seed(time.Now().UnixNano())
-
 	return gofakeit.Sentence(10)
 }
 
 // RandomTimestamp generates a random timestamp.
 func RandomTimestamp() time.Time {
-	_ = gofakeit.Seed(time.Now().UnixNano())
-
 	return gofakeit.Date()
 }
 
 // RandomDiscordUser creates a random DiscordUser domain object.
 func RandomDiscordUser() domain.DiscordUser {
-	_ = gofakeit.Seed(time.Now().UnixNano())
-
 	return domain.DiscordUser{
 		ID:       RandomDiscordID(),
 		Username: RandomDiscordUsername(),
@@ -184,8 +174,6 @@ func RandomDiscordUser() domain.DiscordUser {
 
 // RandomDiscordGuild creates a random DiscordGuild domain object.
 func RandomDiscordGuild() domain.DiscordGuild {
-	_ = gofakeit.Seed(time.Now().UnixNano())
-
 	return domain.DiscordGuild{
 		ID:   RandomDiscordID(),
 		Name: RandomGuildName(),
@@ -194,8 +182,6 @@ func RandomDiscordGuild() domain.DiscordGuild {
 
 // RandomDiscordChannel creates a random DiscordChannel domain object.
 func RandomDiscordChannel(guildID string) domain.DiscordChannel {
-	_ = gofakeit.Seed(time.Now().UnixNano())
-
 	channelTypes := []domain.DiscordChannelType{
 		domain.DiscordChannelTypeGuildText,
 		domain.DiscordChannelTypeDM,
@@ -213,8 +199,6 @@ func RandomDiscordChannel(guildID string) domain.DiscordChannel {
 
 // RandomDiscordMessage creates a random DiscordMessage domain object.
 func RandomDiscordMessage(authorID, channelID string) domain.DiscordMessage {
-	_ = gofakeit.Seed(time.Now().UnixNano())
-
 	return domain.DiscordMessage{
 		ID:        RandomDiscordID(),
 		AuthorID:  authorID,
@@ -235,6 +219,11 @@ func RandomConversation(userID int, discordMessageID string, conversationGroupID
 
 // TestMain sets up and tears down the test database.
 func TestMain(m *testing.M) {
+	// グローバルシードを一度だけ設定
+	if err := gofakeit.Seed(time.Now().UnixNano()); err != nil {
+		os.Exit(1)
+	}
+
 	// Setup: Create a test client for cleanup
 	cfgRepo := config.NewConfigRepository()
 	dbCfg := cfgRepo.GetConfig().Database
@@ -270,7 +259,7 @@ func cleanupTestDB(ctx context.Context, client *ent.Client) {
 	_, _ = client.DiscordGuild.Delete().Exec(ctx)
 	_, _ = client.AkariUser.Delete().Exec(ctx)
 	_, _ = client.DiscordUser.Delete().Exec(ctx)
-	_, _ = client.Character.Delete().Exec(ctx)
 	_, _ = client.CharacterConfig.Delete().Exec(ctx)
 	_, _ = client.SystemPrompt.Delete().Exec(ctx)
+	_, _ = client.Character.Delete().Exec(ctx)
 }

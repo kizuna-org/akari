@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/kizuna-org/akari/pkg/database/domain"
@@ -44,7 +43,6 @@ func TestRepository_CreateConversation_Integration(t *testing.T) {
 				createdMessage, err := repo.CreateDiscordMessage(ctx, message)
 				require.NoError(t, err)
 
-				_ = gofakeit.Seed(time.Now().UnixNano())
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)
@@ -139,7 +137,6 @@ func TestRepository_GetConversationByID_Integration(t *testing.T) {
 				createdMessage, err := repo.CreateDiscordMessage(ctx, message)
 				require.NoError(t, err)
 
-				_ = gofakeit.Seed(time.Now().UnixNano())
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)
@@ -234,7 +231,6 @@ func TestRepository_ListConversations_Integration(t *testing.T) {
 				createdChannel, err := repo.CreateDiscordChannel(ctx, channel)
 				require.NoError(t, err)
 
-				_ = gofakeit.Seed(time.Now().UnixNano())
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)
@@ -257,7 +253,7 @@ func TestRepository_ListConversations_Integration(t *testing.T) {
 				conversationGroup, err := repo.CreateConversationGroup(ctx, character.ID)
 				require.NoError(t, err)
 
-				var conversationIDs []int
+				conversationIDs := make([]int, 0, 2)
 
 				for range 2 {
 					message := RandomDiscordMessage(createdDiscordUser.ID, createdChannel.ID)
@@ -344,7 +340,6 @@ func TestRepository_DeleteConversation_Integration(t *testing.T) {
 				createdMessage, err := repo.CreateDiscordMessage(ctx, message)
 				require.NoError(t, err)
 
-				_ = gofakeit.Seed(time.Now().UnixNano())
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)

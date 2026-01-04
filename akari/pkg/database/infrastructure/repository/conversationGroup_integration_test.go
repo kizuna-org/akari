@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/kizuna-org/akari/pkg/database/domain"
@@ -24,8 +23,6 @@ func TestRepository_CreateConversationGroup_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() int {
-				_ = gofakeit.Seed(time.Now().UnixNano())
-
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)
@@ -96,8 +93,6 @@ func TestRepository_GetConversationGroupByID_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() int {
-				_ = gofakeit.Seed(time.Now().UnixNano())
-
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)
@@ -170,8 +165,6 @@ func TestRepository_ListConversationGroups_Integration(t *testing.T) {
 		{
 			name: "with multiple groups",
 			setup: func() []int {
-				_ = gofakeit.Seed(time.Now().UnixNano())
-
 				var groupIDs []int
 
 				for range 2 {
@@ -253,8 +246,6 @@ func TestRepository_DeleteConversationGroup_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() int {
-				_ = gofakeit.Seed(time.Now().UnixNano())
-
 				config, err := entClient.CharacterConfig.Create().
 					SetDefaultSystemPrompt(gofakeit.Sentence(10)).
 					Save(ctx)

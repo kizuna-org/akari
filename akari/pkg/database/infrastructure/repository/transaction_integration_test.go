@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
-	"github.com/brianvoe/gofakeit/v7"
 	"github.com/kizuna-org/akari/pkg/database/domain"
 	"github.com/kizuna-org/akari/pkg/database/infrastructure/repository"
 	"github.com/stretchr/testify/assert"
@@ -189,8 +187,6 @@ func multipleEntitiesInTransactionTest(
 			return nil
 		},
 		fn: func(ctx context.Context, tx *domain.Tx, setup interface{}) error {
-			_ = gofakeit.Seed(time.Now().UnixNano())
-
 			akariUser, err := repo.CreateAkariUser(ctx)
 			if err != nil {
 				return err

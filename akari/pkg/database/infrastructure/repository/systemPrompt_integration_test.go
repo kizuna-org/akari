@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/brianvoe/gofakeit/v7"
 	"github.com/kizuna-org/akari/pkg/database/domain"
@@ -34,8 +33,6 @@ func TestRepository_GetSystemPromptByID_Integration(t *testing.T) {
 		{
 			name: "success",
 			setup: func() int {
-				_ = gofakeit.Seed(time.Now().UnixNano())
-
 				systemPrompt, err := entClient.SystemPrompt.Create().
 					SetTitle(gofakeit.Word()).
 					SetPurpose("text_chat").
