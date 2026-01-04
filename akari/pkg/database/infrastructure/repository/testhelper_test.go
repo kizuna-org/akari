@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -59,11 +60,21 @@ func (c *testClientWrapper) Ping(ctx context.Context) error {
 }
 
 func (c *testClientWrapper) Close() error {
+	var errs []error
+
 	if err := c.Client.Close(); err != nil {
-		return err
+		errs = append(errs, err)
 	}
 
-	return c.driver.Close()
+	if err := c.driver.Close(); err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
 }
 
 func (c *testClientWrapper) WithTx(ctx context.Context, txFunc domain.TxFunc) error {
