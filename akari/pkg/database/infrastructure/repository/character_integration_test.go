@@ -201,7 +201,7 @@ func validateCharacterList(t *testing.T, got []*domain.Character, expectedIDs []
 }
 
 func TestRepository_ListCharacters_Empty_Integration(t *testing.T) {
-	t.Parallel()
+	// 他のテストに影響を与えるため、並列実行しない
 
 	repo, entClient := setupTestDB(t)
 	ctx := t.Context()

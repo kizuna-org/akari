@@ -40,6 +40,12 @@ func setupTestDB(t *testing.T) (repository.Repository, *ent.Client) {
 		driver: drv,
 	}
 
+	t.Cleanup(func() {
+		if err := client.Close(); err != nil {
+			t.Logf("failed to close test client: %v", err)
+		}
+	})
+
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelError,
 	}))

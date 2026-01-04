@@ -32,7 +32,6 @@ func TestRepository_CreateDiscordChannel_Integration(t *testing.T) {
 			},
 			validate: func(t *testing.T, got *domain.DiscordChannel, expected domain.DiscordChannel) {
 				t.Helper()
-				t.Helper()
 				assert.Equal(t, expected.ID, got.ID)
 				assert.Equal(t, expected.Type, got.Type)
 				assert.Equal(t, expected.Name, got.Name)
@@ -91,7 +90,6 @@ func TestRepository_GetDiscordChannelByID_Integration(t *testing.T) {
 			},
 			wantErr: false,
 			validate: func(t *testing.T, got *domain.DiscordChannel, expectedID string) {
-				t.Helper()
 				t.Helper()
 				assert.Equal(t, expectedID, got.ID)
 				assert.NotEmpty(t, got.Name)
