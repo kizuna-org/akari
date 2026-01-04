@@ -1,5 +1,7 @@
 package interactor
 
+//go:generate go tool mockgen -package=mock -source=akariUser.go -destination=mock/akariUser.go
+
 import (
 	"context"
 

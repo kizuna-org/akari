@@ -20,7 +20,7 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 	tests := []struct {
 		name      string
 		user      *entity.DiscordUser
-		setupMock func(*mock.MockDiscordUserInteractor, context.Context)
+		setupMock func(*mock.MockDiscordUserInteractor, *mock.MockAkariUserInteractor, context.Context)
 		wantID    string
 		wantErr   bool
 		errMsg    string
@@ -28,7 +28,7 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 		{
 			name: "user already exists",
 			user: &entity.DiscordUser{ID: "user-001", Username: "testuser", Bot: false},
-			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {
+			setupMock: func(m *mock.MockDiscordUserInteractor, _ *mock.MockAkariUserInteractor, ctx context.Context) {
 				m.EXPECT().
 					GetDiscordUserByID(ctx, "user-001").
 					Return(&domain.DiscordUser{ID: "user-001"}, nil)
@@ -39,11 +39,18 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 		{
 			name: "user does not exist and creates successfully",
 			user: &entity.DiscordUser{ID: "user-002", Username: "newuser", Bot: false},
-			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {
-				m.EXPECT().
+			setupMock: func(
+				mockDiscordUser *mock.MockDiscordUserInteractor,
+				mockAkariUser *mock.MockAkariUserInteractor,
+				ctx context.Context,
+			) {
+				mockDiscordUser.EXPECT().
 					GetDiscordUserByID(ctx, "user-002").
 					Return(nil, &ent.NotFoundError{})
-				m.EXPECT().
+				mockAkariUser.EXPECT().
+					CreateAkariUser(ctx).
+					Return(&domain.AkariUser{ID: 1}, nil)
+				mockDiscordUser.EXPECT().
 					CreateDiscordUser(ctx, gomock.Any()).
 					Return(&domain.DiscordUser{ID: "user-002"}, nil)
 			},
@@ -53,11 +60,18 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 		{
 			name: "user does not exist and creation fails",
 			user: &entity.DiscordUser{ID: "user-003", Username: "failuser", Bot: true},
-			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {
-				m.EXPECT().
+			setupMock: func(
+				mockDiscordUser *mock.MockDiscordUserInteractor,
+				mockAkariUser *mock.MockAkariUserInteractor,
+				ctx context.Context,
+			) {
+				mockDiscordUser.EXPECT().
 					GetDiscordUserByID(ctx, "user-003").
 					Return(nil, &ent.NotFoundError{})
-				m.EXPECT().
+				mockAkariUser.EXPECT().
+					CreateAkariUser(ctx).
+					Return(&domain.AkariUser{ID: 1}, nil)
+				mockDiscordUser.EXPECT().
 					CreateDiscordUser(ctx, gomock.Any()).
 					Return(nil, errors.New("create error"))
 			},
@@ -68,7 +82,7 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 		{
 			name: "get user returns non-not-found error",
 			user: &entity.DiscordUser{ID: "user-004", Username: "erruser", Bot: false},
-			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {
+			setupMock: func(m *mock.MockDiscordUserInteractor, _ *mock.MockAkariUserInteractor, ctx context.Context) {
 				m.EXPECT().
 					GetDiscordUserByID(ctx, "user-004").
 					Return(nil, errors.New("database error"))
@@ -80,7 +94,7 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 		{
 			name:      "nil user",
 			user:      nil,
-			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {},
+			setupMock: func(m *mock.MockDiscordUserInteractor, _ *mock.MockAkariUserInteractor, ctx context.Context) {},
 			wantID:    "",
 			wantErr:   true,
 			errMsg:    "user is required",
@@ -88,11 +102,18 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 		{
 			name: "user with empty ID",
 			user: &entity.DiscordUser{ID: "", Username: "emptyid", Bot: false},
-			setupMock: func(m *mock.MockDiscordUserInteractor, ctx context.Context) {
-				m.EXPECT().
+			setupMock: func(
+				mockDiscordUser *mock.MockDiscordUserInteractor,
+				mockAkariUser *mock.MockAkariUserInteractor,
+				ctx context.Context,
+			) {
+				mockDiscordUser.EXPECT().
 					GetDiscordUserByID(ctx, "").
 					Return(nil, &ent.NotFoundError{})
-				m.EXPECT().
+				mockAkariUser.EXPECT().
+					CreateAkariUser(ctx).
+					Return(&domain.AkariUser{ID: 1}, nil)
+				mockDiscordUser.EXPECT().
 					CreateDiscordUser(ctx, gomock.Any()).
 					Return(&domain.DiscordUser{ID: ""}, nil)
 			},
@@ -109,10 +130,11 @@ func TestDiscordUserRepository_CreateIfNotExists(t *testing.T) {
 			t.Cleanup(ctrl.Finish)
 
 			ctx := t.Context()
-			mockInteractor := mock.NewMockDiscordUserInteractor(ctrl)
-			testCase.setupMock(mockInteractor, ctx)
+			mockDiscordInteractor := mock.NewMockDiscordUserInteractor(ctrl)
+			mockAkariInteractor := mock.NewMockAkariUserInteractor(ctrl)
+			testCase.setupMock(mockDiscordInteractor, mockAkariInteractor, ctx)
 
-			repo := adapter.NewDiscordUserRepository(mockInteractor)
+			repo := adapter.NewDiscordUserRepository(mockDiscordInteractor, mockAkariInteractor)
 			got, err := repo.CreateIfNotExists(ctx, testCase.user)
 
 			if testCase.wantErr {

@@ -28,11 +28,18 @@ func (r *repositoryImpl) CreateDiscordChannel(
 
 	r.logger.Info("Discord channel created",
 		slog.String("channel_id", channel.ID),
-		slog.String("channel_id", channel.Name),
-		slog.String("author_id", channel.Edges.Guild.ID),
+		slog.String("channel_name", channel.Name),
+		slog.String("guild_id", params.GuildID),
 	)
 
-	return domain.FromEntDiscordChannel(channel)
+	// Create domain object directly since we already have GuildID
+	return &domain.DiscordChannel{
+		ID:        channel.ID,
+		Type:      domain.DiscordChannelType(channel.Type),
+		Name:      channel.Name,
+		GuildID:   params.GuildID,
+		CreatedAt: channel.CreatedAt,
+	}, nil
 }
 
 func (r *repositoryImpl) GetDiscordChannelByID(

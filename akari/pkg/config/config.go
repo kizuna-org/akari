@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -119,7 +120,19 @@ func (c *configRepositoryImpl) LoadConfig() error {
 	envMode, envFile := c.determineEnvMode()
 
 	if envFile != "" {
-		err := godotenv.Load(envFile)
+		loadPath := envFile
+
+		if !filepath.IsAbs(envFile) {
+			wd, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("config: failed to get working directory: %w", err)
+			}
+
+			projectRoot := c.findProjectRoot(wd)
+			loadPath = filepath.Join(projectRoot, envFile)
+		}
+
+		err := godotenv.Load(loadPath)
 		if err != nil {
 			return err
 		}
@@ -149,13 +162,13 @@ func (c *configRepositoryImpl) determineEnvMode() (EnvMode, string) {
 	switch env {
 	case "test":
 		envFile = os.Getenv("TEST_ENV")
-		// if envFile == "" {
-		//	envFile = "../../.env.test"
-		// }
+		if envFile == "" {
+			envFile = ".env.test"
+		}
 
 		envMode = EnvModeTest
 	case "production":
-		envFile = ""
+		envFile = ".env"
 		envMode = EnvModeProduction
 	default:
 		envFile = ".env"
@@ -163,6 +176,26 @@ func (c *configRepositoryImpl) determineEnvMode() (EnvMode, string) {
 	}
 
 	return envMode, envFile
+}
+
+func (c *configRepositoryImpl) findProjectRoot(startDir string) string {
+	dir := startDir
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached root directory
+			break
+		}
+
+		dir = parent
+	}
+
+	return startDir
 }
 
 func (c *configRepositoryImpl) loadAllConfigs() error {

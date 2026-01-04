@@ -49,7 +49,6 @@ func (r *repositoryImpl) GetDiscordGuildByChannelID(
 	guild, err := r.client.DiscordGuildClient().
 		Query().
 		Where(discordguild.HasChannelsWith(discordchannel.IDEQ(channelID))).
-		WithChannels().
 		Only(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get discord channel: %w", err)

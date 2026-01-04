@@ -20,8 +20,9 @@ build: generate clean
 run: generate migrate-apply
 	$(GO) run ./cmd/akari
 
-test: generate migrate-apply
-	$(GO) test ./...
+test: generate
+	$(MAKE) migrate-apply ENV=test
+	ENV=test $(GO) test ./...
 
 fmt:
 	$(GO) fmt ./...

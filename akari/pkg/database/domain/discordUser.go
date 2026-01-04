@@ -17,11 +17,12 @@ type DiscordUserRepository interface {
 }
 
 type DiscordUser struct {
-	ID        string
-	Username  string
-	Bot       bool
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          string
+	Username    string
+	Bot         bool
+	AkariUserID *int
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 func FromEntDiscordUser(entDiscordUser *ent.DiscordUser) *DiscordUser {
@@ -29,11 +30,17 @@ func FromEntDiscordUser(entDiscordUser *ent.DiscordUser) *DiscordUser {
 		return nil
 	}
 
+	var akariUserID *int
+	if entDiscordUser.Edges.AkariUser != nil {
+		akariUserID = &entDiscordUser.Edges.AkariUser.ID
+	}
+
 	return &DiscordUser{
-		ID:        entDiscordUser.ID,
-		Username:  entDiscordUser.Username,
-		Bot:       entDiscordUser.Bot,
-		CreatedAt: entDiscordUser.CreatedAt,
-		UpdatedAt: entDiscordUser.UpdatedAt,
+		ID:          entDiscordUser.ID,
+		Username:    entDiscordUser.Username,
+		Bot:         entDiscordUser.Bot,
+		AkariUserID: akariUserID,
+		CreatedAt:   entDiscordUser.CreatedAt,
+		UpdatedAt:   entDiscordUser.UpdatedAt,
 	}
 }

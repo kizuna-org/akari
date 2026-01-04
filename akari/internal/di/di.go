@@ -49,6 +49,7 @@ func newInfrastructureProviders() fx.Option {
 		newDatabaseRepository,
 		newSystemPromptRepository,
 		newCharacterRepository,
+		newAkariUserRepository,
 		newDiscordUserRepository,
 		newDiscordMessageRepository,
 		newDiscordChannelRepository,
@@ -61,6 +62,7 @@ func newUsecaseProviders() fx.Option {
 	return fx.Provide(
 		databaseInteractor.NewDatabaseInteractor,
 		databaseInteractor.NewCharacterInteractor,
+		databaseInteractor.NewAkariUserInteractor,
 		databaseInteractor.NewDiscordUserInteractor,
 		databaseInteractor.NewDiscordMessageInteractor,
 		databaseInteractor.NewDiscordChannelInteractor,
@@ -250,6 +252,10 @@ func newDiscordChannelRepository(repo databaseRepo.Repository) databaseDomain.Di
 }
 
 func newDiscordGuildRepository(repo databaseRepo.Repository) databaseDomain.DiscordGuildRepository {
+	return repo
+}
+
+func newAkariUserRepository(repo databaseRepo.Repository) databaseDomain.AkariUserRepository {
 	return repo
 }
 
