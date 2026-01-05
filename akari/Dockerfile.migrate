@@ -11,22 +11,12 @@ COPY akari/ .
 
 RUN make generate
 
-RUN go install ariga.io/atlas/cmd/atlas@latest
-
-FROM alpine:3.23@sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62
+FROM arigaio/atlas:1.0.0@sha256:0c5585e0768aeb500c1322e056caafe8a01c6cfc7cf2e5430ec26a6fc9541c09
 
 WORKDIR /app
-
-RUN apk add --no-cache ca-certificates tzdata postgresql-client
-
-COPY --from=builder /go/bin/atlas /usr/local/bin/atlas
 
 COPY --from=builder /build /app
 
 ENV TZ=UTC
 
-RUN echo '#!/bin/sh' > /app/migrate.sh && \
-    echo 'atlas migrate apply --env=dev' >> /app/migrate.sh && \
-    chmod +x /app/migrate.sh
-
-ENTRYPOINT ["/app/migrate.sh"]
+CMD ["migrate", "apply", "--env=dev"]
