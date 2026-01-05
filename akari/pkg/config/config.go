@@ -168,7 +168,7 @@ func (c *configRepositoryImpl) determineEnvMode() (EnvMode, string) {
 
 		envMode = EnvModeTest
 	case "production":
-		envFile = ".env"
+		envFile = ""
 		envMode = EnvModeProduction
 	default:
 		envFile = ".env"
