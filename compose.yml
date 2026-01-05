@@ -73,8 +73,6 @@ services:
       # Discord
       DISCORD_TOKEN: ${DISCORD_TOKEN}
       DISCORD_READY_TIMEOUT: ${DISCORD_READY_TIMEOUT}
-      # Akari
-      DISCORD_BOTNAMEREGEXP: ${DISCORD_BOTNAMEREGEXP}
       # Others
       GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/akari-sa-key.json
     healthcheck:
@@ -85,29 +83,20 @@ services:
       start_period: 40s
 
   nocodb:
-    image: nocodb/nocodb:0.265.1@sha256:2fd72cb69ad59518c1fe23cc5cf74bd8c96ddff17aa67fc7b5febab499532db3
+    image: nocodb/nocodb:0.265.1@sha256:8fd57018accf775fb5390392910e4b0ef6bb154f17c5732b478eb76c40ee8d1e
     container_name: nocodb
     restart: unless-stopped
     depends_on:
       akari-db:
         condition: service_healthy
-    # Ports are not exposed to host for security reasons.
-    # Cloudflare Tunnel is the only ingress point for external access.
-    # Internal access within docker-compose network: http://nocodb:8080
-    # If host port exposure is required, uncomment below and document the reason:
-    # ports:
-    #   - "8080:8080"
     environment:
-      NC_DB: "pg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@akari-db:5432/${NOCODB_DB:-nocodb}"
+      NOCODB_DB: ${NOCODB_DB:-nocodb}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      NC_DB: "pg://akari-db:5432?u=${POSTGRES_USER}&p=${POSTGRES_PASSWORD}&d=${NOCODB_DB:-nocodb}"
       NC_AUTH_JWT_SECRET: ${NC_AUTH_JWT_SECRET}
       NC_SENTRY_DSN: ${NC_SENTRY_DSN:-}
       NC_DISABLE_TELE: ${NC_DISABLE_TELE:-true}
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   cloudflare-tunnel:
     image: cloudflare/cloudflared:2025.11.1
