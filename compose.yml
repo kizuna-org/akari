@@ -36,8 +36,6 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_SSLMODE: ${POSTGRES_SSLMODE}
-    profiles:
-      - migrate
 
   akari:
     build:
@@ -48,6 +46,8 @@ services:
     depends_on:
       akari-db:
         condition: service_healthy
+      akari-migrate:
+        condition: service_completed_successfully
     volumes:
       - ./secrets/akari-sa-key.json:/app/secrets/akari-sa-key.json
     environment:
