@@ -12,6 +12,7 @@ import (
 type Character struct {
 	ID              int
 	Name            string
+	NameRegExp      *string
 	SystemPromptIDs []int
 }
 

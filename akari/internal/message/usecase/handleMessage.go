@@ -18,18 +18,17 @@ type HandleMessageInteractor interface {
 }
 
 type HandleMessageConfig struct {
-	CharacterRepo       domain.CharacterRepository
-	DiscordRepo         domain.DiscordRepository
-	DiscordUserRepo     domain.DiscordUserRepository
-	DiscordMessageRepo  domain.DiscordMessageRepository
-	DiscordChannelRepo  domain.DiscordChannelRepository
-	DiscordGuildRepo    domain.DiscordGuildRepository
-	LLMRepo             domain.LLMRepository
-	SystemPromptRepo    domain.SystemPromptRepository
-	ValidationRepo      domain.ValidationRepository
-	DefaultCharacterID  int
-	DefaultPromptIndex  int
-	BotNamePatternRegex *regexp.Regexp
+	CharacterRepo      domain.CharacterRepository
+	DiscordRepo        domain.DiscordRepository
+	DiscordUserRepo    domain.DiscordUserRepository
+	DiscordMessageRepo domain.DiscordMessageRepository
+	DiscordChannelRepo domain.DiscordChannelRepository
+	DiscordGuildRepo   domain.DiscordGuildRepository
+	LLMRepo            domain.LLMRepository
+	SystemPromptRepo   domain.SystemPromptRepository
+	ValidationRepo     domain.ValidationRepository
+	DefaultCharacterID int
+	DefaultPromptIndex int
 }
 
 type handleMessageInteractorImpl struct {
@@ -49,6 +48,15 @@ type handleMessageInteractorImpl struct {
 }
 
 func NewHandleMessageInteractor(config HandleMessageConfig) discordService.HandleMessageInteractor {
+	var botNameRegex *regexp.Regexp
+
+	character, err := config.CharacterRepo.Get(context.Background(), config.DefaultCharacterID)
+	if err == nil && character.NameRegExp != nil && *character.NameRegExp != "" {
+		if regex, regexErr := regexp.Compile(*character.NameRegExp); regexErr == nil {
+			botNameRegex = regex
+		}
+	}
+
 	return &handleMessageInteractorImpl{
 		characterRepo:       config.CharacterRepo,
 		discordRepo:         config.DiscordRepo,
@@ -62,7 +70,7 @@ func NewHandleMessageInteractor(config HandleMessageConfig) discordService.Handl
 		defaultCharacterID:  config.DefaultCharacterID,
 		defaultPromptIndex:  config.DefaultPromptIndex,
 		botUserID:           "",
-		botNamePatternRegex: config.BotNamePatternRegex,
+		botNamePatternRegex: botNameRegex,
 	}
 }
 
