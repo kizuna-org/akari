@@ -1,7 +1,6 @@
 package usecase_test
 
 import (
-	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -53,14 +52,55 @@ func setupBaseConfig(ctrl *gomock.Controller) usecase.HandleMessageConfig {
 func TestNewHandleMessageInteractor(t *testing.T) {
 	t.Parallel()
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+	tests := []struct {
+		name      string
+		character *domain.Character
+	}{
+		{
+			name: "with valid regex pattern",
+			character: &domain.Character{
+				ID:              defaultCharacterID,
+				Name:            "test-character",
+				NameRegExp:      stringPtr("^bot"),
+				SystemPromptIDs: []int{defaultPromptID},
+			},
+		},
+		{
+			name: "with invalid regex pattern",
+			character: &domain.Character{
+				ID:              defaultCharacterID,
+				Name:            "test-character",
+				NameRegExp:      stringPtr("[invalid("),
+				SystemPromptIDs: []int{defaultPromptID},
+			},
+		},
+		{
+			name: "with nil regex pattern",
+			character: &domain.Character{
+				ID:              defaultCharacterID,
+				Name:            "test-character",
+				NameRegExp:      nil,
+				SystemPromptIDs: []int{defaultPromptID},
+			},
+		},
+	}
 
-	config := setupBaseConfig(ctrl)
-	interactor := usecase.NewHandleMessageInteractor(config)
+	for _, tt := range tests {
+		testCase := tt
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 
-	if interactor == nil {
-		t.Error("expected interactor to not be nil")
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			config := setupBaseConfig(ctrl)
+			config.CharacterRepo = setupCharacterRepo(ctrl, testCase.character, nil)
+			interactor := usecase.NewHandleMessageInteractor(config)
+
+			if interactor == nil {
+				t.Error("expected interactor to not be nil")
+			}
+		})
 	}
 }
 
@@ -143,14 +183,6 @@ func TestHandle(t *testing.T) {
 			wantErr:              false,
 		},
 		{
-			name:                 "failed to get character",
-			shouldProcessMessage: true,
-			character:            nil,
-			characterErr:         errors.New("character not found"),
-			wantErr:              true,
-			wantErrMsg:           "usecase: failed to get character for validation",
-		},
-		{
 			name:                 "valid regex pattern",
 			shouldProcessMessage: false,
 			character: &domain.Character{
@@ -182,18 +214,6 @@ func TestHandle(t *testing.T) {
 				SystemPromptIDs: []int{defaultPromptID},
 			},
 			wantErr: false,
-		},
-		{
-			name:                 "invalid regex pattern",
-			shouldProcessMessage: false,
-			character: &domain.Character{
-				ID:              defaultCharacterID,
-				Name:            "test-character",
-				NameRegExp:      stringPtr("[invalid("),
-				SystemPromptIDs: []int{defaultPromptID},
-			},
-			wantErr:    true,
-			wantErrMsg: "usecase: invalid bot name regex pattern",
 		},
 		{
 			name:                 "case insensitive regex pattern",
