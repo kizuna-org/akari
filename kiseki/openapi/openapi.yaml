@@ -1,0 +1,283 @@
+openapi: 3.0.0
+info:
+  title: Kiseki API
+  description: API specification for Kiseki service
+  version: 0.1.0
+  contact:
+    name: Kizuna Organization
+    url: https://github.com/kizuna-org/akari
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+
+tags:
+  - name: Health
+    description: Health check endpoint
+  - name: Memory
+    description: Memory management endpoints
+
+paths:
+  /memory/health:
+    get:
+      tags:
+        - Health
+      operationId: getMemoryHealth
+      summary: Memory service health check
+      description: Returns the health status of the memory service
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /memory/io:
+    get:
+      tags:
+        - Memory
+      operationId: getMemoryIO
+      summary: Retrieve memory data
+      description: Get memory data by type
+      parameters:
+        - name: dType
+          in: query
+          required: true
+          description: Data type identifier
+          schema:
+            type: string
+        - name: data
+          in: query
+          required: true
+          description: Data identifier or value
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Memory data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemoryIOResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    put:
+      tags:
+        - Memory
+      operationId: putMemoryIO
+      summary: Store memory data
+      description: Store data in memory with specified type
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemoryIORequest"
+      responses:
+        "204":
+          description: Memory data stored successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /memory/sleep:
+    post:
+      tags:
+        - Memory
+      operationId: postMemorySleep
+      summary: Sleep memory service
+      description: Put the memory service into sleep mode
+      responses:
+        "204":
+          description: Memory service sleeping
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /memory/sleep/ws:
+    get:
+      tags:
+        - Memory
+      operationId: memoryWebsocket
+      summary: Memory WebSocket connection
+      description: Establishes a WebSocket connection for memory operations
+      responses:
+        "101":
+          description: WebSocket upgrade successful
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      description: User ID
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+
+    DataType:
+      type: object
+      required:
+        - dType
+        - data
+      properties:
+        dType:
+          type: string
+          description: Data type identifier
+        data:
+          description: Typed data value
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: object
+            - type: array
+
+    DataTypeWithMeta:
+      allOf:
+        - $ref: "#/components/schemas/DataType"
+        - type: object
+          properties:
+            meta:
+              type: object
+              description: Metadata object (empty struct)
+
+    MemoryIORequest:
+      type: object
+      required:
+        - dType
+        - data
+      properties:
+        dType:
+          type: string
+          description: Data type enum value
+        data:
+          description: Typed data value
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+            - type: object
+            - type: array
+
+    MemoryIOResponse:
+      type: object
+      required:
+        - items
+        - meta
+      properties:
+        items:
+          type: array
+          description: Array of memory data items
+          items:
+            $ref: "#/components/schemas/DataType"
+        meta:
+          type: object
+          description: Response metadata
+          additionalProperties: false
+
+    MemorySleepRequest:
+      type: object
+      description: Empty request body
+
+    WebSocketMessage:
+      type: object
+      required:
+        - tType
+        - items
+      properties:
+        tType:
+          type: string
+          description: Transaction type enum value
+        items:
+          type: array
+          description: Array of data items with metadata
+          items:
+            $ref: "#/components/schemas/DataTypeWithMeta"
+
+    WebSocketResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          description: Array of response data items
+          items:
+            $ref: "#/components/schemas/DataType"
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          nullable: true
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: INVALID_REQUEST
+            message: Invalid request parameters
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: NOT_FOUND
+            message: Resource not found
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: INTERNAL_ERROR
+            message: An internal server error occurred
