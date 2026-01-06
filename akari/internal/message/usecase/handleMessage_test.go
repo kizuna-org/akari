@@ -2,7 +2,6 @@ package usecase_test
 
 import (
 	"errors"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -28,19 +27,26 @@ const (
 )
 
 func setupBaseConfig(ctrl *gomock.Controller) usecase.HandleMessageConfig {
+	botPattern := defaultBotPattern
+	character := &domain.Character{
+		ID:              defaultCharacterID,
+		Name:            "test-character",
+		NameRegExp:      &botPattern,
+		SystemPromptIDs: []int{defaultPromptID},
+	}
+
 	return usecase.HandleMessageConfig{
-		LLMRepo:             mock.NewMockLLMRepository(ctrl),
-		DiscordRepo:         mock.NewMockDiscordRepository(ctrl),
-		DiscordUserRepo:     setupDiscordUserRepo(ctrl, nil),
-		DiscordMessageRepo:  setupDiscordMessageRepo(ctrl, nil),
-		DiscordChannelRepo:  setupDiscordChannelRepo(ctrl, nil),
-		DiscordGuildRepo:    setupDiscordGuildRepo(ctrl, nil),
-		ValidationRepo:      mock.NewMockValidationRepository(ctrl),
-		CharacterRepo:       mock.NewMockCharacterRepository(ctrl),
-		SystemPromptRepo:    mock.NewMockSystemPromptRepository(ctrl),
-		DefaultCharacterID:  defaultCharacterID,
-		DefaultPromptIndex:  0,
-		BotNamePatternRegex: regexp.MustCompile(defaultBotPattern),
+		LLMRepo:            mock.NewMockLLMRepository(ctrl),
+		DiscordRepo:        mock.NewMockDiscordRepository(ctrl),
+		DiscordUserRepo:    setupDiscordUserRepo(ctrl, nil),
+		DiscordMessageRepo: setupDiscordMessageRepo(ctrl, nil),
+		DiscordChannelRepo: setupDiscordChannelRepo(ctrl, nil),
+		DiscordGuildRepo:   setupDiscordGuildRepo(ctrl, nil),
+		ValidationRepo:     mock.NewMockValidationRepository(ctrl),
+		CharacterRepo:      setupCharacterRepo(ctrl, character, nil),
+		SystemPromptRepo:   mock.NewMockSystemPromptRepository(ctrl),
+		DefaultCharacterID: defaultCharacterID,
+		DefaultPromptIndex: 0,
 	}
 }
 
@@ -115,6 +121,14 @@ func buildDiscordData() *discordService.DiscordData {
 func TestHandle(t *testing.T) {
 	t.Parallel()
 
+	botPattern := defaultBotPattern
+	defaultCharacter := &domain.Character{
+		ID:              defaultCharacterID,
+		Name:            "test-character",
+		NameRegExp:      &botPattern,
+		SystemPromptIDs: []int{defaultPromptID},
+	}
+
 	tests := []testCase{
 		{
 			name:           "nil discord params",
@@ -125,6 +139,7 @@ func TestHandle(t *testing.T) {
 		{
 			name:                 "message should not be processed",
 			shouldProcessMessage: false,
+			character:            defaultCharacter,
 			wantErr:              false,
 		},
 		{
@@ -133,7 +148,63 @@ func TestHandle(t *testing.T) {
 			character:            nil,
 			characterErr:         errors.New("character not found"),
 			wantErr:              true,
-			wantErrMsg:           "usecase: get character",
+			wantErrMsg:           "usecase: failed to get character for validation",
+		},
+		{
+			name:                 "valid regex pattern",
+			shouldProcessMessage: false,
+			character: &domain.Character{
+				ID:              defaultCharacterID,
+				Name:            "test-character",
+				NameRegExp:      stringPtr("^bot"),
+				SystemPromptIDs: []int{defaultPromptID},
+			},
+			wantErr: false,
+		},
+		{
+			name:                 "nil name regex",
+			shouldProcessMessage: false,
+			character: &domain.Character{
+				ID:              defaultCharacterID,
+				Name:            "test-character",
+				NameRegExp:      nil,
+				SystemPromptIDs: []int{defaultPromptID},
+			},
+			wantErr: false,
+		},
+		{
+			name:                 "empty string name regex",
+			shouldProcessMessage: false,
+			character: &domain.Character{
+				ID:              defaultCharacterID,
+				Name:            "test-character",
+				NameRegExp:      stringPtr(""),
+				SystemPromptIDs: []int{defaultPromptID},
+			},
+			wantErr: false,
+		},
+		{
+			name:                 "invalid regex pattern",
+			shouldProcessMessage: false,
+			character: &domain.Character{
+				ID:              defaultCharacterID,
+				Name:            "test-character",
+				NameRegExp:      stringPtr("[invalid("),
+				SystemPromptIDs: []int{defaultPromptID},
+			},
+			wantErr:    true,
+			wantErrMsg: "usecase: invalid bot name regex pattern",
+		},
+		{
+			name:                 "case insensitive regex pattern",
+			shouldProcessMessage: false,
+			character: &domain.Character{
+				ID:              defaultCharacterID,
+				Name:            "test-character",
+				NameRegExp:      stringPtr("(?i)akari"),
+				SystemPromptIDs: []int{defaultPromptID},
+			},
+			wantErr: false,
 		},
 	}
 
@@ -244,4 +315,8 @@ func checkError(t *testing.T, err error, wantErr bool, wantErrMsg string) {
 			t.Errorf("expected error to contain '%s', but got '%s'", wantErrMsg, err.Error())
 		}
 	}
+}
+
+func stringPtr(s string) *string {
+	return &s
 }
