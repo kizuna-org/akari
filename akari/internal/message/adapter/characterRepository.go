@@ -24,9 +24,15 @@ func (r *characterRepository) Get(ctx context.Context, characterID int) (*domain
 		return nil, fmt.Errorf("adapter: failed to get character by id: %w", err)
 	}
 
+	var nameRegExp *string
+	if character.Config != nil {
+		nameRegExp = character.Config.NameRegExp
+	}
+
 	return &domain.Character{
 		ID:              character.ID,
 		Name:            character.Name,
+		NameRegExp:      nameRegExp,
 		SystemPromptIDs: character.SystemPromptIDs,
 	}, nil
 }

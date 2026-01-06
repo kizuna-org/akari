@@ -18,51 +18,48 @@ type HandleMessageInteractor interface {
 }
 
 type HandleMessageConfig struct {
-	CharacterRepo       domain.CharacterRepository
-	DiscordRepo         domain.DiscordRepository
-	DiscordUserRepo     domain.DiscordUserRepository
-	DiscordMessageRepo  domain.DiscordMessageRepository
-	DiscordChannelRepo  domain.DiscordChannelRepository
-	DiscordGuildRepo    domain.DiscordGuildRepository
-	LLMRepo             domain.LLMRepository
-	SystemPromptRepo    domain.SystemPromptRepository
-	ValidationRepo      domain.ValidationRepository
-	DefaultCharacterID  int
-	DefaultPromptIndex  int
-	BotNamePatternRegex *regexp.Regexp
+	CharacterRepo      domain.CharacterRepository
+	DiscordRepo        domain.DiscordRepository
+	DiscordUserRepo    domain.DiscordUserRepository
+	DiscordMessageRepo domain.DiscordMessageRepository
+	DiscordChannelRepo domain.DiscordChannelRepository
+	DiscordGuildRepo   domain.DiscordGuildRepository
+	LLMRepo            domain.LLMRepository
+	SystemPromptRepo   domain.SystemPromptRepository
+	ValidationRepo     domain.ValidationRepository
+	DefaultCharacterID int
+	DefaultPromptIndex int
 }
 
 type handleMessageInteractorImpl struct {
-	characterRepo       domain.CharacterRepository
-	discordRepo         domain.DiscordRepository
-	discordUserRepo     domain.DiscordUserRepository
-	discordMessageRepo  domain.DiscordMessageRepository
-	discordChannelRepo  domain.DiscordChannelRepository
-	discordGuildRepo    domain.DiscordGuildRepository
-	llmRepo             domain.LLMRepository
-	systemPromptRepo    domain.SystemPromptRepository
-	validationRepo      domain.ValidationRepository
-	defaultCharacterID  int
-	defaultPromptIndex  int
-	botUserID           string
-	botNamePatternRegex *regexp.Regexp
+	characterRepo      domain.CharacterRepository
+	discordRepo        domain.DiscordRepository
+	discordUserRepo    domain.DiscordUserRepository
+	discordMessageRepo domain.DiscordMessageRepository
+	discordChannelRepo domain.DiscordChannelRepository
+	discordGuildRepo   domain.DiscordGuildRepository
+	llmRepo            domain.LLMRepository
+	systemPromptRepo   domain.SystemPromptRepository
+	validationRepo     domain.ValidationRepository
+	defaultCharacterID int
+	defaultPromptIndex int
+	botUserID          string
 }
 
 func NewHandleMessageInteractor(config HandleMessageConfig) discordService.HandleMessageInteractor {
 	return &handleMessageInteractorImpl{
-		characterRepo:       config.CharacterRepo,
-		discordRepo:         config.DiscordRepo,
-		discordUserRepo:     config.DiscordUserRepo,
-		discordMessageRepo:  config.DiscordMessageRepo,
-		discordChannelRepo:  config.DiscordChannelRepo,
-		discordGuildRepo:    config.DiscordGuildRepo,
-		llmRepo:             config.LLMRepo,
-		systemPromptRepo:    config.SystemPromptRepo,
-		validationRepo:      config.ValidationRepo,
-		defaultCharacterID:  config.DefaultCharacterID,
-		defaultPromptIndex:  config.DefaultPromptIndex,
-		botUserID:           "",
-		botNamePatternRegex: config.BotNamePatternRegex,
+		characterRepo:      config.CharacterRepo,
+		discordRepo:        config.DiscordRepo,
+		discordUserRepo:    config.DiscordUserRepo,
+		discordMessageRepo: config.DiscordMessageRepo,
+		discordChannelRepo: config.DiscordChannelRepo,
+		discordGuildRepo:   config.DiscordGuildRepo,
+		llmRepo:            config.LLMRepo,
+		systemPromptRepo:   config.SystemPromptRepo,
+		validationRepo:     config.ValidationRepo,
+		defaultCharacterID: config.DefaultCharacterID,
+		defaultPromptIndex: config.DefaultPromptIndex,
+		botUserID:          "",
 	}
 }
 
@@ -86,12 +83,28 @@ func (i *handleMessageInteractorImpl) Handle(
 
 	domainMessage := entity.ToDiscordMessage(discordParams.Message)
 
+	character, err := i.characterRepo.Get(ctx, i.defaultCharacterID)
+	if err != nil {
+		return fmt.Errorf("usecase: failed to get character for validation: %w", err)
+	}
+
+	var botNameRegex *regexp.Regexp
+
+	if character.NameRegExp != nil && *character.NameRegExp != "" {
+		var regexErr error
+
+		botNameRegex, regexErr = regexp.Compile(*character.NameRegExp)
+		if regexErr != nil {
+			return fmt.Errorf("usecase: invalid bot name regex pattern: %w", regexErr)
+		}
+	}
+
 	if !i.validationRepo.ShouldProcessMessage(
 		domainUser,
 		domainMessage,
 		discordParams.Mentions,
 		i.botUserID,
-		i.botNamePatternRegex,
+		botNameRegex,
 	) {
 		return nil
 	}

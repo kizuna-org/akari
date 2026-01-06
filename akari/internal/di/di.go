@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"time"
 
 	"entgo.io/ent/dialect"
@@ -106,29 +105,20 @@ func newHandleMessageInteractor(
 	validationRepo messageDomain.ValidationRepository,
 	characterID defaultCharacterID,
 	promptIdx defaultPromptIndex,
-	configRepo config.ConfigRepository,
 ) (discordService.HandleMessageInteractor, error) {
-	cfg := configRepo.GetConfig()
-
-	botNameRegex, err := regexp.Compile(cfg.Discord.BotNameRegExp)
-	if err != nil {
-		return nil, fmt.Errorf("di: invalid bot name regex pattern: %w", err)
-	}
-
 	return messageUsecase.NewHandleMessageInteractor(
 		messageUsecase.HandleMessageConfig{
-			CharacterRepo:       characterRepo,
-			DiscordRepo:         discordRepo,
-			DiscordUserRepo:     discordUserRepo,
-			DiscordMessageRepo:  discordMessageRepo,
-			DiscordChannelRepo:  discordChannelRepo,
-			DiscordGuildRepo:    discordGuildRepo,
-			LLMRepo:             llmRepo,
-			SystemPromptRepo:    systemPromptRepo,
-			ValidationRepo:      validationRepo,
-			DefaultCharacterID:  int(characterID),
-			DefaultPromptIndex:  int(promptIdx),
-			BotNamePatternRegex: botNameRegex,
+			CharacterRepo:      characterRepo,
+			DiscordRepo:        discordRepo,
+			DiscordUserRepo:    discordUserRepo,
+			DiscordMessageRepo: discordMessageRepo,
+			DiscordChannelRepo: discordChannelRepo,
+			DiscordGuildRepo:   discordGuildRepo,
+			LLMRepo:            llmRepo,
+			SystemPromptRepo:   systemPromptRepo,
+			ValidationRepo:     validationRepo,
+			DefaultCharacterID: int(characterID),
+			DefaultPromptIndex: int(promptIdx),
 		},
 	), nil
 }

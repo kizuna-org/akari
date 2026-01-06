@@ -155,7 +155,6 @@ func TestConfigRepository_AllEnvironmentVariables(t *testing.T) {
 	t.Setenv("LOG_LEVEL", "debug")
 	t.Setenv("LOG_FORMAT", "json")
 	t.Setenv("DISCORD_TOKEN", "test-token-123")
-	t.Setenv("DISCORD_BOTNAMEREGEXP", "^bot-.*")
 
 	cfg := config.NewConfigRepository().GetConfig()
 
@@ -252,7 +251,6 @@ func TestConfigRepository_IndividualConfigs(t *testing.T) {
 	t.Run("Discord configuration", func(t *testing.T) {
 		t.Setenv("ENV", "test")
 		t.Setenv("DISCORD_TOKEN", "test-123")
-		t.Setenv("DISCORD_BOTNAMEREGEXP", "^test")
 
 		cfg := config.NewConfigRepository().GetConfig()
 		assert.Equal(t, "test-123", cfg.Discord.Token)
