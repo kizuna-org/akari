@@ -223,7 +223,7 @@ paths:
     post:
       tags:
         - Memory
-      operationId: memoryPolling
+      operationId: postMemoryPolling
       summary: Task processing endpoint
       description: Submit task results and receive new task requests
       parameters:
