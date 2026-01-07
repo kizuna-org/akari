@@ -224,19 +224,20 @@ paths:
       tags:
         - Memory
       operationId: memoryPolling
-      summary: Memory polling endpoint
-      description: Poll for memory operation results
+      summary: Task processing endpoint
+      description: Submit task results and receive new task requests
       parameters:
         - $ref: "#/components/parameters/CharacterIdPath"
       requestBody:
         required: true
+        description: Task results from completed operations
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/MemoryPollingRequest"
       responses:
         "200":
-          description: Polling response with memory data
+          description: New task requests to be processed
           content:
             application/json:
               schema:
@@ -368,7 +369,7 @@ components:
       properties:
         items:
           type: array
-          description: Array of polling request items
+          description: Array of completed task results
           items:
             $ref: "#/components/schemas/PollingRequestItem"
 
@@ -379,12 +380,13 @@ components:
       properties:
         items:
           type: array
-          description: Array of polling response groups by transaction type
+          description: Array of new task requests grouped by task type
           items:
             $ref: "#/components/schemas/PollingResponseGroup"
 
     PollingRequestItem:
       type: object
+      description: Completed task result
       required:
         - taskId
         - dType
@@ -392,11 +394,11 @@ components:
       properties:
         taskId:
           type: string
-          description: Task identifier
+          description: Identifier of the completed task
         dType:
           $ref: "#/components/schemas/DType"
         data:
-          description: Typed data value
+          description: Result data from the completed task
           oneOf:
             - type: string
             - type: number
@@ -406,21 +408,23 @@ components:
 
     PollingResponseGroup:
       type: object
+      description: Group of new task requests by task type
       required:
         - tType
         - items
       properties:
         tType:
           type: string
-          description: Task type
+          description: Task type for this group
         items:
           type: array
-          description: Array of polling response items for this task type
+          description: Array of new task requests for this task type
           items:
             $ref: "#/components/schemas/PollingResponseItem"
 
     PollingResponseItem:
       type: object
+      description: New task request to be processed
       required:
         - taskId
         - dType
@@ -429,11 +433,11 @@ components:
       properties:
         taskId:
           type: string
-          description: Task identifier
+          description: Identifier for the new task
         dType:
           $ref: "#/components/schemas/DType"
         data:
-          description: Typed data value
+          description: Input data for the new task
           oneOf:
             - type: string
             - type: number
