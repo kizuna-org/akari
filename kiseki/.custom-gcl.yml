@@ -1,0 +1,5 @@
+version: v2.1.6
+plugins:
+  - module: 'github.com/shiron-dev/go-err113'
+    import: 'github.com/shiron-dev/go-err113'
+    version: v1.1.1

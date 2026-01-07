@@ -12,15 +12,12 @@ permissions:
   pull-requests: write
   contents: read
 
-defaults:
-  run:
-    working-directory: ./akari
-
 jobs:
   all-status-check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs:
+      - find-go-projects
       - yaml-lint
       - action-lint
       - dotenv-lint
@@ -33,9 +30,6 @@ jobs:
       - golang-test-check
       - golang-generate-check
       - ko-build-check
-    defaults:
-      run:
-        working-directory: ./
     steps:
       - uses: actions/checkout@v6
       - name: Check all-status-check
@@ -45,6 +39,18 @@ jobs:
             <(yq ".jobs.all-status-check.needs.[]" .github/workflows/akari-ci.yml)
       - name: All status check
         run: echo "All status check passed"
+
+  find-go-projects:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.get-projects.outputs.projects }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Find Go projects
+        id: get-projects
+        run: |
+          PROJECTS="$(find . -name "go.mod" -exec dirname {} \; | jq -Rsc 'split("\n")[:-1]')"
+          echo "projects=$PROJECTS" >> "$GITHUB_OUTPUT"
 
   yaml-lint:
     runs-on: ubuntu-latest
@@ -80,6 +86,9 @@ jobs:
   migrate-check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: akari
     steps:
       - uses: actions/checkout@v6
         with:
@@ -148,6 +157,9 @@ jobs:
   golang-build-check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: akari
     steps:
       - uses: actions/checkout@v6
         with:
@@ -159,22 +171,42 @@ jobs:
   golang-vet-check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: find-go-projects
+    strategy:
+      matrix:
+        dir: ${{ fromJson(needs.find-go-projects.outputs.projects) }}
+      fail-fast: false
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
+        with:
+          working-directory: ${{ matrix.dir }}
       - name: Run go vet
         run: make vet
 
   golang-fmt-check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: find-go-projects
+    strategy:
+      matrix:
+        dir: ${{ fromJson(needs.find-go-projects.outputs.projects) }}
+      fail-fast: false
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
+        with:
+          working-directory: ${{ matrix.dir }}
       - name: Run go fmt
         run: make fmt
       - name: Check diff
@@ -188,12 +220,22 @@ jobs:
   golang-lint-check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: find-go-projects
+    strategy:
+      matrix:
+        dir: ${{ fromJson(needs.find-go-projects.outputs.projects) }}
+      fail-fast: false
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
         id: setup-go
+        with:
+          working-directory: ${{ matrix.dir }}
       - name: Get versions and install golangci-lint
         id: versions
         run: |
@@ -213,6 +255,9 @@ jobs:
   golang-test-comment-check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: akari
     steps:
       - uses: actions/checkout@v6
         with:
@@ -238,6 +283,9 @@ jobs:
     strategy:
       matrix:
         run: [1, 2, 3]
+    defaults:
+      run:
+        working-directory: akari
     steps:
       - uses: actions/checkout@v6
         with:
@@ -269,11 +317,21 @@ jobs:
   golang-generate-check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    needs: find-go-projects
+    strategy:
+      matrix:
+        dir: ${{ fromJson(needs.find-go-projects.outputs.projects) }}
+      fail-fast: false
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
+        with:
+          working-directory: ${{ matrix.dir }}
       - uses: ./.github/actions/setup-db
       - name: Run go generate
         id: golang-generate
@@ -287,6 +345,9 @@ jobs:
   ko-build-check:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: akari
     steps:
       - uses: actions/checkout@v6
         with:
