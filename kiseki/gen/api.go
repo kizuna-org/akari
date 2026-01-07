@@ -137,13 +137,13 @@ type MemoryIOResponse struct {
 
 // MemoryPollingRequest defines model for MemoryPollingRequest.
 type MemoryPollingRequest struct {
-	// Items Array of polling request items
+	// Items Array of completed task results
 	Items []PollingRequestItem `json:"items"`
 }
 
 // MemoryPollingResponse defines model for MemoryPollingResponse.
 type MemoryPollingResponse struct {
-	// Items Array of polling response groups by transaction type
+	// Items Array of new task requests grouped by task type
 	Items []PollingResponseGroup `json:"items"`
 }
 
@@ -156,15 +156,15 @@ type MemorySleepResponse struct {
 // Meta Metadata object
 type Meta map[string]interface{}
 
-// PollingRequestItem defines model for PollingRequestItem.
+// PollingRequestItem Completed task result
 type PollingRequestItem struct {
 	// DType Data type identifier
 	DType DType `json:"dType"`
 
-	// Data Typed data value
+	// Data Result data from the completed task
 	Data PollingRequestItem_Data `json:"data"`
 
-	// TaskId Task identifier
+	// TaskId Identifier of the completed task
 	TaskId string `json:"taskId"`
 }
 
@@ -183,32 +183,32 @@ type PollingRequestItemData3 = map[string]interface{}
 // PollingRequestItemData4 defines model for .
 type PollingRequestItemData4 = []interface{}
 
-// PollingRequestItem_Data Typed data value
+// PollingRequestItem_Data Result data from the completed task
 type PollingRequestItem_Data struct {
 	union json.RawMessage
 }
 
-// PollingResponseGroup defines model for PollingResponseGroup.
+// PollingResponseGroup Group of new task requests by task type
 type PollingResponseGroup struct {
-	// Items Array of polling response items for this task type
+	// Items Array of new task requests for this task type
 	Items []PollingResponseItem `json:"items"`
 
-	// TType Task type
+	// TType Task type for this group
 	TType string `json:"tType"`
 }
 
-// PollingResponseItem defines model for PollingResponseItem.
+// PollingResponseItem New task request to be processed
 type PollingResponseItem struct {
 	// DType Data type identifier
 	DType DType `json:"dType"`
 
-	// Data Typed data value
+	// Data Input data for the new task
 	Data PollingResponseItem_Data `json:"data"`
 
 	// Meta Metadata object
 	Meta Meta `json:"meta"`
 
-	// TaskId Task identifier
+	// TaskId Identifier for the new task
 	TaskId string `json:"taskId"`
 }
 
@@ -227,7 +227,7 @@ type PollingResponseItemData3 = map[string]interface{}
 // PollingResponseItemData4 defines model for .
 type PollingResponseItemData4 = []interface{}
 
-// PollingResponseItem_Data Typed data value
+// PollingResponseItem_Data Input data for the new task
 type PollingResponseItem_Data struct {
 	union json.RawMessage
 }
@@ -753,7 +753,7 @@ type ServerInterface interface {
 	// Sleep memory service
 	// (POST /characters/{characterId}/sleep)
 	PostMemorySleep(ctx echo.Context, characterId CharacterIdPath) error
-	// Memory polling endpoint
+	// Task processing endpoint
 	// (POST /characters/{characterId}/task)
 	MemoryPolling(ctx echo.Context, characterId CharacterIdPath) error
 	// Memory service health check
@@ -965,37 +965,39 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
+	"OMZ3CyjxuL3f/h0AAP//kFhvgb8pAAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
