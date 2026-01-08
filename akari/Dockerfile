@@ -10,8 +10,8 @@ RUN go mod download
 COPY akari/ .
 COPY kiseki/openapi/openapi.yaml ../kiseki/openapi/openapi.yaml
 
-RUN make generate
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o bin/akari ./cmd/akari
+RUN make generate && \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o bin/akari ./cmd/akari
 
 FROM alpine:3.23@sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62
 
