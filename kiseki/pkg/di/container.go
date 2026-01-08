@@ -115,7 +115,7 @@ func NewContainer() (*Container, error) {
 
 	// Initialize handlers
 	characterHandler := characterAdapter.NewHandler(characterInteractor)
-	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor)
+	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor, taskInteractor)
 	taskHandler := taskAdapter.NewHandler(taskInteractor)
 	server := adapter.NewServer(characterHandler, memoryHandler, taskHandler)
 

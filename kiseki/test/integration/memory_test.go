@@ -83,9 +83,9 @@ func setupMemoryTestServer(t *testing.T) (*echo.Echo, func()) {
 
 	// Setup handlers
 	characterHandler := characterAdapter.NewHandler(characterInteractor)
-	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor)
 	taskRepo := taskRedis.NewRepository(redisClient)
 	taskInteractor := taskUsecase.NewTaskInteractor(taskRepo)
+	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor, taskInteractor)
 	taskHandler := taskAdapter.NewHandler(taskInteractor)
 	server := adapter.NewServer(characterHandler, memoryHandler, taskHandler)
 

@@ -7,6 +7,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/kizuna-org/akari/kiseki/gen"
+	taskEntity "github.com/kizuna-org/akari/kiseki/pkg/task/domain/entity"
+	taskUsecase "github.com/kizuna-org/akari/kiseki/pkg/task/usecase"
 	"github.com/kizuna-org/akari/kiseki/pkg/vectordb/domain/entity"
 	"github.com/kizuna-org/akari/kiseki/pkg/vectordb/usecase"
 	"github.com/labstack/echo/v4"
@@ -15,12 +17,14 @@ import (
 // Handler handles memory-related HTTP requests
 type Handler struct {
 	memoryInteractor *usecase.MemoryInteractor
+	taskInteractor   *taskUsecase.TaskInteractor
 }
 
 // NewHandler creates a new memory handler
-func NewHandler(memoryInteractor *usecase.MemoryInteractor) *Handler {
+func NewHandler(memoryInteractor *usecase.MemoryInteractor, taskInteractor *taskUsecase.TaskInteractor) *Handler {
 	return &Handler{
 		memoryInteractor: memoryInteractor,
+		taskInteractor:   taskInteractor,
 	}
 }
 
@@ -120,6 +124,9 @@ func (h *Handler) GetMemoryIO(ctx echo.Context, characterID gen.CharacterIdPath,
 }
 
 // PutMemoryIO handles PUT /characters/{characterId}/memory
+// Supports two modes:
+// 1. With vectors (synchronous): Store immediately with provided vectors
+// 2. Without vectors (asynchronous): Create embedding task, store when complete
 func (h *Handler) PutMemoryIO(ctx echo.Context, characterID gen.CharacterIdPath) error {
 	// Parse character ID
 	charUUID, err := uuid.Parse(characterID.String())
@@ -139,13 +146,13 @@ func (h *Handler) PutMemoryIO(ctx echo.Context, characterID gen.CharacterIdPath)
 		})
 	}
 
-	// Parse data as JSON to extract vectors and content
-	// Expected format: {"content": "...", "denseVector": [...], "sparseVector": {...}, "metadata": {...}}
+	// Parse data as JSON to extract content and optional vectors
 	var storeData struct {
 		Content      string                 `json:"content"`
-		DenseVector  []float32              `json:"denseVector"`
-		SparseVector map[uint32]float32     `json:"sparseVector"`
+		DenseVector  []float32              `json:"denseVector,omitempty"`
+		SparseVector map[uint32]float32     `json:"sparseVector,omitempty"`
 		Metadata     map[string]interface{} `json:"metadata,omitempty"`
+		Model        string                 `json:"model,omitempty"` // For async embedding
 	}
 
 	// Convert req.Data to JSON string for parsing
@@ -172,30 +179,61 @@ func (h *Handler) PutMemoryIO(ctx echo.Context, characterID gen.CharacterIdPath)
 		})
 	}
 
-	if len(storeData.DenseVector) == 0 {
-		return ctx.JSON(http.StatusBadRequest, gen.Error{
-			Code:    "MISSING_DENSE_VECTOR",
-			Message: "Dense vector is required",
-		})
+	// Check if vectors are provided (synchronous mode)
+	if len(storeData.DenseVector) > 0 {
+		// Synchronous mode: Store immediately
+		input := usecase.PutMemoryInput{
+			CharacterID:  charUUID,
+			Data:         storeData.Content,
+			DType:        entity.DType(req.DType),
+			DenseVector:  storeData.DenseVector,
+			SparseVector: storeData.SparseVector,
+			Metadata:     storeData.Metadata,
+		}
+
+		_, err = h.memoryInteractor.PutMemory(ctx.Request().Context(), input)
+		if err != nil {
+			return ctx.JSON(http.StatusInternalServerError, gen.Error{
+				Code:    "STORE_FAILED",
+				Message: fmt.Sprintf("Failed to store memory: %v", err),
+			})
+		}
+
+		return ctx.NoContent(http.StatusNoContent)
 	}
 
-	// Call usecase
-	input := usecase.PutMemoryInput{
-		CharacterID:  charUUID,
-		Data:         storeData.Content,
-		DType:        entity.DType(req.DType),
-		DenseVector:  storeData.DenseVector,
-		SparseVector: storeData.SparseVector,
-		Metadata:     storeData.Metadata,
+	// Asynchronous mode: Create embedding task
+	// Task will generate vectors and store in VectorDB automatically
+	taskInput := map[string]interface{}{
+		"taskType":  "embedding",
+		"text":      storeData.Content,
+		"storeInDb": true,
+		"dType":     string(req.DType),
+		"metadata":  storeData.Metadata,
+	}
+	
+	if storeData.Model != "" {
+		taskInput["model"] = storeData.Model
 	}
 
-	_, err = h.memoryInteractor.PutMemory(ctx.Request().Context(), input)
+	taskCreateInput := taskUsecase.CreateTaskInput{
+		CharacterID: charUUID,
+		Type:        taskEntity.TaskTypeEmbedding,
+		Input:       taskInput,
+	}
+
+	taskOutput, err := h.taskInteractor.CreateTask(ctx.Request().Context(), taskCreateInput)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, gen.Error{
-			Code:    "STORE_FAILED",
-			Message: fmt.Sprintf("Failed to store memory: %v", err),
+			Code:    "TASK_CREATION_FAILED",
+			Message: fmt.Sprintf("Failed to create embedding task: %v", err),
 		})
 	}
 
-	return ctx.NoContent(http.StatusNoContent)
+	// Return accepted with task ID
+	return ctx.JSON(http.StatusAccepted, map[string]interface{}{
+		"message": "Embedding task created. Memory will be stored when task completes.",
+		"taskId":  taskOutput.Task.ID.String(),
+		"status":  string(taskOutput.Task.Status),
+	})
 }

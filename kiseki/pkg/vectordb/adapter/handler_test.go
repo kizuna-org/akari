@@ -92,7 +92,8 @@ func TestHandler_GetMemoryIO(t *testing.T) {
 		},
 	}
 	interactor := usecase.NewMemoryInteractor(&mockVectorDBRepo{}, &mockKVSRepo{}, cfg)
-	handler := NewHandler(interactor)
+	// For unit tests, taskInteractor can be nil since we're testing with vectors provided
+	handler := NewHandler(interactor, nil)
 
 	characterID := uuid.New()
 	denseVector := make([]float32, 768)
@@ -172,7 +173,8 @@ func TestHandler_PutMemoryIO(t *testing.T) {
 		},
 	}
 	interactor := usecase.NewMemoryInteractor(&mockVectorDBRepo{}, &mockKVSRepo{}, cfg)
-	handler := NewHandler(interactor)
+	// For unit tests, taskInteractor can be nil
+	handler := NewHandler(interactor, nil)
 
 	characterID := uuid.New()
 	denseVector := make([]float32, 768)

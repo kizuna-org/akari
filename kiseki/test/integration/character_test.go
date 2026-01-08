@@ -68,12 +68,14 @@ func setupTestServer(t *testing.T) (*echo.Echo, *redis.Client, func()) {
 	redisClientWrapper, _ := redisInfra.NewClient("localhost", 6379, "", 0)
 	kvsRepo := redisInfra.NewRepository(redisClientWrapper)
 	memoryInteractor := vectordbUsecase.NewMemoryInteractor(vectorDBRepo, kvsRepo, cfg)
-	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor)
 	
 	// Setup task handler
 	taskRepo := taskRedis.NewRepository(redisClient)
 	taskInteractor := taskUsecase.NewTaskInteractor(taskRepo)
 	taskHandler := taskAdapter.NewHandler(taskInteractor)
+	
+	// Setup memory handler (needs task interactor for async embedding)
+	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor, taskInteractor)
 	
 	server := adapter.NewServer(characterHandler, memoryHandler, taskHandler)
 
