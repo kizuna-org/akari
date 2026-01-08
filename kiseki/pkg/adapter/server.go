@@ -6,6 +6,7 @@ import (
 
 	"github.com/kizuna-org/akari/kiseki/gen"
 	characterAdapter "github.com/kizuna-org/akari/kiseki/pkg/character/adapter"
+	taskAdapter "github.com/kizuna-org/akari/kiseki/pkg/task/adapter"
 	vectordbAdapter "github.com/kizuna-org/akari/kiseki/pkg/vectordb/adapter"
 	"github.com/labstack/echo/v4"
 )
@@ -14,13 +15,15 @@ import (
 type Server struct {
 	characterHandler *characterAdapter.Handler
 	memoryHandler    *vectordbAdapter.Handler
+	taskHandler      *taskAdapter.Handler
 }
 
 // NewServer creates a new server with all handlers
-func NewServer(characterHandler *characterAdapter.Handler, memoryHandler *vectordbAdapter.Handler) *Server {
+func NewServer(characterHandler *characterAdapter.Handler, memoryHandler *vectordbAdapter.Handler, taskHandler *taskAdapter.Handler) *Server {
 	return &Server{
 		characterHandler: characterHandler,
 		memoryHandler:    memoryHandler,
+		taskHandler:      taskHandler,
 	}
 }
 
@@ -62,10 +65,7 @@ func (s *Server) PostMemorySleep(ctx echo.Context, characterId gen.CharacterIdPa
 }
 
 func (s *Server) PostMemoryPolling(ctx echo.Context, characterId gen.CharacterIdPath) error {
-	return ctx.JSON(http.StatusNotImplemented, gen.Error{
-		Code:    "NOT_IMPLEMENTED",
-		Message: "Memory polling not yet implemented",
-	})
+	return s.taskHandler.PostMemoryPolling(ctx, characterId)
 }
 
 // Health check

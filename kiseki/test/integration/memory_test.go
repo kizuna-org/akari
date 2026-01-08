@@ -11,17 +11,20 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
 	"github.com/kizuna-org/akari/kiseki/gen"
 	"github.com/kizuna-org/akari/kiseki/pkg/adapter"
 	characterAdapter "github.com/kizuna-org/akari/kiseki/pkg/character/adapter"
 	characterRedis "github.com/kizuna-org/akari/kiseki/pkg/character/infrastructure/redis"
 	characterUsecase "github.com/kizuna-org/akari/kiseki/pkg/character/usecase"
 	"github.com/kizuna-org/akari/kiseki/pkg/config"
+	taskAdapter "github.com/kizuna-org/akari/kiseki/pkg/task/adapter"
+	taskRedis "github.com/kizuna-org/akari/kiseki/pkg/task/infrastructure/redis"
+	taskUsecase "github.com/kizuna-org/akari/kiseki/pkg/task/usecase"
 	vectordbAdapter "github.com/kizuna-org/akari/kiseki/pkg/vectordb/adapter"
 	qdrantInfra "github.com/kizuna-org/akari/kiseki/pkg/vectordb/infrastructure/qdrant"
 	redisInfra "github.com/kizuna-org/akari/kiseki/pkg/vectordb/infrastructure/redis"
 	vectordbUsecase "github.com/kizuna-org/akari/kiseki/pkg/vectordb/usecase"
+	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -81,7 +84,10 @@ func setupMemoryTestServer(t *testing.T) (*echo.Echo, func()) {
 	// Setup handlers
 	characterHandler := characterAdapter.NewHandler(characterInteractor)
 	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor)
-	server := adapter.NewServer(characterHandler, memoryHandler)
+	taskRepo := taskRedis.NewRepository(redisClient)
+	taskInteractor := taskUsecase.NewTaskInteractor(taskRepo)
+	taskHandler := taskAdapter.NewHandler(taskInteractor)
+	server := adapter.NewServer(characterHandler, memoryHandler, taskHandler)
 
 	// Setup Echo
 	e := echo.New()
@@ -108,13 +114,13 @@ func TestIntegration_MemoryIO(t *testing.T) {
 
 	// Create a test character first
 	characterID := uuid.New()
-	
+
 	// Create test vectors
 	denseVector := make([]float32, 768)
 	for i := range denseVector {
 		denseVector[i] = float32(i) / 768.0
 	}
-	
+
 	sparseVector := map[uint32]float32{
 		0:   0.5,
 		10:  0.3,

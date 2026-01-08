@@ -59,6 +59,20 @@ func main() {
 	// Register OpenAPI handlers
 	gen.RegisterHandlers(e, container.Server)
 
+	// Register custom task endpoints
+	e.POST("/characters/:characterId/tasks", container.TaskHandler.CreateTask)
+	e.GET("/tasks/:taskId", container.TaskHandler.GetTask)
+	e.GET("/characters/:characterId/tasks", container.TaskHandler.ListTasks)
+
+	// Start task worker
+	workerCtx, workerCancel := context.WithCancel(context.Background())
+	defer workerCancel()
+	
+	go func() {
+		slog.Info("Task worker starting")
+		container.TaskWorker.Start(workerCtx)
+	}()
+
 	// Start server
 	port := getEnvOrDefault("PORT", "8080")
 	addr := fmt.Sprintf(":%s", port)
@@ -79,6 +93,9 @@ func main() {
 	slog.Info("Shutting down server...")
 
 	// Graceful shutdown
+	slog.Info("Stopping task worker...")
+	workerCancel()
+	
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

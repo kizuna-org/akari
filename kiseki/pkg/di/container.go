@@ -4,12 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/kizuna-org/akari/kiseki/pkg/adapter"
 	characterAdapter "github.com/kizuna-org/akari/kiseki/pkg/character/adapter"
 	characterRedis "github.com/kizuna-org/akari/kiseki/pkg/character/infrastructure/redis"
 	characterUsecase "github.com/kizuna-org/akari/kiseki/pkg/character/usecase"
 	"github.com/kizuna-org/akari/kiseki/pkg/config"
+	taskAdapter "github.com/kizuna-org/akari/kiseki/pkg/task/adapter"
+	"github.com/kizuna-org/akari/kiseki/pkg/task/infrastructure/embedding"
+	taskRedis "github.com/kizuna-org/akari/kiseki/pkg/task/infrastructure/redis"
+	taskUsecase "github.com/kizuna-org/akari/kiseki/pkg/task/usecase"
 	vectordbAdapter "github.com/kizuna-org/akari/kiseki/pkg/vectordb/adapter"
 	qdrantInfra "github.com/kizuna-org/akari/kiseki/pkg/vectordb/infrastructure/qdrant"
 	redisInfra "github.com/kizuna-org/akari/kiseki/pkg/vectordb/infrastructure/redis"
@@ -29,14 +34,21 @@ type Container struct {
 	CharacterRepo *characterRedis.Repository
 	VectorDBRepo  *qdrantInfra.Repository
 	KVSRepo       *redisInfra.Repository
+	TaskRepo      *taskRedis.Repository
+
+	// Services
+	EmbeddingService *embedding.MockService
 
 	// Usecases
 	CharacterInteractor *characterUsecase.CharacterInteractor
 	MemoryInteractor    *vectordbUsecase.MemoryInteractor
+	TaskInteractor      *taskUsecase.TaskInteractor
+	TaskWorker          *taskUsecase.Worker
 
 	// Handlers
 	CharacterHandler *characterAdapter.Handler
 	MemoryHandler    *vectordbAdapter.Handler
+	TaskHandler      *taskAdapter.Handler
 	Server           *adapter.Server
 }
 
@@ -82,6 +94,7 @@ func NewContainer() (*Container, error) {
 	// Initialize repositories
 	characterRepo := characterRedis.NewRepository(redisClient)
 	vectorDBRepo := qdrantInfra.NewRepository(qdrantClient, cfg.Qdrant.VectorSize)
+	taskRepo := taskRedis.NewRepository(redisClient)
 
 	// Create KVS repository with Redis client wrapper
 	redisClientWrapper, err := redisInfra.NewClient(cfg.Redis.Host, cfg.Redis.Port, cfg.Redis.Password, cfg.Redis.DB)
@@ -90,14 +103,21 @@ func NewContainer() (*Container, error) {
 	}
 	kvsRepo := redisInfra.NewRepository(redisClientWrapper)
 
+	// Initialize services
+	embeddingService := embedding.NewMockService(int(cfg.Qdrant.VectorSize))
+	slog.Info("Using mock embedding service for development")
+
 	// Initialize use cases
 	characterInteractor := characterUsecase.NewCharacterInteractor(characterRepo)
 	memoryInteractor := vectordbUsecase.NewMemoryInteractor(vectorDBRepo, kvsRepo, *cfg)
+	taskInteractor := taskUsecase.NewTaskInteractor(taskRepo)
+	taskWorker := taskUsecase.NewWorker(taskRepo, embeddingService, memoryInteractor, 5*time.Second)
 
 	// Initialize handlers
 	characterHandler := characterAdapter.NewHandler(characterInteractor)
 	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor)
-	server := adapter.NewServer(characterHandler, memoryHandler)
+	taskHandler := taskAdapter.NewHandler(taskInteractor)
+	server := adapter.NewServer(characterHandler, memoryHandler, taskHandler)
 
 	slog.Info("All dependencies initialized successfully")
 
@@ -108,10 +128,15 @@ func NewContainer() (*Container, error) {
 		CharacterRepo:       characterRepo,
 		VectorDBRepo:        vectorDBRepo,
 		KVSRepo:             kvsRepo,
+		TaskRepo:            taskRepo,
+		EmbeddingService:    embeddingService,
 		CharacterInteractor: characterInteractor,
 		MemoryInteractor:    memoryInteractor,
+		TaskInteractor:      taskInteractor,
+		TaskWorker:          taskWorker,
 		CharacterHandler:    characterHandler,
 		MemoryHandler:       memoryHandler,
+		TaskHandler:         taskHandler,
 		Server:              server,
 	}, nil
 }

@@ -17,6 +17,9 @@ import (
 	characterRedis "github.com/kizuna-org/akari/kiseki/pkg/character/infrastructure/redis"
 	characterUsecase "github.com/kizuna-org/akari/kiseki/pkg/character/usecase"
 	"github.com/kizuna-org/akari/kiseki/pkg/config"
+	taskAdapter "github.com/kizuna-org/akari/kiseki/pkg/task/adapter"
+	taskRedis "github.com/kizuna-org/akari/kiseki/pkg/task/infrastructure/redis"
+	taskUsecase "github.com/kizuna-org/akari/kiseki/pkg/task/usecase"
 	vectordbAdapter "github.com/kizuna-org/akari/kiseki/pkg/vectordb/adapter"
 	qdrantInfra "github.com/kizuna-org/akari/kiseki/pkg/vectordb/infrastructure/qdrant"
 	redisInfra "github.com/kizuna-org/akari/kiseki/pkg/vectordb/infrastructure/redis"
@@ -66,8 +69,13 @@ func setupTestServer(t *testing.T) (*echo.Echo, *redis.Client, func()) {
 	kvsRepo := redisInfra.NewRepository(redisClientWrapper)
 	memoryInteractor := vectordbUsecase.NewMemoryInteractor(vectorDBRepo, kvsRepo, cfg)
 	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor)
-
-	server := adapter.NewServer(characterHandler, memoryHandler)
+	
+	// Setup task handler
+	taskRepo := taskRedis.NewRepository(redisClient)
+	taskInteractor := taskUsecase.NewTaskInteractor(taskRepo)
+	taskHandler := taskAdapter.NewHandler(taskInteractor)
+	
+	server := adapter.NewServer(characterHandler, memoryHandler, taskHandler)
 
 	// Setup Echo
 	e := echo.New()
