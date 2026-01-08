@@ -293,11 +293,29 @@ components:
 
     Meta:
       type: object
-      description: Metadata object
+      description: Metadata object with timestamps
+      required:
+        - memorized_at
+        - created_at
+        - updated_at
+      properties:
+        memorized_at:
+          type: string
+          format: date-time
+          description: Timestamp when the data was memorized
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the data was created
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the data was last updated
       additionalProperties: true
 
-    DataType:
+    BaseData:
       type: object
+      description: Base data structure with dType and data
       required:
         - dType
         - data
@@ -309,44 +327,39 @@ components:
           oneOf:
             - type: string
 
-    DataTypeWithMeta:
+    DataFragment:
       allOf:
-        - $ref: "#/components/schemas/DataType"
+        - $ref: "#/components/schemas/BaseData"
         - type: object
+          description: Data fragment without metadata (used in requests)
+
+    Fragment:
+      allOf:
+        - $ref: "#/components/schemas/BaseData"
+        - type: object
+          description: Data fragment with metadata (used in responses)
+          required:
+            - meta
           properties:
             meta:
               $ref: "#/components/schemas/Meta"
 
     MemoryIORequest:
-      type: object
-      required:
-        - dType
-        - data
-      properties:
-        dType:
-          $ref: "#/components/schemas/DType"
-        data:
-          description: Typed data value
-          oneOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: object
-            - type: array
+      allOf:
+        - $ref: "#/components/schemas/DataFragment"
+        - type: object
+          description: Request to store memory data
 
     MemoryIOResponse:
       type: object
       required:
         - items
-        - meta
       properties:
         items:
           type: array
-          description: Array of memory data items
+          description: Array of memory data fragments with metadata
           items:
-            $ref: "#/components/schemas/DataType"
-        meta:
-          $ref: "#/components/schemas/Meta"
+            $ref: "#/components/schemas/Fragment"
 
     MemorySleepRequest:
       type: object
@@ -385,26 +398,16 @@ components:
             $ref: "#/components/schemas/PollingResponseGroup"
 
     PollingRequestItem:
-      type: object
-      description: Completed task result
-      required:
-        - taskId
-        - dType
-        - data
-      properties:
-        taskId:
-          type: string
-          description: Identifier of the completed task
-        dType:
-          $ref: "#/components/schemas/DType"
-        data:
-          description: Result data from the completed task
-          oneOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: object
-            - type: array
+      allOf:
+        - $ref: "#/components/schemas/DataFragment"
+        - type: object
+          description: Completed task result
+          required:
+            - taskId
+          properties:
+            taskId:
+              type: string
+              description: Identifier of the completed task
 
     PollingResponseGroup:
       type: object
@@ -423,31 +426,18 @@ components:
             $ref: "#/components/schemas/PollingResponseItem"
 
     PollingResponseItem:
-      type: object
-      description: New task request to be processed
-      required:
-        - taskId
-        - dType
-        - data
-        - meta
-      properties:
-        taskId:
-          type: string
-          description: Identifier for the new task
-        dType:
-          $ref: "#/components/schemas/DType"
-        data:
-          description: Input data for the new task
-          oneOf:
-            - type: string
-            - type: number
-            - type: boolean
-            - type: object
-            - type: array
-        meta:
-          $ref: "#/components/schemas/Meta"
+      allOf:
+        - $ref: "#/components/schemas/Fragment"
+        - type: object
+          description: New task request to be processed
+          required:
+            - taskId
+          properties:
+            taskId:
+              type: string
+              description: Identifier for the new task
 
-    WebSocketMessage:
+    TaskMessage:
       type: object
       required:
         - tType
@@ -458,20 +448,20 @@ components:
           description: Transaction type enum value
         items:
           type: array
-          description: Array of data items with metadata
+          description: Array of data fragments with metadata
           items:
-            $ref: "#/components/schemas/DataTypeWithMeta"
+            $ref: "#/components/schemas/Fragment"
 
-    WebSocketResponse:
+    TaskResponse:
       type: object
       required:
         - items
       properties:
         items:
           type: array
-          description: Array of response data items
+          description: Array of response data fragments
           items:
-            $ref: "#/components/schemas/DataType"
+            $ref: "#/components/schemas/DataFragment"
 
     Character:
       type: object
