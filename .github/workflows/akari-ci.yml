@@ -29,6 +29,8 @@ jobs:
       - golang-test-comment-check
       - golang-test-check
       - golang-generate-check
+      - dockerfile-lint
+      - docker-compose-build-check
       - ko-build-check
     steps:
       - uses: actions/checkout@v6
@@ -341,6 +343,29 @@ jobs:
             git diff
             exit 1
           fi
+
+  dockerfile-lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+        with:
+          dockerfile: Dockerfile
+          recursive: true
+      - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
+        with:
+          dockerfile: Dockerfile.*
+          recursive: true
+
+  docker-compose-build-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build Docker image
+        run: |
+          docker compose build
 
   ko-build-check:
     runs-on: ubuntu-latest
