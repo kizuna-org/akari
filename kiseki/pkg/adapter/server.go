@@ -6,19 +6,21 @@ import (
 
 	"github.com/kizuna-org/akari/kiseki/gen"
 	characterAdapter "github.com/kizuna-org/akari/kiseki/pkg/character/adapter"
+	vectordbAdapter "github.com/kizuna-org/akari/kiseki/pkg/vectordb/adapter"
 	"github.com/labstack/echo/v4"
 )
 
 // Server implements the full ServerInterface by composing individual handlers
 type Server struct {
 	characterHandler *characterAdapter.Handler
-	// Add other handlers here as they are implemented
+	memoryHandler    *vectordbAdapter.Handler
 }
 
 // NewServer creates a new server with all handlers
-func NewServer(characterHandler *characterAdapter.Handler) *Server {
+func NewServer(characterHandler *characterAdapter.Handler, memoryHandler *vectordbAdapter.Handler) *Server {
 	return &Server{
 		characterHandler: characterHandler,
+		memoryHandler:    memoryHandler,
 	}
 }
 
@@ -43,19 +45,13 @@ func (s *Server) UpdateCharacter(ctx echo.Context, characterId gen.CharacterIdPa
 	return s.characterHandler.UpdateCharacter(ctx, characterId)
 }
 
-// Memory endpoints - TODO: implement
+// Memory endpoints - delegate to memory handler
 func (s *Server) GetMemoryIO(ctx echo.Context, characterId gen.CharacterIdPath, params gen.GetMemoryIOParams) error {
-	return ctx.JSON(http.StatusNotImplemented, gen.Error{
-		Code:    "NOT_IMPLEMENTED",
-		Message: "Memory I/O not yet implemented",
-	})
+	return s.memoryHandler.GetMemoryIO(ctx, characterId, params)
 }
 
 func (s *Server) PutMemoryIO(ctx echo.Context, characterId gen.CharacterIdPath) error {
-	return ctx.JSON(http.StatusNotImplemented, gen.Error{
-		Code:    "NOT_IMPLEMENTED",
-		Message: "Memory I/O not yet implemented",
-	})
+	return s.memoryHandler.PutMemoryIO(ctx, characterId)
 }
 
 func (s *Server) PostMemorySleep(ctx echo.Context, characterId gen.CharacterIdPath) error {

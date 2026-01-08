@@ -10,6 +10,7 @@ import (
 	characterRedis "github.com/kizuna-org/akari/kiseki/pkg/character/infrastructure/redis"
 	characterUsecase "github.com/kizuna-org/akari/kiseki/pkg/character/usecase"
 	"github.com/kizuna-org/akari/kiseki/pkg/config"
+	vectordbAdapter "github.com/kizuna-org/akari/kiseki/pkg/vectordb/adapter"
 	qdrantInfra "github.com/kizuna-org/akari/kiseki/pkg/vectordb/infrastructure/qdrant"
 	redisInfra "github.com/kizuna-org/akari/kiseki/pkg/vectordb/infrastructure/redis"
 	vectordbUsecase "github.com/kizuna-org/akari/kiseki/pkg/vectordb/usecase"
@@ -35,6 +36,7 @@ type Container struct {
 
 	// Handlers
 	CharacterHandler *characterAdapter.Handler
+	MemoryHandler    *vectordbAdapter.Handler
 	Server           *adapter.Server
 }
 
@@ -94,7 +96,8 @@ func NewContainer() (*Container, error) {
 
 	// Initialize handlers
 	characterHandler := characterAdapter.NewHandler(characterInteractor)
-	server := adapter.NewServer(characterHandler)
+	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor)
+	server := adapter.NewServer(characterHandler, memoryHandler)
 
 	slog.Info("All dependencies initialized successfully")
 
@@ -108,6 +111,7 @@ func NewContainer() (*Container, error) {
 		CharacterInteractor: characterInteractor,
 		MemoryInteractor:    memoryInteractor,
 		CharacterHandler:    characterHandler,
+		MemoryHandler:       memoryHandler,
 		Server:              server,
 	}, nil
 }

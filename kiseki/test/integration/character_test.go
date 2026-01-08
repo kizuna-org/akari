@@ -16,6 +16,11 @@ import (
 	characterAdapter "github.com/kizuna-org/akari/kiseki/pkg/character/adapter"
 	characterRedis "github.com/kizuna-org/akari/kiseki/pkg/character/infrastructure/redis"
 	characterUsecase "github.com/kizuna-org/akari/kiseki/pkg/character/usecase"
+	"github.com/kizuna-org/akari/kiseki/pkg/config"
+	vectordbAdapter "github.com/kizuna-org/akari/kiseki/pkg/vectordb/adapter"
+	qdrantInfra "github.com/kizuna-org/akari/kiseki/pkg/vectordb/infrastructure/qdrant"
+	redisInfra "github.com/kizuna-org/akari/kiseki/pkg/vectordb/infrastructure/redis"
+	vectordbUsecase "github.com/kizuna-org/akari/kiseki/pkg/vectordb/usecase"
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 )
@@ -35,11 +40,34 @@ func setupTestServer(t *testing.T) (*echo.Echo, *redis.Client, func()) {
 		t.Skipf("Redis not available: %v", err)
 	}
 
-	// Setup handler
-	repo := characterRedis.NewRepository(redisClient)
-	interactor := characterUsecase.NewCharacterInteractor(repo)
-	characterHandler := characterAdapter.NewHandler(interactor)
-	server := adapter.NewServer(characterHandler)
+	// Setup handlers
+	characterRepo := characterRedis.NewRepository(redisClient)
+	characterInteractor := characterUsecase.NewCharacterInteractor(characterRepo)
+	characterHandler := characterAdapter.NewHandler(characterInteractor)
+
+	// Setup memory handler (with mock repositories for now)
+	cfg := config.Config{
+		Score: config.ScoreConfig{
+			Alpha:   0.5,
+			Beta:    0.3,
+			Gamma:   0.2,
+			Epsilon: 0.1,
+		},
+		Qdrant: config.QdrantConfig{
+			VectorSize: 768,
+		},
+	}
+
+	// For character tests, we can use nil repositories for memory since we won't test memory endpoints
+	// In a full integration test, we would set up real Qdrant and Redis connections
+	qdrantClient, _ := qdrantInfra.NewClient("localhost", 6334, false)
+	vectorDBRepo := qdrantInfra.NewRepository(qdrantClient, 768)
+	redisClientWrapper, _ := redisInfra.NewClient("localhost", 6379, "", 0)
+	kvsRepo := redisInfra.NewRepository(redisClientWrapper)
+	memoryInteractor := vectordbUsecase.NewMemoryInteractor(vectorDBRepo, kvsRepo, cfg)
+	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor)
+
+	server := adapter.NewServer(characterHandler, memoryHandler)
 
 	// Setup Echo
 	e := echo.New()
