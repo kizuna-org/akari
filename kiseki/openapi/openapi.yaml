@@ -437,7 +437,7 @@ components:
               type: string
               description: Identifier for the new task
 
-    WebSocketMessage:
+    TaskMessage:
       type: object
       required:
         - tType
@@ -452,7 +452,7 @@ components:
           items:
             $ref: "#/components/schemas/Fragment"
 
-    WebSocketResponse:
+    TaskResponse:
       type: object
       required:
         - items
