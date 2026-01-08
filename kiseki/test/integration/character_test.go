@@ -72,7 +72,8 @@ func setupTestServer(t *testing.T) (*echo.Echo, *redis.Client, func()) {
 	// Setup task handler
 	taskRepo := taskRedis.NewRepository(redisClient)
 	taskInteractor := taskUsecase.NewTaskInteractor(taskRepo)
-	taskHandler := taskAdapter.NewHandler(taskInteractor)
+	pollingInteractor := taskUsecase.NewPollingInteractor(taskRepo, memoryInteractor)
+	taskHandler := taskAdapter.NewHandler(taskInteractor, pollingInteractor)
 	
 	// Setup memory handler (needs task interactor for async embedding)
 	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor, taskInteractor)

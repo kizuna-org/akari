@@ -12,22 +12,23 @@ import (
 
 // Handler handles task-related HTTP requests
 type Handler struct {
-	taskInteractor *usecase.TaskInteractor
+	taskInteractor    *usecase.TaskInteractor
+	pollingInteractor *usecase.PollingInteractor
 }
 
 // NewHandler creates a new task handler
-func NewHandler(taskInteractor *usecase.TaskInteractor) *Handler {
+func NewHandler(taskInteractor *usecase.TaskInteractor, pollingInteractor *usecase.PollingInteractor) *Handler {
 	return &Handler{
-		taskInteractor: taskInteractor,
+		taskInteractor:    taskInteractor,
+		pollingInteractor: pollingInteractor,
 	}
 }
 
 // PostMemoryPolling handles POST /characters/{characterId}/task
-// This is a simplified implementation that returns empty response
-// In production, this would implement the full polling protocol
+// External services submit completed task results and receive new tasks
 func (h *Handler) PostMemoryPolling(ctx echo.Context, characterID gen.CharacterIdPath) error {
 	// Parse character ID
-	_, err := uuid.Parse(characterID.String())
+	charUUID, err := uuid.Parse(characterID.String())
 	if err != nil {
 		return ctx.JSON(http.StatusBadRequest, gen.Error{
 			Code:    "INVALID_CHARACTER_ID",
@@ -44,10 +45,60 @@ func (h *Handler) PostMemoryPolling(ctx echo.Context, characterID gen.CharacterI
 		})
 	}
 
-	// TODO: Implement full polling protocol
-	// For now, return empty response indicating no new tasks
+	// Convert request items to completed tasks
+	completedTasks := make([]usecase.CompletedTaskItem, 0, len(req.Items))
+	for _, item := range req.Items {
+		completedTasks = append(completedTasks, usecase.CompletedTaskItem{
+			TaskID: item.TaskId,
+			DType:  string(item.DType),
+			Data:   item.Data,
+		})
+	}
+
+	// Handle polling (process completed tasks and get new ones)
+	input := usecase.HandlePollingInput{
+		CharacterID:    charUUID,
+		CompletedTasks: completedTasks,
+	}
+
+	output, err := h.pollingInteractor.HandlePolling(ctx.Request().Context(), input)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, gen.Error{
+			Code:    "POLLING_FAILED",
+			Message: fmt.Sprintf("Failed to handle polling: %v", err),
+		})
+	}
+
+	// Group new tasks by type
+	tasksByType := make(map[string][]gen.PollingResponseItem)
+	for _, task := range output.NewTasks {
+		// Convert data to appropriate union format
+		var dataUnion gen.PollingResponseItem_Data
+		if taskData, ok := task.Data.(map[string]interface{}); ok {
+			dataUnion.FromPollingResponseItemData3(taskData)
+		}
+		
+		item := gen.PollingResponseItem{
+			TaskId: task.TaskID,
+			DType:  gen.DType(task.DType),
+			Data:   dataUnion,
+			Meta:   task.Meta,
+		}
+
+		tasksByType[task.Type] = append(tasksByType[task.Type], item)
+	}
+
+	// Convert to response groups
+	groups := make([]gen.PollingResponseGroup, 0, len(tasksByType))
+	for tType, items := range tasksByType {
+		groups = append(groups, gen.PollingResponseGroup{
+			TType: tType,
+			Items: items,
+		})
+	}
+
 	response := gen.MemoryPollingResponse{
-		Items: []gen.PollingResponseGroup{},
+		Items: groups,
 	}
 
 	return ctx.JSON(http.StatusOK, response)

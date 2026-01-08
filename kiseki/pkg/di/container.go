@@ -111,12 +111,13 @@ func NewContainer() (*Container, error) {
 	characterInteractor := characterUsecase.NewCharacterInteractor(characterRepo)
 	memoryInteractor := vectordbUsecase.NewMemoryInteractor(vectorDBRepo, kvsRepo, *cfg)
 	taskInteractor := taskUsecase.NewTaskInteractor(taskRepo)
+	pollingInteractor := taskUsecase.NewPollingInteractor(taskRepo, memoryInteractor)
 	taskWorker := taskUsecase.NewWorker(taskRepo, embeddingService, memoryInteractor, 5*time.Second)
 
 	// Initialize handlers
 	characterHandler := characterAdapter.NewHandler(characterInteractor)
 	memoryHandler := vectordbAdapter.NewHandler(memoryInteractor, taskInteractor)
-	taskHandler := taskAdapter.NewHandler(taskInteractor)
+	taskHandler := taskAdapter.NewHandler(taskInteractor, pollingInteractor)
 	server := adapter.NewServer(characterHandler, memoryHandler, taskHandler)
 
 	slog.Info("All dependencies initialized successfully")
