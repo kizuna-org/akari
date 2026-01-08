@@ -2,7 +2,7 @@ FROM golang:1.25.5-alpine@sha256:ac09a5f469f307e5da71e766b0bd59c9c49ea460a528cc3
 
 WORKDIR /build
 
-RUN apk add --no-cache git make
+RUN apk add --no-cache git=2.52.0-r0 make=4.4.1-r3
 
 COPY akari/go.mod akari/go.sum ./
 RUN go mod download
