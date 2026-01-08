@@ -34,6 +34,23 @@ const (
 	Unhealthy HealthResponseStatus = "unhealthy"
 )
 
+// BaseData Base data structure with dType and data
+type BaseData struct {
+	// DType Data type identifier
+	DType DType `json:"dType"`
+
+	// Data Typed data value
+	Data BaseData_Data `json:"data"`
+}
+
+// BaseDataData0 defines model for .
+type BaseDataData0 = string
+
+// BaseData_Data Typed data value
+type BaseData_Data struct {
+	union json.RawMessage
+}
+
 // Character defines model for Character.
 type Character struct {
 	// CreatedAt Timestamp when the character was created
@@ -64,20 +81,20 @@ type CreateCharacterRequest struct {
 // DType Data type identifier
 type DType string
 
-// DataType defines model for DataType.
-type DataType struct {
+// DataFragment defines model for DataFragment.
+type DataFragment struct {
 	// DType Data type identifier
 	DType DType `json:"dType"`
 
 	// Data Typed data value
-	Data DataType_Data `json:"data"`
+	Data DataFragment_Data `json:"data"`
 }
 
-// DataTypeData0 defines model for .
-type DataTypeData0 = string
+// DataFragmentData0 defines model for .
+type DataFragmentData0 = string
 
-// DataType_Data Typed data value
-type DataType_Data struct {
+// DataFragment_Data Typed data value
+type DataFragment_Data struct {
 	union json.RawMessage
 }
 
@@ -86,6 +103,26 @@ type Error struct {
 	Code    string                  `json:"code"`
 	Details *map[string]interface{} `json:"details"`
 	Message string                  `json:"message"`
+}
+
+// Fragment defines model for Fragment.
+type Fragment struct {
+	// DType Data type identifier
+	DType DType `json:"dType"`
+
+	// Data Typed data value
+	Data Fragment_Data `json:"data"`
+
+	// Meta Metadata object with timestamps
+	Meta Meta `json:"meta"`
+}
+
+// FragmentData0 defines model for .
+type FragmentData0 = string
+
+// Fragment_Data Typed data value
+type Fragment_Data struct {
+	union json.RawMessage
 }
 
 // HealthResponse defines model for HealthResponse.
@@ -110,18 +147,6 @@ type MemoryIORequest struct {
 // MemoryIORequestData0 defines model for .
 type MemoryIORequestData0 = string
 
-// MemoryIORequestData1 defines model for .
-type MemoryIORequestData1 = float32
-
-// MemoryIORequestData2 defines model for .
-type MemoryIORequestData2 = bool
-
-// MemoryIORequestData3 defines model for .
-type MemoryIORequestData3 = map[string]interface{}
-
-// MemoryIORequestData4 defines model for .
-type MemoryIORequestData4 = []interface{}
-
 // MemoryIORequest_Data Typed data value
 type MemoryIORequest_Data struct {
 	union json.RawMessage
@@ -129,11 +154,8 @@ type MemoryIORequest_Data struct {
 
 // MemoryIOResponse defines model for MemoryIOResponse.
 type MemoryIOResponse struct {
-	// Items Array of memory data items
-	Items []DataType `json:"items"`
-
-	// Meta Metadata object
-	Meta Meta `json:"meta"`
+	// Items Array of memory data fragments with metadata
+	Items []Fragment `json:"items"`
 }
 
 // MemoryPollingRequest defines model for MemoryPollingRequest.
@@ -154,15 +176,25 @@ type MemorySleepResponse struct {
 	PollingUrl string `json:"pollingUrl"`
 }
 
-// Meta Metadata object
-type Meta map[string]interface{}
+// Meta Metadata object with timestamps
+type Meta struct {
+	// CreatedAt Timestamp when the data was created
+	CreatedAt time.Time `json:"created_at"`
 
-// PollingRequestItem Completed task result
+	// MemorizedAt Timestamp when the data was memorized
+	MemorizedAt time.Time `json:"memorized_at"`
+
+	// UpdatedAt Timestamp when the data was last updated
+	UpdatedAt            time.Time              `json:"updated_at"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// PollingRequestItem defines model for PollingRequestItem.
 type PollingRequestItem struct {
 	// DType Data type identifier
 	DType DType `json:"dType"`
 
-	// Data Result data from the completed task
+	// Data Typed data value
 	Data PollingRequestItem_Data `json:"data"`
 
 	// TaskId Identifier of the completed task
@@ -172,19 +204,7 @@ type PollingRequestItem struct {
 // PollingRequestItemData0 defines model for .
 type PollingRequestItemData0 = string
 
-// PollingRequestItemData1 defines model for .
-type PollingRequestItemData1 = float32
-
-// PollingRequestItemData2 defines model for .
-type PollingRequestItemData2 = bool
-
-// PollingRequestItemData3 defines model for .
-type PollingRequestItemData3 = map[string]interface{}
-
-// PollingRequestItemData4 defines model for .
-type PollingRequestItemData4 = []interface{}
-
-// PollingRequestItem_Data Result data from the completed task
+// PollingRequestItem_Data Typed data value
 type PollingRequestItem_Data struct {
 	union json.RawMessage
 }
@@ -198,15 +218,15 @@ type PollingResponseGroup struct {
 	TType string `json:"tType"`
 }
 
-// PollingResponseItem New task request to be processed
+// PollingResponseItem defines model for PollingResponseItem.
 type PollingResponseItem struct {
 	// DType Data type identifier
 	DType DType `json:"dType"`
 
-	// Data Input data for the new task
+	// Data Typed data value
 	Data PollingResponseItem_Data `json:"data"`
 
-	// Meta Metadata object
+	// Meta Metadata object with timestamps
 	Meta Meta `json:"meta"`
 
 	// TaskId Identifier for the new task
@@ -216,19 +236,7 @@ type PollingResponseItem struct {
 // PollingResponseItemData0 defines model for .
 type PollingResponseItemData0 = string
 
-// PollingResponseItemData1 defines model for .
-type PollingResponseItemData1 = float32
-
-// PollingResponseItemData2 defines model for .
-type PollingResponseItemData2 = bool
-
-// PollingResponseItemData3 defines model for .
-type PollingResponseItemData3 = map[string]interface{}
-
-// PollingResponseItemData4 defines model for .
-type PollingResponseItemData4 = []interface{}
-
-// PollingResponseItem_Data Input data for the new task
+// PollingResponseItem_Data Typed data value
 type PollingResponseItem_Data struct {
 	union json.RawMessage
 }
@@ -272,22 +280,114 @@ type PutMemoryIOJSONRequestBody = MemoryIORequest
 // PostMemoryPollingJSONRequestBody defines body for PostMemoryPolling for application/json ContentType.
 type PostMemoryPollingJSONRequestBody = MemoryPollingRequest
 
-// AsDataTypeData0 returns the union data inside the DataType_Data as a DataTypeData0
-func (t DataType_Data) AsDataTypeData0() (DataTypeData0, error) {
-	var body DataTypeData0
+// Getter for additional properties for Meta. Returns the specified
+// element and whether it was found
+func (a Meta) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for Meta
+func (a *Meta) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for Meta to handle AdditionalProperties
+func (a *Meta) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["created_at"]; found {
+		err = json.Unmarshal(raw, &a.CreatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'created_at': %w", err)
+		}
+		delete(object, "created_at")
+	}
+
+	if raw, found := object["memorized_at"]; found {
+		err = json.Unmarshal(raw, &a.MemorizedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'memorized_at': %w", err)
+		}
+		delete(object, "memorized_at")
+	}
+
+	if raw, found := object["updated_at"]; found {
+		err = json.Unmarshal(raw, &a.UpdatedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'updated_at': %w", err)
+		}
+		delete(object, "updated_at")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for Meta to handle AdditionalProperties
+func (a Meta) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["created_at"], err = json.Marshal(a.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'created_at': %w", err)
+	}
+
+	object["memorized_at"], err = json.Marshal(a.MemorizedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'memorized_at': %w", err)
+	}
+
+	object["updated_at"], err = json.Marshal(a.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'updated_at': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// AsBaseDataData0 returns the union data inside the BaseData_Data as a BaseDataData0
+func (t BaseData_Data) AsBaseDataData0() (BaseDataData0, error) {
+	var body BaseDataData0
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromDataTypeData0 overwrites any union data inside the DataType_Data as the provided DataTypeData0
-func (t *DataType_Data) FromDataTypeData0(v DataTypeData0) error {
+// FromBaseDataData0 overwrites any union data inside the BaseData_Data as the provided BaseDataData0
+func (t *BaseData_Data) FromBaseDataData0(v BaseDataData0) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeDataTypeData0 performs a merge with any union data inside the DataType_Data, using the provided DataTypeData0
-func (t *DataType_Data) MergeDataTypeData0(v DataTypeData0) error {
+// MergeBaseDataData0 performs a merge with any union data inside the BaseData_Data, using the provided BaseDataData0
+func (t *BaseData_Data) MergeBaseDataData0(v BaseDataData0) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -298,12 +398,84 @@ func (t *DataType_Data) MergeDataTypeData0(v DataTypeData0) error {
 	return err
 }
 
-func (t DataType_Data) MarshalJSON() ([]byte, error) {
+func (t BaseData_Data) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *DataType_Data) UnmarshalJSON(b []byte) error {
+func (t *BaseData_Data) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsDataFragmentData0 returns the union data inside the DataFragment_Data as a DataFragmentData0
+func (t DataFragment_Data) AsDataFragmentData0() (DataFragmentData0, error) {
+	var body DataFragmentData0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromDataFragmentData0 overwrites any union data inside the DataFragment_Data as the provided DataFragmentData0
+func (t *DataFragment_Data) FromDataFragmentData0(v DataFragmentData0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeDataFragmentData0 performs a merge with any union data inside the DataFragment_Data, using the provided DataFragmentData0
+func (t *DataFragment_Data) MergeDataFragmentData0(v DataFragmentData0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t DataFragment_Data) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *DataFragment_Data) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsFragmentData0 returns the union data inside the Fragment_Data as a FragmentData0
+func (t Fragment_Data) AsFragmentData0() (FragmentData0, error) {
+	var body FragmentData0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromFragmentData0 overwrites any union data inside the Fragment_Data as the provided FragmentData0
+func (t *Fragment_Data) FromFragmentData0(v FragmentData0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeFragmentData0 performs a merge with any union data inside the Fragment_Data, using the provided FragmentData0
+func (t *Fragment_Data) MergeFragmentData0(v FragmentData0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t Fragment_Data) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *Fragment_Data) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -324,110 +496,6 @@ func (t *MemoryIORequest_Data) FromMemoryIORequestData0(v MemoryIORequestData0) 
 
 // MergeMemoryIORequestData0 performs a merge with any union data inside the MemoryIORequest_Data, using the provided MemoryIORequestData0
 func (t *MemoryIORequest_Data) MergeMemoryIORequestData0(v MemoryIORequestData0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsMemoryIORequestData1 returns the union data inside the MemoryIORequest_Data as a MemoryIORequestData1
-func (t MemoryIORequest_Data) AsMemoryIORequestData1() (MemoryIORequestData1, error) {
-	var body MemoryIORequestData1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromMemoryIORequestData1 overwrites any union data inside the MemoryIORequest_Data as the provided MemoryIORequestData1
-func (t *MemoryIORequest_Data) FromMemoryIORequestData1(v MemoryIORequestData1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeMemoryIORequestData1 performs a merge with any union data inside the MemoryIORequest_Data, using the provided MemoryIORequestData1
-func (t *MemoryIORequest_Data) MergeMemoryIORequestData1(v MemoryIORequestData1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsMemoryIORequestData2 returns the union data inside the MemoryIORequest_Data as a MemoryIORequestData2
-func (t MemoryIORequest_Data) AsMemoryIORequestData2() (MemoryIORequestData2, error) {
-	var body MemoryIORequestData2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromMemoryIORequestData2 overwrites any union data inside the MemoryIORequest_Data as the provided MemoryIORequestData2
-func (t *MemoryIORequest_Data) FromMemoryIORequestData2(v MemoryIORequestData2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeMemoryIORequestData2 performs a merge with any union data inside the MemoryIORequest_Data, using the provided MemoryIORequestData2
-func (t *MemoryIORequest_Data) MergeMemoryIORequestData2(v MemoryIORequestData2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsMemoryIORequestData3 returns the union data inside the MemoryIORequest_Data as a MemoryIORequestData3
-func (t MemoryIORequest_Data) AsMemoryIORequestData3() (MemoryIORequestData3, error) {
-	var body MemoryIORequestData3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromMemoryIORequestData3 overwrites any union data inside the MemoryIORequest_Data as the provided MemoryIORequestData3
-func (t *MemoryIORequest_Data) FromMemoryIORequestData3(v MemoryIORequestData3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeMemoryIORequestData3 performs a merge with any union data inside the MemoryIORequest_Data, using the provided MemoryIORequestData3
-func (t *MemoryIORequest_Data) MergeMemoryIORequestData3(v MemoryIORequestData3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsMemoryIORequestData4 returns the union data inside the MemoryIORequest_Data as a MemoryIORequestData4
-func (t MemoryIORequest_Data) AsMemoryIORequestData4() (MemoryIORequestData4, error) {
-	var body MemoryIORequestData4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromMemoryIORequestData4 overwrites any union data inside the MemoryIORequest_Data as the provided MemoryIORequestData4
-func (t *MemoryIORequest_Data) FromMemoryIORequestData4(v MemoryIORequestData4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeMemoryIORequestData4 performs a merge with any union data inside the MemoryIORequest_Data, using the provided MemoryIORequestData4
-func (t *MemoryIORequest_Data) MergeMemoryIORequestData4(v MemoryIORequestData4) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -474,110 +542,6 @@ func (t *PollingRequestItem_Data) MergePollingRequestItemData0(v PollingRequestI
 	return err
 }
 
-// AsPollingRequestItemData1 returns the union data inside the PollingRequestItem_Data as a PollingRequestItemData1
-func (t PollingRequestItem_Data) AsPollingRequestItemData1() (PollingRequestItemData1, error) {
-	var body PollingRequestItemData1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPollingRequestItemData1 overwrites any union data inside the PollingRequestItem_Data as the provided PollingRequestItemData1
-func (t *PollingRequestItem_Data) FromPollingRequestItemData1(v PollingRequestItemData1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePollingRequestItemData1 performs a merge with any union data inside the PollingRequestItem_Data, using the provided PollingRequestItemData1
-func (t *PollingRequestItem_Data) MergePollingRequestItemData1(v PollingRequestItemData1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPollingRequestItemData2 returns the union data inside the PollingRequestItem_Data as a PollingRequestItemData2
-func (t PollingRequestItem_Data) AsPollingRequestItemData2() (PollingRequestItemData2, error) {
-	var body PollingRequestItemData2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPollingRequestItemData2 overwrites any union data inside the PollingRequestItem_Data as the provided PollingRequestItemData2
-func (t *PollingRequestItem_Data) FromPollingRequestItemData2(v PollingRequestItemData2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePollingRequestItemData2 performs a merge with any union data inside the PollingRequestItem_Data, using the provided PollingRequestItemData2
-func (t *PollingRequestItem_Data) MergePollingRequestItemData2(v PollingRequestItemData2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPollingRequestItemData3 returns the union data inside the PollingRequestItem_Data as a PollingRequestItemData3
-func (t PollingRequestItem_Data) AsPollingRequestItemData3() (PollingRequestItemData3, error) {
-	var body PollingRequestItemData3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPollingRequestItemData3 overwrites any union data inside the PollingRequestItem_Data as the provided PollingRequestItemData3
-func (t *PollingRequestItem_Data) FromPollingRequestItemData3(v PollingRequestItemData3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePollingRequestItemData3 performs a merge with any union data inside the PollingRequestItem_Data, using the provided PollingRequestItemData3
-func (t *PollingRequestItem_Data) MergePollingRequestItemData3(v PollingRequestItemData3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPollingRequestItemData4 returns the union data inside the PollingRequestItem_Data as a PollingRequestItemData4
-func (t PollingRequestItem_Data) AsPollingRequestItemData4() (PollingRequestItemData4, error) {
-	var body PollingRequestItemData4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPollingRequestItemData4 overwrites any union data inside the PollingRequestItem_Data as the provided PollingRequestItemData4
-func (t *PollingRequestItem_Data) FromPollingRequestItemData4(v PollingRequestItemData4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePollingRequestItemData4 performs a merge with any union data inside the PollingRequestItem_Data, using the provided PollingRequestItemData4
-func (t *PollingRequestItem_Data) MergePollingRequestItemData4(v PollingRequestItemData4) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
 func (t PollingRequestItem_Data) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
@@ -604,110 +568,6 @@ func (t *PollingResponseItem_Data) FromPollingResponseItemData0(v PollingRespons
 
 // MergePollingResponseItemData0 performs a merge with any union data inside the PollingResponseItem_Data, using the provided PollingResponseItemData0
 func (t *PollingResponseItem_Data) MergePollingResponseItemData0(v PollingResponseItemData0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPollingResponseItemData1 returns the union data inside the PollingResponseItem_Data as a PollingResponseItemData1
-func (t PollingResponseItem_Data) AsPollingResponseItemData1() (PollingResponseItemData1, error) {
-	var body PollingResponseItemData1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPollingResponseItemData1 overwrites any union data inside the PollingResponseItem_Data as the provided PollingResponseItemData1
-func (t *PollingResponseItem_Data) FromPollingResponseItemData1(v PollingResponseItemData1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePollingResponseItemData1 performs a merge with any union data inside the PollingResponseItem_Data, using the provided PollingResponseItemData1
-func (t *PollingResponseItem_Data) MergePollingResponseItemData1(v PollingResponseItemData1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPollingResponseItemData2 returns the union data inside the PollingResponseItem_Data as a PollingResponseItemData2
-func (t PollingResponseItem_Data) AsPollingResponseItemData2() (PollingResponseItemData2, error) {
-	var body PollingResponseItemData2
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPollingResponseItemData2 overwrites any union data inside the PollingResponseItem_Data as the provided PollingResponseItemData2
-func (t *PollingResponseItem_Data) FromPollingResponseItemData2(v PollingResponseItemData2) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePollingResponseItemData2 performs a merge with any union data inside the PollingResponseItem_Data, using the provided PollingResponseItemData2
-func (t *PollingResponseItem_Data) MergePollingResponseItemData2(v PollingResponseItemData2) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPollingResponseItemData3 returns the union data inside the PollingResponseItem_Data as a PollingResponseItemData3
-func (t PollingResponseItem_Data) AsPollingResponseItemData3() (PollingResponseItemData3, error) {
-	var body PollingResponseItemData3
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPollingResponseItemData3 overwrites any union data inside the PollingResponseItem_Data as the provided PollingResponseItemData3
-func (t *PollingResponseItem_Data) FromPollingResponseItemData3(v PollingResponseItemData3) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePollingResponseItemData3 performs a merge with any union data inside the PollingResponseItem_Data, using the provided PollingResponseItemData3
-func (t *PollingResponseItem_Data) MergePollingResponseItemData3(v PollingResponseItemData3) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsPollingResponseItemData4 returns the union data inside the PollingResponseItem_Data as a PollingResponseItemData4
-func (t PollingResponseItem_Data) AsPollingResponseItemData4() (PollingResponseItemData4, error) {
-	var body PollingResponseItemData4
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPollingResponseItemData4 overwrites any union data inside the PollingResponseItem_Data as the provided PollingResponseItemData4
-func (t *PollingResponseItem_Data) FromPollingResponseItemData4(v PollingResponseItemData4) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePollingResponseItemData4 performs a merge with any union data inside the PollingResponseItem_Data, using the provided PollingResponseItemData4
-func (t *PollingResponseItem_Data) MergePollingResponseItemData4(v PollingResponseItemData4) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -2232,39 +2092,41 @@ func ParseGetMemoryHealthResponse(rsp *http.Response) (*GetMemoryHealthResponse,
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"R/l2AQ6Pm7vN3wEAAP//xm2HncMpAAA=",
+	"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",
+	"AA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
