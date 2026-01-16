@@ -83,7 +83,7 @@ services:
       start_period: 40s
 
   nocodb:
-    image: nocodb/nocodb:0.265.1@sha256:8fd57018accf775fb5390392910e4b0ef6bb154f17c5732b478eb76c40ee8d1e
+    image: nocodb/nocodb:0.301.0@sha256:4cad729d56b1163253669057e031c1a0224d28d3f4516f310155308d9545dbf7
     container_name: nocodb
     restart: unless-stopped
     depends_on:
