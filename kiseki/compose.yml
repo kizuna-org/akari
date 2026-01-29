@@ -1,0 +1,79 @@
+services:
+  kiseki-qdrant:
+    image: qdrant/qdrant:v1.12.5
+    container_name: kiseki-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333" # HTTP API
+      - "6334:6334" # gRPC API
+    volumes:
+      - qdrant-data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  kiseki-redis:
+    image: redis:7.4.1-alpine
+    container_name: kiseki-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  kiseki-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kiseki-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      kiseki-qdrant:
+        condition: service_healthy
+      kiseki-redis:
+        condition: service_healthy
+    environment:
+      # Qdrant Configuration
+      - QDRANT_HOST=kiseki-qdrant
+      - QDRANT_PORT=6334
+      - QDRANT_USE_TLS=false
+      - QDRANT_VECTOR_SIZE=768
+      # Redis Configuration
+      - REDIS_HOST=kiseki-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      # Score Configuration
+      - SCORE_ALPHA=0.5
+      - SCORE_BETA=0.3
+      - SCORE_GAMMA=0.2
+      - SCORE_EPSILON=0.1
+      # Server Configuration
+      - PORT=8080
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  qdrant-data:
+    driver: local
+  redis-data:
+    driver: local
