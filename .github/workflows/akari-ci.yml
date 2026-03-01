@@ -307,7 +307,7 @@ jobs:
           echo "$TEST_OUT" | tee /tmp/gotest.log | gotestfmt
           exit "$TEST_EXIT"
         continue-on-error: true
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: test-log-${{ matrix.run }}
           path: /tmp/gotest.log
