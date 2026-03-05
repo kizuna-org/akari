@@ -97,7 +97,7 @@ jobs:
           submodules: recursive
           ref: ${{ github.base_ref }}
       - uses: ./.github/actions/setup-golang
-      - uses: ariga/setup-atlas@1ffa6444093025c9791791f0de623560359acd02 # v0
+      - uses: ariga/setup-atlas@2f3c785c89a15e1c0d07bcae3900fb5feb969eea # v0
       - name: Run `make init` (base branch)
         run: make init
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
