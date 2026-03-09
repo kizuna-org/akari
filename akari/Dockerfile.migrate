@@ -12,7 +12,7 @@ COPY kiseki/openapi/openapi.yaml ../kiseki/openapi/openapi.yaml
 
 RUN make generate
 
-FROM arigaio/atlas:1.1.5@sha256:b333861186a4cdcbec44277b52584838863fe50e8fa49564771541ae85d48684
+FROM arigaio/atlas:1.1.6@sha256:f05f62d9797e305e4cd891dcc7047919bb23f5f1186827792036cb4e4a816ee9
 
 WORKDIR /app
 
