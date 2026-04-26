@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"entgo.io/ent"
-	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -24,16 +23,5 @@ func (Character) Fields() []ent.Field {
 }
 
 func (Character) Edges() []ent.Edge {
-	return []ent.Edge{
-		edge.To("config", CharacterConfig.Type).
-			Unique().
-			Required().
-			Comment("The configuration associated with this character"),
-		edge.To("system_prompts", SystemPrompt.Type).
-			Required().
-			Comment("The system prompts associated with this character"),
-		edge.From("conversation_groups", ConversationGroup.Type).
-			Ref("character").
-			Comment("The conversation groups associated with this character"),
-	}
+	return []ent.Edge{}
 }
