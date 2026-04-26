@@ -1,4 +1,19 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>shiron-dev/renovate-config"]
+  "extends": ["github>shiron-dev/renovate-config"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update pinned OS packages in Dockerfiles",
+      "managerFilePatterns": ["/(^|/)Dockerfile(?:\\.[^/]+)?$/"],
+      "matchStringsStrategy": "recursive",
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z0-9-._]+)\\s+packagePrefix=(?<packagePrefix>[^\\s]+)(?:\\s+versioning=(?<versioning>[a-z0-9-._]+))?\\s+RUN\\s+(?:apk\\s+add|(?:apt-get|apt)\\s+install)[^\\n]*(?:\\\\\\s*\\r?\\n[^\\n]*)*",
+        "RUN\\s+(?:apk\\s+add|(?:apt-get|apt)\\s+install)[^\\n]*(?:\\\\\\s*\\r?\\n[^\\n]*)*",
+        "(?:^|\\s)(?<depName>[a-z0-9][a-z0-9+._-]*)=(?<currentValue>[A-Za-z0-9:~._+\\-]+)"
+      ],
+      "packageNameTemplate": "{{{packagePrefix}}}/{{{depName}}}",
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}loose{{/if}}"
+    }
+  ]
 }

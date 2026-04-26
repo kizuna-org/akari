@@ -2,6 +2,7 @@ FROM golang:1.26.0-alpine@sha256:d4c4845f5d60c6a974c6000ce58ae079328d03ab7f721a0
 
 WORKDIR /build
 
+# renovate: datasource=repology packagePrefix=alpine_3_23 versioning=loose
 RUN apk add --no-cache git=2.52.0-r0 make=4.4.1-r3
 
 COPY akari/go.mod akari/go.sum ./
