@@ -10,7 +10,7 @@ tool (
 
 require (
 	entgo.io/ent v0.14.5
-	github.com/brianvoe/gofakeit/v7 v7.14.0
+	github.com/brianvoe/gofakeit/v7 v7.14.1
 	github.com/bwmarrin/discordgo v0.29.0
 	github.com/getkin/kin-openapi v0.133.0
 	github.com/google/uuid v1.6.0
