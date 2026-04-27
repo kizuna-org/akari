@@ -18,7 +18,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.11.2
 	github.com/oapi-codegen/runtime v1.2.0
-	github.com/samber/lo v1.52.0
+	github.com/samber/lo v1.53.0
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/fx v1.24.0
 	go.uber.org/mock v0.6.0
