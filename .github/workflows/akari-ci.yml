@@ -32,6 +32,7 @@ jobs:
       - dockerfile-lint
       - docker-compose-build-check
       - ko-build-check
+      - renovate-deps-comment
     steps:
       - uses: actions/checkout@v6
       - name: Check all-status-check
@@ -391,3 +392,9 @@ jobs:
           IMAGE="$(ko build --bare ./cmd/akari)"
           echo "Built image: ${IMAGE}"
           docker images | grep akari || true
+
+  renovate-deps-comment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: shiron-dev/actions/renovate-deps-comment@0cc65c3143f6a0d119fa8085c8b2ae3dd25e657b # v1.6.3
