@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.2.0](https://github.com/kizuna-org/akari/compare/v0.1.1...v0.2.0) (2026-04-28)
+
+
+### Features
+
+* **akari/internal/message:** Create Discord channel if not exist ([#108](https://github.com/kizuna-org/akari/issues/108)) ([5e728ff](https://github.com/kizuna-org/akari/commit/5e728ffe51054fa2e9fa1db79d6834bbc511d279))
+* **akari/internal/message:** Create Discord guild if not exist ([#109](https://github.com/kizuna-org/akari/issues/109)) ([3ad82e0](https://github.com/kizuna-org/akari/commit/3ad82e019a16b12b449ba5b4325250f8affbb648))
+* **akari/internal/message:** Create Discord user if not exist ([#110](https://github.com/kizuna-org/akari/issues/110)) ([61fdc57](https://github.com/kizuna-org/akari/commit/61fdc57b2b1ccf3c6652dcdcd9d50679c6b662fc))
+* **akari/pkg/database:** Set user ID to conversation as well ([#115](https://github.com/kizuna-org/akari/issues/115)) ([f155b85](https://github.com/kizuna-org/akari/commit/f155b854ebc811509a32f822ba64d38dbf7f42e1))
+* **akari/pkg/kiseki:** Initialize polling methods ([#148](https://github.com/kizuna-org/akari/issues/148)) ([c9a6960](https://github.com/kizuna-org/akari/commit/c9a6960e937b1191ba670d61be400b8dc9648b08))
+* **akari:** add AkariUser integration to DiscordUserRepository ([#135](https://github.com/kizuna-org/akari/issues/135)) ([f75030e](https://github.com/kizuna-org/akari/commit/f75030e68315bb87275d882c99145803ea7d06f0))
+* **akari:** Generate kiseki client code ([#143](https://github.com/kizuna-org/akari/issues/143)) ([44e529e](https://github.com/kizuna-org/akari/commit/44e529eb0f3db9b274c9aee0c7b46a7dfe67663d))
+* **akari:** Store all Discord messages ([#99](https://github.com/kizuna-org/akari/issues/99)) ([9eea981](https://github.com/kizuna-org/akari/commit/9eea981b494d6080495cf3d094afaf678f70d819))
+* **deploy:** add Docker configuration for Akari deploy ([#131](https://github.com/kizuna-org/akari/issues/131)) ([c8542d7](https://github.com/kizuna-org/akari/commit/c8542d7a52ff7459ed53546ff07e84f6cd0cc54a))
+* **deploy:** add nocodb and cloudflare-tunnel services to compose.yml ([#136](https://github.com/kizuna-org/akari/issues/136)) ([4b91ea7](https://github.com/kizuna-org/akari/commit/4b91ea78e3a70f5277f85086f78d4ee8e7453242))
+* **openapi:** add openapi ([#141](https://github.com/kizuna-org/akari/issues/141)) ([8aafc20](https://github.com/kizuna-org/akari/commit/8aafc205b09abc99412b6f76372fed631b8dda50))
+
+
+### Bug Fixes
+
+* **akari/internal/message:** Read bot name RegExp from database ([#140](https://github.com/kizuna-org/akari/issues/140)) ([f6c52a8](https://github.com/kizuna-org/akari/commit/f6c52a83d429c5cc619be3c7e8d6b622c32eb42d))
+* **akari:** Copy kiseki OpenAPI config to the build ([#146](https://github.com/kizuna-org/akari/issues/146)) ([cf36e52](https://github.com/kizuna-org/akari/commit/cf36e52cd12fdba8c62063eb5c9348cf54b76015))
+* **deps:** update module github.com/brianvoe/gofakeit/v7 to v7.14.0 ([#134](https://github.com/kizuna-org/akari/issues/134)) ([22f8e58](https://github.com/kizuna-org/akari/commit/22f8e5836ef16fa617d390a0898c225e6e16780e))
+* **deps:** update module github.com/brianvoe/gofakeit/v7 to v7.14.1 ([#210](https://github.com/kizuna-org/akari/issues/210)) ([fec6e22](https://github.com/kizuna-org/akari/commit/fec6e2253f0f8b3e63d4429c3c0a7ab1ecb91ef1))
+* **deps:** update module github.com/labstack/echo/v4 to v4.15.0 ([#142](https://github.com/kizuna-org/akari/issues/142)) ([85d729f](https://github.com/kizuna-org/akari/commit/85d729f4af474beadb6f16c74379e705279926d2))
+* **deps:** update module github.com/labstack/echo/v4 to v4.15.1 ([#200](https://github.com/kizuna-org/akari/issues/200)) ([859d8fd](https://github.com/kizuna-org/akari/commit/859d8fd4d4abb086c1f6ecdd5bc9a95d8cb906ae))
+* **deps:** update module github.com/lib/pq to v1.11.1 ([#175](https://github.com/kizuna-org/akari/issues/175)) ([f085ab0](https://github.com/kizuna-org/akari/commit/f085ab0dd533184e7aab6e7057a395f35474bc2e))
+* **deps:** update module github.com/lib/pq to v1.11.2 ([#186](https://github.com/kizuna-org/akari/issues/186)) ([bc7553e](https://github.com/kizuna-org/akari/commit/bc7553e222b33d63225d5bb5cf1bbc5075fa4911))
+* **deps:** update module github.com/lib/pq to v1.12.3 ([#234](https://github.com/kizuna-org/akari/issues/234)) ([7550754](https://github.com/kizuna-org/akari/commit/75507542f2ced1181b87ac77371ada3d02e56c88))
+* **deps:** update module github.com/oapi-codegen/runtime to v1.2.0 ([#205](https://github.com/kizuna-org/akari/issues/205)) ([c5c447b](https://github.com/kizuna-org/akari/commit/c5c447b45594b0b9645d3b08d1065d0e5274afd9))
+* **deps:** update module github.com/oapi-codegen/runtime to v1.4.0 ([#235](https://github.com/kizuna-org/akari/issues/235)) ([cbf2aaf](https://github.com/kizuna-org/akari/commit/cbf2aafc02bf3bdda3878a59eff37e3ae1429974))
+* **deps:** update module github.com/samber/lo to v1.53.0 ([#236](https://github.com/kizuna-org/akari/issues/236)) ([b598fcb](https://github.com/kizuna-org/akari/commit/b598fcb7d213b0844ae3327b8aef78c715a11349))
+* **deps:** update module google.golang.org/genai to v1.36.0 ([#92](https://github.com/kizuna-org/akari/issues/92)) ([2529e37](https://github.com/kizuna-org/akari/commit/2529e37bdee818a9b9705c8a97475ae8b95a5d23))
+* **deps:** update module google.golang.org/genai to v1.37.0 ([#105](https://github.com/kizuna-org/akari/issues/105)) ([10105e0](https://github.com/kizuna-org/akari/commit/10105e013225deb687c59fa0856cdf3d14fa34b8))
+* **deps:** update module google.golang.org/genai to v1.38.0 ([#117](https://github.com/kizuna-org/akari/issues/117)) ([9918f7d](https://github.com/kizuna-org/akari/commit/9918f7d0a4f154bc2408e00bae6806e57ae7262a))
+* **deps:** update module google.golang.org/genai to v1.39.0 ([#121](https://github.com/kizuna-org/akari/issues/121)) ([552fe2d](https://github.com/kizuna-org/akari/commit/552fe2d9e5e57d15216dd21e2300705a2eb1302d))
+* **deps:** update module google.golang.org/genai to v1.40.0 ([#126](https://github.com/kizuna-org/akari/issues/126)) ([0448837](https://github.com/kizuna-org/akari/commit/0448837bf62ae8ce34689f66157930984e38137b))
+* **deps:** update module google.golang.org/genai to v1.41.0 ([#153](https://github.com/kizuna-org/akari/issues/153)) ([eb198f3](https://github.com/kizuna-org/akari/commit/eb198f3f0272ffb09d8e709daaa67893f7db4199))
+* **deps:** update module google.golang.org/genai to v1.41.1 ([#159](https://github.com/kizuna-org/akari/issues/159)) ([ec9ab4e](https://github.com/kizuna-org/akari/commit/ec9ab4eec2de2741a71f38cac64037428bea2b45))
+* **deps:** update module google.golang.org/genai to v1.42.0 ([#161](https://github.com/kizuna-org/akari/issues/161)) ([38a305c](https://github.com/kizuna-org/akari/commit/38a305c1f0404d2c07ea85625b42059dd1cade13))
+* **deps:** update module google.golang.org/genai to v1.43.0 ([#166](https://github.com/kizuna-org/akari/issues/166)) ([b7bcd96](https://github.com/kizuna-org/akari/commit/b7bcd96d415dd190f9bdc050cc38f78abe53cb77))
+* **deps:** update module google.golang.org/genai to v1.44.0 ([#176](https://github.com/kizuna-org/akari/issues/176)) ([fa4093c](https://github.com/kizuna-org/akari/commit/fa4093c115120ecd4b762bf413891cdb36b48c54))
+* **deps:** update module google.golang.org/genai to v1.45.0 ([#181](https://github.com/kizuna-org/akari/issues/181)) ([9a8dbc3](https://github.com/kizuna-org/akari/commit/9a8dbc3ccddb6f5351615093f38dd667923dad1a))
+* **deps:** update module google.golang.org/genai to v1.46.0 ([#185](https://github.com/kizuna-org/akari/issues/185)) ([3788bce](https://github.com/kizuna-org/akari/commit/3788bce9ab97f075c85f09d958a40ace4d1afb42))
+* **deps:** update module google.golang.org/genai to v1.47.0 ([#195](https://github.com/kizuna-org/akari/issues/195)) ([ebc938c](https://github.com/kizuna-org/akari/commit/ebc938c321f060aeb6d02430de3ce5758c6e892a))
+* **deps:** update module google.golang.org/genai to v1.48.0 ([#204](https://github.com/kizuna-org/akari/issues/204)) ([d7bb773](https://github.com/kizuna-org/akari/commit/d7bb773458d6c513fd23e6c6bc70b62110742f53))
+* **deps:** update module google.golang.org/genai to v1.54.0 ([#215](https://github.com/kizuna-org/akari/issues/215)) ([80472f7](https://github.com/kizuna-org/akari/commit/80472f77447462fc5d5a845226d30c4d3c24f8f1))
+* **kiseki-gen:** Regenerate PostMemoryPolling ([#145](https://github.com/kizuna-org/akari/issues/145)) ([37f742f](https://github.com/kizuna-org/akari/commit/37f742f008939a568f4838d484c39ef3bbaee02d))
+* Make NocoDB workable ([#139](https://github.com/kizuna-org/akari/issues/139)) ([ff44f98](https://github.com/kizuna-org/akari/commit/ff44f989684ef79ca03f03936b2acefe270b88ef))
+* update discordUserRepository to implement DiscordUserRepository interface ([#130](https://github.com/kizuna-org/akari/issues/130)) ([779167c](https://github.com/kizuna-org/akari/commit/779167c4c73fa047dd2a7347ee48846c54d97e09))
+
+
+### Reverts
+
+* **akari:** Remove Go work ([#149](https://github.com/kizuna-org/akari/issues/149)) ([c25019c](https://github.com/kizuna-org/akari/commit/c25019cd29334c0dc29bffadb7e69696123bbee4))
+
 ## [0.1.1](https://github.com/kizuna-org/akari/compare/v0.1.0...v0.1.1) (2025-11-20)
 
 
