@@ -2,11 +2,13 @@ APP_NAME := akari
 BIN := bin/$(APP_NAME)
 GO := go
 ENV := local
+GO_TOOLCHAIN := $(shell env -u GOROOT $(GO) env GOROOT)/bin/go
+GOLANGCI_LINT := env -u GOROOT GOTOOLCHAIN=local $(GO_TOOLCHAIN) run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 
-.PHONY: init build run test fmt vet tidy generate lint clean up down down-volumes migrate-new migrate-apply migrate-status migrate-hash migrate-validate migrate-dry-run
+.PHONY: init build ko-build run test fmt vet tidy generate lint clean up down down-volumes migrate-new migrate-apply migrate-status migrate-hash migrate-validate migrate-dry-run
 
 init:
-	go mod download
+	$(GO) mod download
 	if [ ! -f .env ]; then \
 		cp .env.example .env; \
 	fi
@@ -16,6 +18,9 @@ init:
 
 build: generate clean
 	$(GO) build -o $(BIN) ./cmd/akari
+
+ko-build:
+	ko build ./cmd/akari
 
 run: generate migrate-apply
 	$(GO) run ./cmd/akari
@@ -34,13 +39,10 @@ tidy:
 	$(GO) mod tidy
 
 generate: init
-	go generate ./...
+	$(GO) generate ./...
 
 lint: fmt vet
-	@if [ ! -f custom-gcl ]; then \
-		golangci-lint custom; \
-	fi
-	./custom-gcl run --fix
+	$(GOLANGCI_LINT) run --fix
 
 clean:
 	rm -rf bin

@@ -9,124 +9,16 @@ import (
 	"github.com/kizuna-org/akari/gen/ent"
 )
 
-// The AkariUserFunc type is an adapter to allow the use of ordinary
-// function as AkariUser mutator.
-type AkariUserFunc func(context.Context, *ent.AkariUserMutation) (ent.Value, error)
+// The AppStateFunc type is an adapter to allow the use of ordinary
+// function as AppState mutator.
+type AppStateFunc func(context.Context, *ent.AppStateMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
-func (f AkariUserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.AkariUserMutation); ok {
+func (f AppStateFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AppStateMutation); ok {
 		return f(ctx, mv)
 	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AkariUserMutation", m)
-}
-
-// The CharacterFunc type is an adapter to allow the use of ordinary
-// function as Character mutator.
-type CharacterFunc func(context.Context, *ent.CharacterMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f CharacterFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.CharacterMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CharacterMutation", m)
-}
-
-// The CharacterConfigFunc type is an adapter to allow the use of ordinary
-// function as CharacterConfig mutator.
-type CharacterConfigFunc func(context.Context, *ent.CharacterConfigMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f CharacterConfigFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.CharacterConfigMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CharacterConfigMutation", m)
-}
-
-// The ConversationFunc type is an adapter to allow the use of ordinary
-// function as Conversation mutator.
-type ConversationFunc func(context.Context, *ent.ConversationMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f ConversationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.ConversationMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConversationMutation", m)
-}
-
-// The ConversationGroupFunc type is an adapter to allow the use of ordinary
-// function as ConversationGroup mutator.
-type ConversationGroupFunc func(context.Context, *ent.ConversationGroupMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f ConversationGroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.ConversationGroupMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConversationGroupMutation", m)
-}
-
-// The DiscordChannelFunc type is an adapter to allow the use of ordinary
-// function as DiscordChannel mutator.
-type DiscordChannelFunc func(context.Context, *ent.DiscordChannelMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f DiscordChannelFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.DiscordChannelMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DiscordChannelMutation", m)
-}
-
-// The DiscordGuildFunc type is an adapter to allow the use of ordinary
-// function as DiscordGuild mutator.
-type DiscordGuildFunc func(context.Context, *ent.DiscordGuildMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f DiscordGuildFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.DiscordGuildMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DiscordGuildMutation", m)
-}
-
-// The DiscordMessageFunc type is an adapter to allow the use of ordinary
-// function as DiscordMessage mutator.
-type DiscordMessageFunc func(context.Context, *ent.DiscordMessageMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f DiscordMessageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.DiscordMessageMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DiscordMessageMutation", m)
-}
-
-// The DiscordUserFunc type is an adapter to allow the use of ordinary
-// function as DiscordUser mutator.
-type DiscordUserFunc func(context.Context, *ent.DiscordUserMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f DiscordUserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.DiscordUserMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DiscordUserMutation", m)
-}
-
-// The SystemPromptFunc type is an adapter to allow the use of ordinary
-// function as SystemPrompt mutator.
-type SystemPromptFunc func(context.Context, *ent.SystemPromptMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f SystemPromptFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.SystemPromptMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SystemPromptMutation", m)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AppStateMutation", m)
 }
 
 // Condition is a hook condition function.

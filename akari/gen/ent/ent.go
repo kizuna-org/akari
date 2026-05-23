@@ -12,16 +12,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/kizuna-org/akari/gen/ent/akariuser"
-	"github.com/kizuna-org/akari/gen/ent/character"
-	"github.com/kizuna-org/akari/gen/ent/characterconfig"
-	"github.com/kizuna-org/akari/gen/ent/conversation"
-	"github.com/kizuna-org/akari/gen/ent/conversationgroup"
-	"github.com/kizuna-org/akari/gen/ent/discordchannel"
-	"github.com/kizuna-org/akari/gen/ent/discordguild"
-	"github.com/kizuna-org/akari/gen/ent/discordmessage"
-	"github.com/kizuna-org/akari/gen/ent/discorduser"
-	"github.com/kizuna-org/akari/gen/ent/systemprompt"
+	"github.com/kizuna-org/akari/gen/ent/appstate"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -82,16 +73,7 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			akariuser.Table:         akariuser.ValidColumn,
-			character.Table:         character.ValidColumn,
-			characterconfig.Table:   characterconfig.ValidColumn,
-			conversation.Table:      conversation.ValidColumn,
-			conversationgroup.Table: conversationgroup.ValidColumn,
-			discordchannel.Table:    discordchannel.ValidColumn,
-			discordguild.Table:      discordguild.ValidColumn,
-			discordmessage.Table:    discordmessage.ValidColumn,
-			discorduser.Table:       discorduser.ValidColumn,
-			systemprompt.Table:      systemprompt.ValidColumn,
+			appstate.Table: appstate.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

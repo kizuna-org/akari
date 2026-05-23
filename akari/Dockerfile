@@ -9,7 +9,6 @@ COPY akari/go.mod akari/go.sum ./
 RUN go mod download
 
 COPY akari/ .
-COPY kiseki/openapi/openapi.yaml ../kiseki/openapi/openapi.yaml
 
 RUN make generate && \
     CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o bin/akari ./cmd/akari
@@ -19,7 +18,7 @@ FROM alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a50
 WORKDIR /app
 
 # renovate: datasource=repology packagePrefix=alpine_3_23 versioning=loose
-RUN apk add --no-cache ca-certificates=20260413-r0 tzdata=2026a-r0 procps=4.0.5-r0
+RUN apk add --no-cache ca-certificates=20260413-r0 tzdata=2026b-r0 procps=4.0.5-r0
 
 COPY --from=builder /build/bin/akari /app/akari
 
