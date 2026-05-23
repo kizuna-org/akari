@@ -295,9 +295,7 @@ jobs:
       - uses: ./.github/actions/setup-golang
       - uses: ./.github/actions/setup-db
       - name: Set up gotestfmt
-        uses: gotesttools/gotestfmt-action@8b4478c7019be847373babde9300210e7de34bfb # v2.5.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@v2.5.0
       - name: Run go test
         id: golang-test
         run: |
