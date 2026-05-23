@@ -3,10 +3,10 @@ BIN := bin/$(APP_NAME)
 GO := go
 ENV := local
 
-.PHONY: init build run test fmt vet tidy generate lint clean up down down-volumes migrate-new migrate-apply migrate-status migrate-hash migrate-validate migrate-dry-run
+.PHONY: init build ko-build run test fmt vet tidy generate lint clean up down down-volumes migrate-new migrate-apply migrate-status migrate-hash migrate-validate migrate-dry-run
 
 init:
-	go mod download
+	$(GO) mod download
 	if [ ! -f .env ]; then \
 		cp .env.example .env; \
 	fi
@@ -16,6 +16,9 @@ init:
 
 build: generate clean
 	$(GO) build -o $(BIN) ./cmd/akari
+
+ko-build:
+	ko build ./cmd/akari
 
 run: generate migrate-apply
 	$(GO) run ./cmd/akari
@@ -34,13 +37,9 @@ tidy:
 	$(GO) mod tidy
 
 generate: init
-	go generate ./...
+	$(GO) generate ./...
 
 lint: fmt vet
-	@if [ ! -f custom-gcl ]; then \
-		golangci-lint custom; \
-	fi
-	./custom-gcl run --fix
 
 clean:
 	rm -rf bin

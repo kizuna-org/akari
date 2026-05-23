@@ -4,7 +4,7 @@ services:
     container_name: akari-db
     env_file: .env
     volumes:
-      - db-store:/var/lib/pgsql/data
+      - db-store:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
     ports:
       - "${POSTGRES_PORT}:5432"

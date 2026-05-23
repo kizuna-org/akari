@@ -12,26 +12,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
-	// AkariUser is the client for interacting with the AkariUser builders.
-	AkariUser *AkariUserClient
-	// Character is the client for interacting with the Character builders.
-	Character *CharacterClient
-	// CharacterConfig is the client for interacting with the CharacterConfig builders.
-	CharacterConfig *CharacterConfigClient
-	// Conversation is the client for interacting with the Conversation builders.
-	Conversation *ConversationClient
-	// ConversationGroup is the client for interacting with the ConversationGroup builders.
-	ConversationGroup *ConversationGroupClient
-	// DiscordChannel is the client for interacting with the DiscordChannel builders.
-	DiscordChannel *DiscordChannelClient
-	// DiscordGuild is the client for interacting with the DiscordGuild builders.
-	DiscordGuild *DiscordGuildClient
-	// DiscordMessage is the client for interacting with the DiscordMessage builders.
-	DiscordMessage *DiscordMessageClient
-	// DiscordUser is the client for interacting with the DiscordUser builders.
-	DiscordUser *DiscordUserClient
-	// SystemPrompt is the client for interacting with the SystemPrompt builders.
-	SystemPrompt *SystemPromptClient
+	// AppState is the client for interacting with the AppState builders.
+	AppState *AppStateClient
 
 	// lazily loaded.
 	client     *Client
@@ -163,16 +145,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
-	tx.AkariUser = NewAkariUserClient(tx.config)
-	tx.Character = NewCharacterClient(tx.config)
-	tx.CharacterConfig = NewCharacterConfigClient(tx.config)
-	tx.Conversation = NewConversationClient(tx.config)
-	tx.ConversationGroup = NewConversationGroupClient(tx.config)
-	tx.DiscordChannel = NewDiscordChannelClient(tx.config)
-	tx.DiscordGuild = NewDiscordGuildClient(tx.config)
-	tx.DiscordMessage = NewDiscordMessageClient(tx.config)
-	tx.DiscordUser = NewDiscordUserClient(tx.config)
-	tx.SystemPrompt = NewSystemPromptClient(tx.config)
+	tx.AppState = NewAppStateClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.
@@ -182,7 +155,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: AkariUser.QueryXXX(), the query will be executed
+// applies a query, for example: AppState.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.
