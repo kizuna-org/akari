@@ -32,11 +32,12 @@ func NewMux() *http.ServeMux {
 }
 
 func NewHTTPServer(cfg config.Config, mux *http.ServeMux) *http.Server {
-	return &http.Server{
-		Addr:              cfg.Addr,
-		Handler:           mux,
-		ReadHeaderTimeout: readHeaderTimeout,
-	}
+	server := new(http.Server)
+	server.Addr = cfg.Addr
+	server.Handler = mux
+	server.ReadHeaderTimeout = readHeaderTimeout
+
+	return server
 }
 
 func RegisterLifecycle(lc fx.Lifecycle, server *http.Server) {

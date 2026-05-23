@@ -94,7 +94,9 @@ func TestLoad(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "loads defaults",
+			name:    "loads defaults",
+			env:     nil,
+			wantErr: false,
 			want: Config{
 				Addr: testAddr,
 				Database: Database{
@@ -108,7 +110,8 @@ func TestLoad(t *testing.T) {
 			},
 		},
 		{
-			name: "loads environment overrides",
+			name:    "loads environment overrides",
+			wantErr: false,
 			env: map[string]string{
 				"AKARI_ADDR":        ":9090",
 				"POSTGRES_HOST":     "db",
@@ -134,6 +137,17 @@ func TestLoad(t *testing.T) {
 			name: "rejects invalid database port",
 			env: map[string]string{
 				testPortEnv: "invalid",
+			},
+			want: Config{
+				Addr: "",
+				Database: Database{
+					Host:     "",
+					Port:     0,
+					User:     "",
+					Password: "",
+					Name:     "",
+					SSLMode:  "",
+				},
 			},
 			wantErr: true,
 		},
@@ -173,7 +187,7 @@ func TestEnvFile(t *testing.T) {
 		env  string
 		want string
 	}{
-		{name: "development default", want: ".env"},
+		{name: "development default", env: "", want: ".env"},
 		{name: testEnvironment, env: testEnvironment, want: ".env.test"},
 		{name: testProduction, env: testProduction, want: ""},
 	}
@@ -196,7 +210,7 @@ func TestGetenv(t *testing.T) {
 		fallback string
 		want     string
 	}{
-		{name: "uses fallback", fallback: testFallback, want: testFallback},
+		{name: "uses fallback", value: "", fallback: testFallback, want: testFallback},
 		{name: "uses env value", value: testValue, fallback: testFallback, want: testValue},
 	}
 
