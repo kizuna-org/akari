@@ -5,6 +5,21 @@ import (
 	"testing"
 )
 
+const (
+	testAddr        = ":8080"
+	testDatabase    = "akari"
+	testFallback    = "fallback"
+	testHost        = "localhost"
+	testPassword    = "secret"
+	testPort        = 5432
+	testPortEnv     = "POSTGRES_PORT"
+	testProduction  = "production"
+	testSSLMode     = "disable"
+	testUser        = "postgres"
+	testValue       = "value"
+	testEnvironment = "test"
+)
+
 func TestDatabaseURL(t *testing.T) {
 	t.Parallel()
 
@@ -16,24 +31,23 @@ func TestDatabaseURL(t *testing.T) {
 		{
 			name: "builds postgres URL",
 			db: Database{
-				Host:     "localhost",
-				Port:     5432,
-				User:     "postgres",
-				Password: "secret",
-				Name:     "akari",
-				SSLMode:  "disable",
+				Host:     testHost,
+				Port:     testPort,
+				User:     testUser,
+				Password: testPassword, // #nosec G101 -- test fixture only.
+				Name:     testDatabase,
+				SSLMode:  testSSLMode,
 			},
 			want: "postgres://postgres:secret@localhost:5432/akari?sslmode=disable",
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := tt.db.URL(); got != tt.want {
-				t.Fatalf("URL() = %q, want %q", got, tt.want)
+			if got := testCase.db.URL(); got != testCase.want {
+				t.Fatalf("URL() = %q, want %q", got, testCase.want)
 			}
 		})
 	}
@@ -50,24 +64,23 @@ func TestDatabaseDSN(t *testing.T) {
 		{
 			name: "builds postgres DSN",
 			db: Database{
-				Host:     "localhost",
-				Port:     5432,
-				User:     "postgres",
-				Password: "secret",
-				Name:     "akari",
-				SSLMode:  "disable",
+				Host:     testHost,
+				Port:     testPort,
+				User:     testUser,
+				Password: testPassword,
+				Name:     testDatabase,
+				SSLMode:  testSSLMode,
 			},
 			want: "host=localhost port=5432 user=postgres password=secret dbname=akari sslmode=disable",
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := tt.db.DSN(); got != tt.want {
-				t.Fatalf("DSN() = %q, want %q", got, tt.want)
+			if got := testCase.db.DSN(); got != testCase.want {
+				t.Fatalf("DSN() = %q, want %q", got, testCase.want)
 			}
 		})
 	}
@@ -83,14 +96,14 @@ func TestLoad(t *testing.T) {
 		{
 			name: "loads defaults",
 			want: Config{
-				Addr: ":8080",
+				Addr: testAddr,
 				Database: Database{
-					Host:     "localhost",
-					Port:     5432,
-					User:     "postgres",
-					Password: "postgres",
-					Name:     "akari",
-					SSLMode:  "disable",
+					Host:     testHost,
+					Port:     testPort,
+					User:     testUser,
+					Password: testUser,
+					Name:     testDatabase,
+					SSLMode:  testSSLMode,
 				},
 			},
 		},
@@ -99,8 +112,8 @@ func TestLoad(t *testing.T) {
 			env: map[string]string{
 				"AKARI_ADDR":        ":9090",
 				"POSTGRES_HOST":     "db",
-				"POSTGRES_PORT":     "15432",
-				"POSTGRES_USER":     "akari",
+				testPortEnv:         "15432",
+				"POSTGRES_USER":     testDatabase,
 				"POSTGRES_PASSWORD": "password",
 				"POSTGRES_DB":       "akari_dev",
 				"POSTGRES_SSLMODE":  "require",
@@ -120,22 +133,22 @@ func TestLoad(t *testing.T) {
 		{
 			name: "rejects invalid database port",
 			env: map[string]string{
-				"POSTGRES_PORT": "invalid",
+				testPortEnv: "invalid",
 			},
 			wantErr: true,
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			clearConfigEnv(t)
-			for key, value := range tt.env {
+
+			for key, value := range testCase.env {
 				t.Setenv(key, value)
 			}
 
 			got, err := Load()
-			if tt.wantErr {
+			if testCase.wantErr {
 				if err == nil {
 					t.Fatal("Load() error = nil, want error")
 				}
@@ -147,8 +160,8 @@ func TestLoad(t *testing.T) {
 				t.Fatalf("Load() error = %v", err)
 			}
 
-			if got != tt.want {
-				t.Fatalf("Load() = %#v, want %#v", got, tt.want)
+			if got != testCase.want {
+				t.Fatalf("Load() = %#v, want %#v", got, testCase.want)
 			}
 		})
 	}
@@ -161,17 +174,16 @@ func TestEnvFile(t *testing.T) {
 		want string
 	}{
 		{name: "development default", want: ".env"},
-		{name: "test", env: "test", want: ".env.test"},
-		{name: "production", env: "production", want: ""},
+		{name: testEnvironment, env: testEnvironment, want: ".env.test"},
+		{name: testProduction, env: testProduction, want: ""},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("ENV", tt.env)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Setenv("ENV", testCase.env)
 
-			if got := envFile(); got != tt.want {
-				t.Fatalf("envFile() = %q, want %q", got, tt.want)
+			if got := envFile(); got != testCase.want {
+				t.Fatalf("envFile() = %q, want %q", got, testCase.want)
 			}
 		})
 	}
@@ -184,19 +196,18 @@ func TestGetenv(t *testing.T) {
 		fallback string
 		want     string
 	}{
-		{name: "uses fallback", fallback: "fallback", want: "fallback"},
-		{name: "uses env value", value: "value", fallback: "fallback", want: "value"},
+		{name: "uses fallback", fallback: testFallback, want: testFallback},
+		{name: "uses env value", value: testValue, fallback: testFallback, want: testValue},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.value != "" {
-				t.Setenv("AKARI_TEST_VALUE", tt.value)
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			if testCase.value != "" {
+				t.Setenv("AKARI_TEST_VALUE", testCase.value)
 			}
 
-			if got := getenv("AKARI_TEST_VALUE", tt.fallback); got != tt.want {
-				t.Fatalf("getenv() = %q, want %q", got, tt.want)
+			if got := getenv("AKARI_TEST_VALUE", testCase.fallback); got != testCase.want {
+				t.Fatalf("getenv() = %q, want %q", got, testCase.want)
 			}
 		})
 	}
@@ -208,7 +219,7 @@ func clearConfigEnv(t *testing.T) {
 	keys := []string{
 		"AKARI_ADDR",
 		"POSTGRES_HOST",
-		"POSTGRES_PORT",
+		testPortEnv,
 		"POSTGRES_USER",
 		"POSTGRES_PASSWORD",
 		"POSTGRES_DB",
@@ -218,7 +229,8 @@ func clearConfigEnv(t *testing.T) {
 		t.Setenv(key, "")
 	}
 
-	if err := os.Unsetenv("ENV"); err != nil {
+	err := os.Unsetenv("ENV")
+	if err != nil {
 		t.Fatalf("Unsetenv() error = %v", err)
 	}
 }

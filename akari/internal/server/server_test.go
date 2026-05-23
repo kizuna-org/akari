@@ -21,9 +21,8 @@ func TestNewMux(t *testing.T) {
 		{name: "unknown route", path: "/unknown", want: http.StatusNotFound},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
 
 			mux := NewMux()
@@ -32,14 +31,15 @@ func TestNewMux(t *testing.T) {
 
 			client := connect.NewClient[emptypb.Empty, emptypb.Empty](
 				server.Client(),
-				server.URL+tt.path,
+				server.URL+testCase.path,
 			)
 
 			_, err := client.CallUnary(t.Context(), connect.NewRequest(&emptypb.Empty{}))
-			if tt.want == http.StatusOK && err != nil {
+			if testCase.want == http.StatusOK && err != nil {
 				t.Fatalf("CallUnary() error = %v", err)
 			}
-			if tt.want == http.StatusNotFound && err == nil {
+
+			if testCase.want == http.StatusNotFound && err == nil {
 				t.Fatal("CallUnary() error = nil, want error")
 			}
 		})

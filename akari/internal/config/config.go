@@ -9,6 +9,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const (
+	envTest       = "test"
+	envProduction = "production"
+)
+
 type Config struct {
 	Addr     string
 	Database Database
@@ -68,11 +73,11 @@ func (d Database) URL() string {
 }
 
 func envFile() string {
-	if os.Getenv("ENV") == "test" {
+	if os.Getenv("ENV") == envTest {
 		return ".env.test"
 	}
 
-	if os.Getenv("ENV") == "production" {
+	if os.Getenv("ENV") == envProduction {
 		return ""
 	}
 

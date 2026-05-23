@@ -14,7 +14,10 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-const healthProcedure = "/akari.v1.HealthService/Check"
+const (
+	healthProcedure   = "/akari.v1.HealthService/Check"
+	readHeaderTimeout = 5 * time.Second
+)
 
 func NewMux() *http.ServeMux {
 	mux := http.NewServeMux()
@@ -32,7 +35,7 @@ func NewHTTPServer(cfg config.Config, mux *http.ServeMux) *http.Server {
 	return &http.Server{
 		Addr:              cfg.Addr,
 		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
+		ReadHeaderTimeout: readHeaderTimeout,
 	}
 }
 
@@ -41,7 +44,9 @@ func RegisterLifecycle(lc fx.Lifecycle, server *http.Server) {
 		OnStart: func(context.Context) error {
 			go func() {
 				slog.Info("http server starting", "addr", server.Addr)
-				if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+
+				err := server.ListenAndServe()
+				if err != nil && !errors.Is(err, http.ErrServerClosed) {
 					slog.Error("http server stopped unexpectedly", "error", err)
 				}
 			}()
@@ -49,7 +54,8 @@ func RegisterLifecycle(lc fx.Lifecycle, server *http.Server) {
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			if err := server.Shutdown(ctx); err != nil {
+			err := server.Shutdown(ctx)
+			if err != nil {
 				return fmt.Errorf("shutdown http server: %w", err)
 			}
 

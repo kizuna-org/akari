@@ -24,7 +24,8 @@ func NewClient(cfg config.Config) (*ent.Client, error) {
 func RegisterLifecycle(lc fx.Lifecycle, client *ent.Client) {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			if err := client.Schema.Create(ctx); err != nil {
+			err := client.Schema.Create(ctx)
+			if err != nil {
 				return fmt.Errorf("create database schema: %w", err)
 			}
 
@@ -33,7 +34,8 @@ func RegisterLifecycle(lc fx.Lifecycle, client *ent.Client) {
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			if err := client.Close(); err != nil {
+			err := client.Close()
+			if err != nil {
 				return fmt.Errorf("close ent client: %w", err)
 			}
 
