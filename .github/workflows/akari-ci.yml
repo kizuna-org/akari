@@ -33,7 +33,7 @@ jobs:
       - docker-compose-build-check
       - ko-build-check
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Check all-status-check
         run: |
           diff \
@@ -47,7 +47,7 @@ jobs:
     outputs:
       projects: ${{ steps.get-projects.outputs.projects }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Find Go projects
         id: get-projects
         run: |
@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: reviewdog/action-yamllint@f01d8a48fd8d89f89895499fca2cff09f9e9e8c0 # v1.21.0
         with:
           level: warning
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: reviewdog/action-actionlint@6fb7acc99f4a1008869fa8a0f09cfca740837d9d # v1.72
         with:
           level: warning
@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: dotenv-linter/action-dotenv-linter@afde61cfda2ecffe7bea35837b6f20b956c88689 # v3.0.0
         with:
           dotenv_linter_flags: --skip UnorderedKey
@@ -92,7 +92,7 @@ jobs:
       run:
         working-directory: akari
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: recursive
           ref: ${{ github.base_ref }}
@@ -108,13 +108,13 @@ jobs:
       - name: Apply migrations (base branch)
         run: make migrate-apply
       - name: Checkout PR branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
       - name: Run `make init` (PR branch)
         run: make init
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.14.4"
       - name: Setup sqlfluff
@@ -163,7 +163,7 @@ jobs:
       run:
         working-directory: akari
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
@@ -182,7 +182,7 @@ jobs:
       run:
         working-directory: ${{ matrix.dir }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
@@ -203,7 +203,7 @@ jobs:
       run:
         working-directory: ${{ matrix.dir }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
@@ -231,7 +231,7 @@ jobs:
       run:
         working-directory: ${{ matrix.dir }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
@@ -246,7 +246,7 @@ jobs:
           echo "gcl_version=$(golangci-lint --version | sed 's/,/./g')" >> "$GITHUB_OUTPUT"
       - name: Cache custom-gcl
         id: cache-custom-gcl
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: ./custom-gcl
           key: ${{ runner.os }}-${{ steps.versions.outputs.go_version }}-${{ steps.versions.outputs.gcl_version }}-${{ hashFiles('.custom-gcl.yml') }}
@@ -261,7 +261,7 @@ jobs:
       run:
         working-directory: akari
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
@@ -289,7 +289,7 @@ jobs:
       run:
         working-directory: akari
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
@@ -305,7 +305,7 @@ jobs:
           echo "$TEST_OUT" | tee /tmp/gotest.log | gotestfmt
           exit "$TEST_EXIT"
         continue-on-error: true
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: test-log-${{ matrix.run }}
           path: /tmp/gotest.log
@@ -326,7 +326,7 @@ jobs:
       run:
         working-directory: ${{ matrix.dir }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
@@ -346,7 +346,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: hadolint/hadolint-action@2332a7b74a6de0dda2e2221d575162eba76ba5e5 # v3.3.0
         with:
           dockerfile: Dockerfile
@@ -360,7 +360,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - name: Build Docker images
         run: |
           docker compose build
@@ -372,7 +372,7 @@ jobs:
       run:
         working-directory: akari
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           submodules: recursive
       - uses: ./.github/actions/setup-golang
