@@ -488,6 +488,47 @@ func TestDecayFactor(t *testing.T) {
 	}
 }
 
+func TestClampAffinity(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		value float64
+		want  float64
+	}{
+		{name: "liking is kept", value: 0.5, want: 0.5},
+		{name: "aversion is kept", value: -0.5, want: -0.5},
+		{name: "below the range is raised", value: -9, want: minAffinity},
+		{name: "above the range is lowered", value: 9, want: maxScore},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := clampAffinity(testCase.value); got != testCase.want {
+				t.Fatalf("clampAffinity() = %v, want %v", got, testCase.want)
+			}
+		})
+	}
+}
+
+func TestABadExperiencePutsThePersonaOff(t *testing.T) {
+	t.Parallel()
+
+	now := reference()
+	tuning := DefaultTuning()
+	tuning.Curiosity = 0
+	table := New(tuning)
+
+	table.Engage(topicID, Result{Enjoyment: -1, Progress: 0}, now)
+	table.Engage(topicID, Result{Enjoyment: -1, Progress: 0}, now)
+
+	if got := table.Score(topicID, NeutralBias(), now); got != minScore {
+		t.Fatalf("Score() = %v, want a disliked topic to hold no draw at all", got)
+	}
+}
+
 func TestClampUnit(t *testing.T) {
 	t.Parallel()
 

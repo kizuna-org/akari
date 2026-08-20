@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"testing"
+	"time"
 )
 
 const (
@@ -18,6 +19,10 @@ const (
 	testUser        = "postgres"
 	testValue       = "value"
 	testEnvironment = "test"
+
+	envPersonaSeed     = "AKARI_PERSONA_SEED"
+	envPersonaInterval = "AKARI_PERSONA_INTERVAL"
+	envPersonaNightly  = "AKARI_PERSONA_NIGHTLY"
 )
 
 func TestDatabaseURL(t *testing.T) {
@@ -107,6 +112,7 @@ func TestLoad(t *testing.T) {
 					Name:     testDatabase,
 					SSLMode:  testSSLMode,
 				},
+				Persona: defaultPersona(),
 			},
 		},
 		{
@@ -131,6 +137,7 @@ func TestLoad(t *testing.T) {
 					Name:     "akari_dev",
 					SSLMode:  "require",
 				},
+				Persona: defaultPersona(),
 			},
 		},
 		{
@@ -148,6 +155,7 @@ func TestLoad(t *testing.T) {
 					Name:     "",
 					SSLMode:  "",
 				},
+				Persona: Persona{Name: "", Seed: 0, Interval: 0, Nightly: 0},
 			},
 			wantErr: true,
 		},
@@ -232,6 +240,10 @@ func clearConfigEnv(t *testing.T) {
 
 	keys := []string{
 		"AKARI_ADDR",
+		"AKARI_PERSONA_NAME",
+		envPersonaSeed,
+		envPersonaInterval,
+		envPersonaNightly,
 		"POSTGRES_HOST",
 		testPortEnv,
 		"POSTGRES_USER",
@@ -246,5 +258,102 @@ func clearConfigEnv(t *testing.T) {
 	err := os.Unsetenv("ENV")
 	if err != nil {
 		t.Fatalf("Unsetenv() error = %v", err)
+	}
+}
+
+// defaultPersona is the persona settings Load produces with nothing set.
+func defaultPersona() Persona {
+	return Persona{
+		Name:     defaultPersonaName,
+		Seed:     1,
+		Interval: 3 * time.Second,
+		Nightly:  24 * time.Hour,
+	}
+}
+
+func TestLoadPersona(t *testing.T) {
+	tests := []struct {
+		name    string
+		env     map[string]string
+		want    Persona
+		wantErr bool
+	}{
+		{
+			name:    "the reference persona",
+			env:     nil,
+			want:    defaultPersona(),
+			wantErr: false,
+		},
+		{
+			name: "a persona paced by hand",
+			env: map[string]string{
+				"AKARI_PERSONA_NAME": "yukari",
+				envPersonaSeed:       "7",
+				envPersonaInterval:   "500ms",
+				envPersonaNightly:    "12h",
+			},
+			want: Persona{
+				Name:     "yukari",
+				Seed:     7,
+				Interval: 500 * time.Millisecond,
+				Nightly:  12 * time.Hour,
+			},
+			wantErr: false,
+		},
+		{
+			name:    "rejects a seed that is not a number",
+			env:     map[string]string{envPersonaSeed: "not-a-number"},
+			want:    Persona{Name: "", Seed: 0, Interval: 0, Nightly: 0},
+			wantErr: true,
+		},
+		{
+			name:    "rejects an interval that is not a duration",
+			env:     map[string]string{envPersonaInterval: "soonish"},
+			want:    Persona{Name: "", Seed: 0, Interval: 0, Nightly: 0},
+			wantErr: true,
+		},
+		{
+			name:    "rejects a nightly gap that is not a duration",
+			env:     map[string]string{envPersonaNightly: "whenever"},
+			want:    Persona{Name: "", Seed: 0, Interval: 0, Nightly: 0},
+			wantErr: true,
+		},
+	}
+
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			clearConfigEnv(t)
+
+			for key, value := range testCase.env {
+				t.Setenv(key, value)
+			}
+
+			got, err := loadPersona()
+			if testCase.wantErr {
+				if err == nil {
+					t.Fatal("loadPersona() error = nil, want error")
+				}
+
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("loadPersona() error = %v", err)
+			}
+
+			if got != testCase.want {
+				t.Fatalf("loadPersona() = %#v, want %#v", got, testCase.want)
+			}
+		})
+	}
+}
+
+func TestLoadRejectsABadPersona(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv(envPersonaSeed, "not-a-number")
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("Load() error = nil, want error")
 	}
 }

@@ -39,9 +39,14 @@ const (
 	// fruitless engagement (docs/04-interest.md 4.3).
 	progressWeight = 0.2
 
+	// noveltyRecoveryShare is how much of the lost freshness can ever come
+	// back. Below one, because something once met is never wholly new again.
+	noveltyRecoveryShare = 0.5
+
 	halving      = 0.5
 	minScore     = 0.0
 	maxScore     = 1.0
+	minAffinity  = -1.0
 	freshNovelty = 1.0
 	neutralBias  = 1.0
 )
@@ -98,6 +103,9 @@ type Result struct {
 
 // topic is what is known about one thing a persona might care about.
 type topic struct {
+	// affinity is learned liking, in [-1, 1]. It goes negative because a bad
+	// experience does not merely fail to attract: it puts a persona off
+	// (docs/04-interest.md 4.4).
 	affinity    float64
 	novelty     float64
 	progress    float64
@@ -124,7 +132,7 @@ func (t topic) at(now time.Time) topic {
 		return t
 	}
 
-	recovered := freshNovelty - decayFactor(elapsed, noveltyRecoveryHalfLife)
+	recovered := (freshNovelty - decayFactor(elapsed, noveltyRecoveryHalfLife)) * noveltyRecoveryShare
 
 	return topic{
 		affinity:    t.affinity * decayFactor(elapsed, affinityHalfLife),
@@ -180,7 +188,7 @@ func (t *Table) Engage(topicID string, result Result, now time.Time) {
 
 	current = current.at(now)
 
-	current.affinity = clampUnit(current.affinity + result.Enjoyment*t.tuning.AffinityLearning)
+	current.affinity = clampAffinity(current.affinity + result.Enjoyment*t.tuning.AffinityLearning)
 	current.novelty = clampUnit(current.novelty * (freshNovelty - clampUnit(t.tuning.Habituation)))
 	current.progress = clampUnit(result.Progress)
 	current.lastTouched = now
@@ -226,7 +234,14 @@ func decayFactor(elapsed, halfLife time.Duration) float64 {
 	return math.Pow(halving, float64(elapsed)/float64(halfLife))
 }
 
-// clampUnit confines value to [0, 1], the range every interest figure lives in.
+// clampUnit confines value to [0, 1], the range novelty, progress and the final
+// score live in.
 func clampUnit(value float64) float64 {
 	return math.Max(minScore, math.Min(maxScore, value))
+}
+
+// clampAffinity confines value to [-1, 1], the range learned liking lives in.
+// Negative is aversion: a topic the persona would rather avoid.
+func clampAffinity(value float64) float64 {
+	return math.Max(minAffinity, math.Min(maxScore, value))
 }
