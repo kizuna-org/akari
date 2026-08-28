@@ -12,7 +12,7 @@ COPY akari/ .
 
 RUN make generate
 
-FROM arigaio/atlas:1.2.0@sha256:69fef5b506378439771fc70e052471780336552dbf35da397f5a7a729da8f7e3
+FROM arigaio/atlas:1.3.2@sha256:1e4fe2e242281555f8fc41a95f09b94ccd47f85ee3a6bc1e808e1e48d27e4b39
 
 WORKDIR /app
 
