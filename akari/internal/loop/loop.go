@@ -90,6 +90,11 @@ func New(persona *mind.Mind, clock Clock, config Config, logger *slog.Logger) *L
 	}
 }
 
+// Name reports which persona is running.
+func (l *Loop) Name() string {
+	return l.mind.Name()
+}
+
 // Ticks reports how many turns the loop has taken.
 func (l *Loop) Ticks() int {
 	return l.ticks

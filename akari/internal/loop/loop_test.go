@@ -133,6 +133,16 @@ func TestNewFallsBackToTheRealClock(t *testing.T) {
 	}
 }
 
+func TestName(t *testing.T) {
+	t.Parallel()
+
+	runner := New(newPersona(), nil, DefaultConfig(), nil)
+
+	if got := runner.Name(); got != personaName {
+		t.Fatalf("Name() = %q, want %q", got, personaName)
+	}
+}
+
 func TestStepOnAnIdleMind(t *testing.T) {
 	t.Parallel()
 

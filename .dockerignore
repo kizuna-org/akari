@@ -1,0 +1,21 @@
+# Keep the build context small. The Dockerfiles only ever copy akari/, so
+# everything else is upload cost for nothing.
+.git
+.github
+.idea
+.vscode
+docs
+infra
+kiseki
+
+# Local secrets and settings never belong in an image.
+.env
+.env.test
+secrets
+
+# Build output and coverage. Generated ent code is deliberately NOT excluded:
+# it is checked in, and keeping it means the build does not hinge on codegen
+# succeeding inside the container.
+akari/bin
+**/*.out
+**/coverage.*

@@ -24,6 +24,9 @@ COPY --from=builder /build/bin/akari /app/akari
 
 ENV TZ=UTC
 
+# The persona serves health and RPC here; AKARI_ADDR can move it.
+EXPOSE 8080
+
 RUN addgroup -g 1000 akari && \
     adduser -D -u 1000 -G akari akari && \
     chown -R akari:akari /app

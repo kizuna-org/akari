@@ -30,17 +30,20 @@ services:
         condition: service_healthy
     environment:
       ENV: production
+      # 5432 is the port inside the compose network. POSTGRES_PORT only decides
+      # what gets published to the host, so it must not be used here.
       POSTGRES_HOST: akari-db
-      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_SSLMODE: ${POSTGRES_SSLMODE}
+      POSTGRES_SSLMODE: ${POSTGRES_SSLMODE:-disable}
 
   akari:
     build:
       context: .
       dockerfile: akari/Dockerfile
+    image: ${AKARI_IMAGE:-akari:local}
     container_name: akari
     restart: unless-stopped
     depends_on:
@@ -48,43 +51,41 @@ services:
         condition: service_healthy
       akari-migrate:
         condition: service_completed_successfully
-    volumes:
-      - ./secrets/akari-sa-key.json:/app/secrets/akari-sa-key.json
+    ports:
+      - "${AKARI_PORT:-8080}:8080"
     environment:
       ENV: production
-      # Database
+      AKARI_ADDR: ":8080"
+      # Database. See the note on akari-migrate about the port.
       POSTGRES_HOST: akari-db
-      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_SSLMODE: ${POSTGRES_SSLMODE}
-      POSTGRES_MAX_OPEN_CONNS: ${POSTGRES_MAX_OPEN_CONNS}
-      POSTGRES_MAX_IDLE_CONNS: ${POSTGRES_MAX_IDLE_CONNS}
-      POSTGRES_CONN_MAX_LIFETIME_MINUTES: ${POSTGRES_CONN_MAX_LIFETIME_MINUTES}
-      POSTGRES_CONN_MAX_IDLE_TIME_MINUTES: ${POSTGRES_CONN_MAX_IDLE_TIME_MINUTES}
-      # LLM
-      LLM_PROJECT_ID: ${LLM_PROJECT_ID}
-      LLM_LOCATION: ${LLM_LOCATION}
-      LLM_MODEL_NAME: ${LLM_MODEL_NAME}
-      # Log
-      LOG_LEVEL: ${LOG_LEVEL}
-      LOG_FORMAT: ${LOG_FORMAT}
-      # Discord
-      DISCORD_TOKEN: ${DISCORD_TOKEN}
-      DISCORD_READY_TIMEOUT: ${DISCORD_READY_TIMEOUT}
-      # Others
-      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/akari-sa-key.json
+      POSTGRES_SSLMODE: ${POSTGRES_SSLMODE:-disable}
+      # The persona: only its pacing and its seed. What it is like — how it
+      # feels, what draws it, how well it follows through — belongs to the
+      # persona itself rather than to deployment configuration.
+      AKARI_PERSONA_NAME: ${AKARI_PERSONA_NAME:-akari}
+      AKARI_PERSONA_SEED: ${AKARI_PERSONA_SEED:-1}
+      AKARI_PERSONA_INTERVAL: ${AKARI_PERSONA_INTERVAL:-3s}
+      AKARI_PERSONA_NIGHTLY: ${AKARI_PERSONA_NIGHTLY:-24h}
     healthcheck:
-      test: ["CMD", "pgrep", "-f", "akari"]
+      # Asking the persona itself, rather than looking for a live process: a
+      # loop that has quietly stopped still has a process.
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
+  # Everything below is optional and off by default, so that `docker compose up`
+  # brings up the persona and nothing else. Start them with:
+  #   docker compose --profile extras up -d
   nocodb:
     image: nocodb/nocodb:0.301.5@sha256:d9516f0bf546fd6c78a382ab0657626c683fca7aaafdbbe53c66baf15df7fc0d
     container_name: nocodb
+    profiles: ["extras"]
     restart: unless-stopped
     depends_on:
       akari-db:
@@ -94,17 +95,18 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       NC_DB: "pg://akari-db:5432?u=${POSTGRES_USER}&p=${POSTGRES_PASSWORD}&d=${NOCODB_DB:-nocodb}"
-      NC_AUTH_JWT_SECRET: ${NC_AUTH_JWT_SECRET}
+      NC_AUTH_JWT_SECRET: ${NC_AUTH_JWT_SECRET:-}
       NC_SENTRY_DSN: ${NC_SENTRY_DSN:-}
       NC_DISABLE_TELE: ${NC_DISABLE_TELE:-true}
 
   cloudflare-tunnel:
     image: cloudflare/cloudflared:2026.3.0@sha256:6b599ca3e974349ead3286d178da61d291961182ec3fe9c505e1dd02c8ac31b0
     container_name: cloudflare-tunnel
+    profiles: ["extras"]
     restart: unless-stopped
     command: tunnel run
     environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:-}
     healthcheck:
       test: ["CMD", "cloudflared", "tunnel", "info"]
       interval: 30s
