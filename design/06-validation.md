@@ -6,7 +6,14 @@
 |---|---|
 | `make lint` | golangci-lint default: all、0 issues |
 | `make test` | race detector付きで成功 |
-| `make coverage` | internal/host のstatement coverage 100% |
+| `make coverage` | internalパッケージ合算のstatement coverage 98.5%、host は100% |
+| 並列思考 | 遅い系列の途中で別系列が完了・採用。無関係な更新は許可、変更された依存は拒否 |
+| 所有と取消 | mapの変更が共有状態へ漏れない。取消後・古い世代・二重採用を拒否。未解決の完了も容量に数える |
+| 行為の境界 | 未登録・未許可の宛先・predictionの更新を拒否。不可逆・準備のない相手への発話は承認が必要 |
+| 承認 | 別Gateway・別Pendingに使い回せず、承認後に呼び出し元が引数を変更できない |
+| 行為の競合 | 同じ対象は直列、異なる対象は並列。対象ロック・容量待ちの取消でadapterを呼ばず資源を解放 |
+| 障害の分離 | adapter / runner のpanicを局所化。送信後のerrorはUnknown。同じPendingの再実行を拒否 |
+| 組合せの検証 | 二つの疑似Channelが同じGatewayを利用。片方の遅延・失敗が他方の採用を妨げない |
 | `make build` | Go 1.26.2、CGOなしで成功 |
 | `make generate` | 生成による変更なし |
 | `make smoke` | 不正アドレス・使用中ポートを拒否、health応答、readinessの誤表示なし、SIGTERMで正常終了 |
@@ -22,6 +29,10 @@ GoLandのRun構成はXMLとして検査していますが、GoLand GUIでの操�
 ローカルのコンテナhealthcheckはlocalhostへの確認なので、wgetのproxy利用を明示的にoffにしています。
 外部の接続でproxyやTLS検証を無効にする設定は追加していません。
 
-この結果はホスト基盤の確認です。
-並列Channel、LLM、MCP、内面の振る舞い、永続化、管理画面は後続実装です。
-それらの検証条件は [05](./05-delivery.md) に記載しています。
+coverageは `-count=1` で全パッケージを同じソース版から再実行します。
+未実行の箇所は3パッケージのエラー文字列化と、実行枠を取った直後の取消再確認の分岐です。
+取消そのものと待機中の取消は確認していますが、最後の僅かな競合時間をテストで強制してはいません。
+
+この結果はホストと基礎契約の確認です。ホストから具体的なChannelを起動する配線、
+LLM、MCP、内面の振る舞い、永続化、管理画面は後続実装です。
+実装した契約の限界と次に必要な条件は [05](./05-delivery.md) に記載しています。
