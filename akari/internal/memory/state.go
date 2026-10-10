@@ -18,28 +18,28 @@ func (err fault) Error() string { return string(err) }
 const ErrMemory fault = "invalid memory fragment, recall query, agreement or repeated experience"
 
 type Fragment struct {
-	ID         string
-	Meaning    meaning.Point
-	OccurredAt time.Time
-	Emotion    float64
-	Will       float64
-	Strength   float64
-	Accesses   uint64
-	Sources    []string
+	ID         string        `json:"id"`
+	Meaning    meaning.Point `json:"meaning"`
+	OccurredAt time.Time     `json:"occurredAt"`
+	Emotion    float64       `json:"emotion"`
+	Will       float64       `json:"will"`
+	Strength   float64       `json:"strength"`
+	Accesses   uint64        `json:"accesses"`
+	Sources    []string      `json:"sources"`
 }
 
 // Agreement attaches confidentiality to a conversation, not a keyword or feeling.
 type Agreement struct {
-	Conversation string
-	Recipients   []string
+	Conversation string   `json:"conversation"`
+	Recipients   []string `json:"recipients"`
 }
 
 type State struct {
-	Context    []Fragment
-	Working    []Fragment
-	Day        []Fragment
-	Sleeping   []Fragment
-	Agreements []Agreement
+	Context    []Fragment  `json:"context"`
+	Working    []Fragment  `json:"working"`
+	Day        []Fragment  `json:"day"`
+	Sleeping   []Fragment  `json:"sleeping"`
+	Agreements []Agreement `json:"agreements"`
 }
 
 type Change struct {

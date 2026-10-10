@@ -18,8 +18,8 @@ const ErrAppraisal fault = "invalid emotional appraisal or time dynamics"
 type Mood [3]float64
 
 type Feeling struct {
-	Meaning  meaning.Point
-	Strength float64
+	Meaning  meaning.Point `json:"meaning"`
+	Strength float64       `json:"strength"`
 }
 
 // Appraisal includes readiness interpreted by the subject, not an unconditional external action.
@@ -31,10 +31,10 @@ type Appraisal struct {
 }
 
 type State struct {
-	Feelings  []Feeling
-	Readiness []Feeling
-	Mood      Mood
-	At        time.Time
+	Feelings  []Feeling `json:"feelings"`
+	Readiness []Feeling `json:"readiness"`
+	Mood      Mood      `json:"mood"`
+	At        time.Time `json:"at"`
 }
 
 type Dynamics struct {

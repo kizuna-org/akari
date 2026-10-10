@@ -58,12 +58,12 @@ const (
 // Config is for configuration/administrative persistence, never a model request.
 // Qualitative seeds await a chosen encoder; no synthetic semantic coordinates are assigned.
 type Config struct {
-	ID            string
-	Schema        int
-	Vector        [AxisCount]float64
-	Likes         []string
-	Dislikes      []string
-	EmotionBiases []string
+	ID            string             `json:"id"`
+	Schema        int                `json:"schema"`
+	Vector        [AxisCount]float64 `json:"vector"`
+	Likes         []string           `json:"likes"`
+	Dislikes      []string           `json:"dislikes"`
+	EmotionBiases []string           `json:"emotionBiases"`
 }
 
 //nolint:gosmopolitan // Preserve the confirmed Japanese seed descriptions verbatim.

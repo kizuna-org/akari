@@ -2,6 +2,7 @@
 package mind
 
 import (
+	"context"
 	"maps"
 	"sync"
 )
@@ -20,14 +21,14 @@ const (
 
 // Item is shared context, not a long-term memory record or persona parameter.
 type Item struct {
-	Content string
-	Version uint64
+	Content string `json:"content"`
+	Version uint64 `json:"version"`
 }
 
 type Snapshot struct {
-	Revision   uint64
-	Items      map[string]Item
-	Experience *Experience `exhaustruct:"optional"`
+	Revision   uint64          `json:"revision"`
+	Items      map[string]Item `json:"items"`
+	Experience *Experience     `exhaustruct:"optional" json:"experience"`
 }
 
 type Proposal struct {
@@ -80,8 +81,17 @@ func (workspace *Workspace) Snapshot() Snapshot {
 
 // Commit validates only declared dependencies, avoiding starvation from unrelated changes.
 func (workspace *Workspace) Commit(proposal Proposal) (uint64, error) {
+	return workspace.CommitContext(context.Background(), proposal)
+}
+
+func (workspace *Workspace) CommitContext(ctx context.Context, proposal Proposal) (uint64, error) {
 	workspace.mu.Lock()
 	defer workspace.mu.Unlock()
+
+	contextErr := ctx.Err()
+	if contextErr != nil {
+		return workspace.revision, contextErr
+	}
 
 	err := workspace.validate(proposal)
 	if err != nil {
@@ -93,18 +103,7 @@ func (workspace *Workspace) Commit(proposal Proposal) (uint64, error) {
 		return workspace.revision, err
 	}
 
-	workspace.revision++
-	workspace.inner = next
-
-	if proposal.Inner != nil {
-		for _, part := range proposal.Inner.parts() {
-			workspace.inner.versions[part] = workspace.revision
-		}
-
-		if proposal.Inner.Load > 0 {
-			workspace.inner.versions[Fatigue] = workspace.revision
-		}
-	}
+	workspace.applyInner(next, proposal.Inner)
 
 	for key, content := range proposal.Writes {
 		workspace.items[key] = Item{Content: content, Version: workspace.revision}
@@ -142,6 +141,23 @@ func (workspace *Workspace) Watch() (<-chan struct{}, func()) {
 	}
 
 	return wake, stop
+}
+
+func (workspace *Workspace) applyInner(next *innerState, update *Update) {
+	workspace.revision++
+	workspace.inner = next
+
+	if update == nil {
+		return
+	}
+
+	for _, part := range update.parts() {
+		workspace.inner.versions[part] = workspace.revision
+	}
+
+	if update.Load > 0 {
+		workspace.inner.versions[Fatigue] = workspace.revision
+	}
 }
 
 func (workspace *Workspace) validate(proposal Proposal) error {

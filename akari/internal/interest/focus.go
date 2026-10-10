@@ -14,9 +14,9 @@ func (err fault) Error() string { return string(err) }
 const ErrFocus fault = "focus must identify a valid semantic target with signed affinity"
 
 type Focus struct {
-	ID       string
-	Target   meaning.Point
-	Affinity float64
+	ID       string        `json:"id"`
+	Target   meaning.Point `json:"target"`
+	Affinity float64       `json:"affinity"`
 }
 
 func Clone(foci []Focus) []Focus {

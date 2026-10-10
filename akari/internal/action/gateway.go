@@ -41,7 +41,8 @@ type Operation struct {
 	Destination string
 	ConflictKey string
 	Call        func(context.Context) ([]byte, error)
-	Sources     []string `exhaustruct:"optional"`
+	CallWithKey func(context.Context, string) ([]byte, error) `exhaustruct:"optional"`
+	Sources     []string                                      `exhaustruct:"optional"`
 }
 
 // Prepare must be pure: it normalizes arguments without performing external effects.
@@ -122,6 +123,7 @@ type Pending struct {
 	approved      atomic.Bool
 	used          atomic.Bool
 	disclosure    func([]string, string) bool
+	command       Command
 }
 
 func (session *Session) Plan(ctx context.Context, name string, arguments []byte) (*Pending, error) {
@@ -155,6 +157,9 @@ func (session *Session) Plan(ctx context.Context, name string, arguments []byte)
 		needsApproval: needsApproval,
 		approved:      atomic.Bool{}, used: atomic.Bool{},
 		disclosure: session.disclosure,
+		command: Command{Tool: name, Arguments: bytes.Clone(arguments), Impact: operation.Impact,
+			Destination: operation.Destination, ConflictKey: operation.ConflictKey,
+			Sources: slices.Clone(operation.Sources), NeedsApproval: needsApproval},
 	}, nil
 }
 
@@ -219,6 +224,23 @@ type Observation struct {
 
 // Execute is one-shot. An error after dispatch is unknown, never an automatic retry.
 func (pending *Pending) Execute(ctx context.Context) (Observation, error) {
+	return pending.execute(ctx, "")
+}
+
+// ExecuteIdentified passes a durable idempotency key to adapters that support it.
+func (pending *Pending) ExecuteIdentified(ctx context.Context, identity string) (Observation, error) {
+	if identity == "" {
+		return Observation{Status: NotExecuted, Data: nil}, ErrOperation
+	}
+
+	return pending.execute(ctx, identity)
+}
+
+func (pending *Pending) execute(ctx context.Context, identity string) (Observation, error) {
+	if identity == "" && pending.operation.Call == nil {
+		return Observation{Status: NotExecuted, Data: nil}, ErrOperation
+	}
+
 	authorizationErr := pending.authorize(ctx)
 	if authorizationErr != nil {
 		return Observation{Status: NotExecuted, Data: nil}, authorizationErr
@@ -248,12 +270,20 @@ func (pending *Pending) Execute(ctx context.Context) (Observation, error) {
 		return Observation{Status: NotExecuted, Data: nil}, ErrDisclosure
 	}
 
-	data, err := invoke(ctx, pending.operation.Call)
+	data, err := invoke(ctx, pending.call(identity))
 	if err != nil {
 		return Observation{Status: Unknown, Data: bytes.Clone(data)}, err
 	}
 
 	return Observation{Status: Succeeded, Data: bytes.Clone(data)}, nil
+}
+
+func (pending *Pending) call(identity string) func(context.Context) ([]byte, error) {
+	if identity != "" && pending.operation.CallWithKey != nil {
+		return func(ctx context.Context) ([]byte, error) { return pending.operation.CallWithKey(ctx, identity) }
+	}
+
+	return pending.operation.Call
 }
 
 func (pending *Pending) authorize(ctx context.Context) error {
@@ -336,7 +366,7 @@ func allows(policy func([]string, string) bool, operation Operation) bool {
 func validOperation(operation Operation) bool {
 	switch operation.Impact {
 	case Read, Reversible, Speech, Irreversible:
-		return operation.Call != nil && operation.Destination != "" &&
+		return (operation.Call != nil || operation.CallWithKey != nil) && operation.Destination != "" &&
 			(operation.Impact == Read || operation.ConflictKey != "")
 	default:
 		return false

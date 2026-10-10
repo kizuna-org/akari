@@ -31,14 +31,14 @@ const (
 
 // Experience is the subject's context: no configuration vector or full archival history.
 type Experience struct {
-	Emotion    emotion.State
-	Interests  []interest.Focus
-	Goals      goal.State
-	Context    []memory.Fragment
-	Working    []memory.Fragment
-	Agreements []memory.Agreement
-	Fatigue    float64
-	Versions   map[Part]uint64
+	Emotion    emotion.State      `json:"emotion"`
+	Interests  []interest.Focus   `json:"interests"`
+	Goals      goal.State         `json:"goals"`
+	Context    []memory.Fragment  `json:"context"`
+	Working    []memory.Fragment  `json:"working"`
+	Agreements []memory.Agreement `json:"agreements"`
+	Fatigue    float64            `json:"fatigue"`
+	Versions   map[Part]uint64    `json:"versions"`
 }
 
 // Update is an unadopted interpretation. Load/Rest are supplied by trusted runtime, not the model.
@@ -75,15 +75,10 @@ type innerState struct {
 // Checkpoint is an administrative persistence envelope; never pass it to a Channel.
 // This envelope covers inner state only; add an atomic action outbox before external updates.
 type Checkpoint struct {
-	Schema   int
-	Persona  persona.Config
-	Snapshot Snapshot
-	Archive  memory.State
-}
-
-type Repository interface {
-	Load(ctx context.Context) (Checkpoint, error)
-	Save(ctx context.Context, checkpoint Checkpoint) error
+	Schema   int            `json:"schema"`
+	Persona  persona.Config `json:"persona"`
+	Snapshot Snapshot       `json:"snapshot"`
+	Archive  memory.State   `json:"archive"`
 }
 
 func NewWithInner(capacity int, config persona.Config, settings Settings) (*Workspace, error) {
