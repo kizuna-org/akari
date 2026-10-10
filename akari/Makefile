@@ -3,6 +3,7 @@ BIN := bin/$(APP_NAME)
 GO ?= go
 GO_TOOLCHAIN := $(shell env -u GOROOT $(GO) env GOROOT)/bin/go
 GOLANGCI_LINT := env -u GOROOT GOTOOLCHAIN=local $(GO_TOOLCHAIN) run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+LINT_FLAGS ?=
 COMPOSE := docker compose -f ../compose.yml
 
 .PHONY: init build run test coverage fmt vet tidy generate lint smoke clean up down docker-build docker-check
@@ -23,7 +24,7 @@ test:
 	$(GO) test -race -count=1 ./...
 
 coverage:
-	$(GO) test -race -coverprofile=coverage.out -coverpkg=./internal/... ./...
+	$(GO) test -race -count=1 -coverprofile=coverage.out -coverpkg=./internal/... ./...
 	$(GO) tool cover -func=coverage.out
 
 fmt:
@@ -39,7 +40,7 @@ generate:
 	$(GO) generate ./...
 
 lint: fmt vet
-	$(GOLANGCI_LINT) run
+	$(GOLANGCI_LINT) run $(LINT_FLAGS)
 
 clean:
 	rm -rf bin
