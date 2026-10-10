@@ -11,10 +11,11 @@ type fault string
 func (err fault) Error() string { return string(err) }
 
 const (
-	ErrConfig   fault = "positive workspace capacity is required"
-	ErrCapacity fault = "workspace infrastructure capacity reached"
-	ErrConflict fault = "proposal dependencies changed"
-	ErrProposal fault = "proposal must identify itself and declare every write dependency"
+	ErrConfig     fault = "positive workspace capacity is required"
+	ErrCapacity   fault = "workspace infrastructure capacity reached"
+	ErrConflict   fault = "proposal dependencies changed"
+	ErrProposal   fault = "proposal must identify itself and declare every write dependency"
+	ErrPrediction fault = "prediction cannot commit actual shared state"
 )
 
 // Item is shared context, not a long-term memory record or persona parameter.
@@ -24,19 +25,25 @@ type Item struct {
 }
 
 type Snapshot struct {
-	Revision uint64
-	Items    map[string]Item
+	Revision   uint64
+	Items      map[string]Item
+	Experience *Experience `exhaustruct:"optional"`
 }
 
 type Proposal struct {
-	ID     string
-	Reads  map[string]uint64
-	Writes map[string]string
+	ID         string
+	Reads      map[string]uint64
+	Writes     map[string]string
+	Inner      *Update `exhaustruct:"optional"`
+	Prediction bool    `exhaustruct:"optional"`
 }
 
 // Clone transfers a proposal across ownership boundaries.
 func (proposal Proposal) Clone() Proposal {
-	return Proposal{ID: proposal.ID, Reads: maps.Clone(proposal.Reads), Writes: maps.Clone(proposal.Writes)}
+	return Proposal{
+		ID: proposal.ID, Reads: maps.Clone(proposal.Reads), Writes: maps.Clone(proposal.Writes),
+		Inner: proposal.Inner.Clone(), Prediction: proposal.Prediction,
+	}
 }
 
 // Workspace serializes short commits; it never calls a model or an external tool.
@@ -47,6 +54,7 @@ type Workspace struct {
 	capacity    int
 	watchers    map[uint64]chan struct{}
 	nextWatcher uint64
+	inner       *innerState
 }
 
 func New(capacity int) (*Workspace, error) {
@@ -57,6 +65,7 @@ func New(capacity int) (*Workspace, error) {
 	return &Workspace{
 		mu: sync.Mutex{}, revision: 0, items: make(map[string]Item),
 		watchers: make(map[uint64]chan struct{}), nextWatcher: 0, capacity: capacity,
+		inner: nil,
 	}, nil
 }
 
@@ -64,7 +73,9 @@ func (workspace *Workspace) Snapshot() Snapshot {
 	workspace.mu.Lock()
 	defer workspace.mu.Unlock()
 
-	return Snapshot{Revision: workspace.revision, Items: maps.Clone(workspace.items)}
+	return Snapshot{
+		Revision: workspace.revision, Items: maps.Clone(workspace.items), Experience: workspace.inner.experience(),
+	}
 }
 
 // Commit validates only declared dependencies, avoiding starvation from unrelated changes.
@@ -77,7 +88,23 @@ func (workspace *Workspace) Commit(proposal Proposal) (uint64, error) {
 		return workspace.revision, err
 	}
 
+	next, err := workspace.prepare(proposal.Inner)
+	if err != nil {
+		return workspace.revision, err
+	}
+
 	workspace.revision++
+	workspace.inner = next
+
+	if proposal.Inner != nil {
+		for _, part := range proposal.Inner.parts() {
+			workspace.inner.versions[part] = workspace.revision
+		}
+
+		if proposal.Inner.Load > 0 {
+			workspace.inner.versions[Fatigue] = workspace.revision
+		}
+	}
 
 	for key, content := range proposal.Writes {
 		workspace.items[key] = Item{Content: content, Version: workspace.revision}
@@ -118,6 +145,10 @@ func (workspace *Workspace) Watch() (<-chan struct{}, func()) {
 }
 
 func (workspace *Workspace) validate(proposal Proposal) error {
+	if proposal.Prediction {
+		return ErrPrediction
+	}
+
 	if proposal.ID == "" {
 		return ErrProposal
 	}
