@@ -7,7 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/kizuna-org/akari/internal/action"
 	"github.com/kizuna-org/akari/internal/host"
+	"github.com/kizuna-org/akari/internal/lifecycle"
+	"github.com/kizuna-org/akari/internal/persistence"
 )
 
 func main() {
@@ -23,7 +26,24 @@ func run() int {
 		address = "127.0.0.1:8080"
 	}
 
-	err := host.Run(ctx, address)
+	directory := os.Getenv("AKARI_DATA_DIR")
+	if directory == "" {
+		directory = "data"
+	}
+
+	err := host.RunWith(ctx, address, func(ctx context.Context) (host.Service, error) {
+		store, err := persistence.New(directory)
+		if err != nil {
+			return nil, err
+		}
+
+		gateway, err := action.New(nil, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		return lifecycle.Open(ctx, store, gateway, lifecycle.FoundationConfig())
+	})
 	if err != nil {
 		slog.Error("foundation host stopped", "error", err)
 

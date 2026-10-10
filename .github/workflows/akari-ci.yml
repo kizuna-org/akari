@@ -47,6 +47,14 @@ jobs:
       - run: docker compose up --build -d --wait --wait-timeout 120
       - name: Verify host liveness
         run: curl --fail http://127.0.0.1:8080/healthz
+      - name: Verify state survives restart
+        run: |
+          before=$(docker compose exec -T akari sed -n 's/.*"sequence":\([0-9]*\).*/\1/p' /data/state.json)
+          docker compose restart
+          docker compose up -d --wait --no-build --wait-timeout 120
+          after=$(docker compose exec -T akari sed -n 's/.*"sequence":\([0-9]*\).*/\1/p' /data/state.json)
+          test "$after" -eq "$((before + 1))"
+          curl --fail http://127.0.0.1:8080/healthz
       - name: Reject invalid configuration
         run: |
           if docker compose run --rm -e AKARI_ADDR=invalid akari; then

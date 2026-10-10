@@ -17,8 +17,19 @@ const (
 	healthBody      = "{\"status\":\"alive\",\"mode\":\"foundation\"}\n"
 )
 
+type Service interface {
+	Close(ctx context.Context) error
+}
+
+type Starter func(context.Context) (Service, error)
+
 // Run binds before reporting success and serves until cancellation or failure.
 func Run(ctx context.Context, address string) error {
+	return RunWith(ctx, address, nil)
+}
+
+// RunWith restores a service before serving liveness, and finalizes it before closing the listener.
+func RunWith(ctx context.Context, address string, start Starter) error {
 	listenConfig := new(net.ListenConfig)
 
 	listener, err := listenConfig.Listen(ctx, "tcp", address)
@@ -26,12 +37,27 @@ func Run(ctx context.Context, address string) error {
 		return fmt.Errorf("bind foundation host: %w", err)
 	}
 
+	var service Service
+
+	if start != nil {
+		service, err = start(ctx)
+		if err != nil {
+			_ = listener.Close()
+
+			return fmt.Errorf("restore foundation state: %w", err)
+		}
+	}
+
 	slog.Info("foundation host listening", "address", listener.Addr().String(), "mode", "foundation")
 
-	return serve(ctx, listener)
+	return serveManaged(ctx, listener, service)
 }
 
 func serve(ctx context.Context, listener net.Listener) error {
+	return serveManaged(ctx, listener, nil)
+}
+
+func serveManaged(ctx context.Context, listener net.Listener, service Service) error {
 	server := new(http.Server)
 	server.Handler = NewHandler()
 	server.ReadHeaderTimeout = headerTimeout
@@ -44,24 +70,37 @@ func serve(ctx context.Context, listener net.Listener) error {
 		done <- server.Serve(listener)
 	}()
 
+	var serveErr error
+
+	finished := false
+
 	select {
-	case err := <-done:
-		return fmt.Errorf("serve foundation host: %w", err)
+	case serveErr = <-done:
+		finished = true
 	case <-ctx.Done():
 	}
 
 	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shutdownTimeout)
 	defer cancel()
 
+	var stateErr error
+
+	if service != nil {
+		stateErr = service.Close(shutdownCtx)
+	}
+
 	shutdownErr := server.Shutdown(shutdownCtx)
 	closeErr := server.Close()
-	serveErr := <-done
+
+	if !finished {
+		serveErr = <-done
+	}
 
 	if errors.Is(serveErr, http.ErrServerClosed) {
 		serveErr = nil
 	}
 
-	err := errors.Join(shutdownErr, closeErr, serveErr)
+	err := errors.Join(stateErr, shutdownErr, closeErr, serveErr)
 	if err != nil {
 		return fmt.Errorf("stop foundation host: %w", err)
 	}
