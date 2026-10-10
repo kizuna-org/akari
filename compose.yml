@@ -1,117 +1,32 @@
+name: akari-foundation
+
 services:
-  akari-db:
-    image: postgres:18.3@sha256:69e8582b781cb44fa4557b98ed586fe68361e320d9b12f9707494335634f4f3d
-    container_name: akari-db
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      NOCODB_DB: ${NOCODB_DB:-nocodb}
-      TZ: UTC
-    volumes:
-      - db-store:/var/lib/postgresql
-      - ./init-db:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  akari-migrate:
-    build:
-      context: .
-      dockerfile: akari/Dockerfile.migrate
-    container_name: akari-migrate
-    restart: "no"
-    depends_on:
-      akari-db:
-        condition: service_healthy
-    environment:
-      ENV: production
-      POSTGRES_HOST: akari-db
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_SSLMODE: ${POSTGRES_SSLMODE}
-
   akari:
     build:
       context: .
       dockerfile: akari/Dockerfile
-    container_name: akari
+    init: true
     restart: unless-stopped
-    depends_on:
-      akari-db:
-        condition: service_healthy
-      akari-migrate:
-        condition: service_completed_successfully
+    environment:
+      AKARI_ADDR: ":8080"
+    ports:
+      - "127.0.0.1:${AKARI_PORT:-8080}:8080"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 128
+    mem_limit: 256m
+    stop_grace_period: 15s
     volumes:
-      - ./secrets/akari-sa-key.json:/app/secrets/akari-sa-key.json
-    environment:
-      ENV: production
-      # Database
-      POSTGRES_HOST: akari-db
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_SSLMODE: ${POSTGRES_SSLMODE}
-      POSTGRES_MAX_OPEN_CONNS: ${POSTGRES_MAX_OPEN_CONNS}
-      POSTGRES_MAX_IDLE_CONNS: ${POSTGRES_MAX_IDLE_CONNS}
-      POSTGRES_CONN_MAX_LIFETIME_MINUTES: ${POSTGRES_CONN_MAX_LIFETIME_MINUTES}
-      POSTGRES_CONN_MAX_IDLE_TIME_MINUTES: ${POSTGRES_CONN_MAX_IDLE_TIME_MINUTES}
-      # LLM
-      LLM_PROJECT_ID: ${LLM_PROJECT_ID}
-      LLM_LOCATION: ${LLM_LOCATION}
-      LLM_MODEL_NAME: ${LLM_MODEL_NAME}
-      # Log
-      LOG_LEVEL: ${LOG_LEVEL}
-      LOG_FORMAT: ${LOG_FORMAT}
-      # Discord
-      DISCORD_TOKEN: ${DISCORD_TOKEN}
-      DISCORD_READY_TIMEOUT: ${DISCORD_READY_TIMEOUT}
-      # Others
-      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/akari-sa-key.json
+      - akari-data:/data
     healthcheck:
-      test: ["CMD", "pgrep", "-f", "akari"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "wget", "-Y", "off", "--spider", "-q", "http://127.0.0.1:8080/healthz"]
+      interval: 10s
+      timeout: 3s
       retries: 3
-      start_period: 40s
-
-  nocodb:
-    image: nocodb/nocodb:0.301.5@sha256:d9516f0bf546fd6c78a382ab0657626c683fca7aaafdbbe53c66baf15df7fc0d
-    container_name: nocodb
-    restart: unless-stopped
-    depends_on:
-      akari-db:
-        condition: service_healthy
-    environment:
-      NOCODB_DB: ${NOCODB_DB:-nocodb}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      NC_DB: "pg://akari-db:5432?u=${POSTGRES_USER}&p=${POSTGRES_PASSWORD}&d=${NOCODB_DB:-nocodb}"
-      NC_AUTH_JWT_SECRET: ${NC_AUTH_JWT_SECRET}
-      NC_SENTRY_DSN: ${NC_SENTRY_DSN:-}
-      NC_DISABLE_TELE: ${NC_DISABLE_TELE:-true}
-
-  cloudflare-tunnel:
-    image: cloudflare/cloudflared:2026.3.0@sha256:6b599ca3e974349ead3286d178da61d291961182ec3fe9c505e1dd02c8ac31b0
-    container_name: cloudflare-tunnel
-    restart: unless-stopped
-    command: tunnel run
-    environment:
-      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
-    healthcheck:
-      test: ["CMD", "cloudflared", "tunnel", "info"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      start_period: 5s
 
 volumes:
-  db-store:
-    driver: local
+  akari-data:

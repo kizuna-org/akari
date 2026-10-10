@@ -4,13 +4,16 @@
 
 ### Workspace Setup
 
-- **Always** `cd /akari/akari/` before working
-- **Always** read `Makefile` first
+- Work in the repository's `akari/` Go module (the checkout path may vary).
+- **Always** read `akari/Makefile` before working.
+- Behavioral specifications belong in `docs/`; technical architecture belongs in `design/`.
+- Preserve confirmed behavioral decisions; consult the user before changing them.
 
 ### Code Quality
 
 - Run `make lint` after every iteration
 - Maintain ~100% test coverage
+- Coverage measures `internal/` packages; validate the thin process entrypoint with a real startup/shutdown smoke check.
 - Follow the existing code patterns in the project for consistency.
 
 ### Testing Standards
