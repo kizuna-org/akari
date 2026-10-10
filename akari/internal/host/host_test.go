@@ -156,8 +156,13 @@ func TestServe(t *testing.T) {
 
 func checkHealthy(t *testing.T, address string) {
 	t.Helper()
+	checkHealthyContext(t, t.Context(), address)
+}
 
-	request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+address+healthPath, nil)
+func checkHealthyContext(t *testing.T, ctx context.Context, address string) {
+	t.Helper()
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+address+healthPath, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

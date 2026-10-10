@@ -24,6 +24,7 @@ const (
 	ErrBusy        fault = "durable mutation or dispatch already in progress"
 	ErrUnavailable fault = "save outcome is uncertain; reopen before further mutations"
 	ErrAction      fault = "action identity is missing, reused or not in the required state"
+	ErrClosed      fault = "durable owner is sealed for shutdown"
 )
 
 type Stage string
