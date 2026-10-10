@@ -15,9 +15,9 @@ const ErrPoint fault = "semantic point must have finite nonzero coordinates in a
 
 // Point names its encoder revision; equal dimensions alone do not imply compatibility.
 type Point struct {
-	Text   string
-	Space  string
-	Vector []float64
+	Text   string    `json:"text"`
+	Space  string    `json:"space"`
+	Vector []float64 `json:"vector"`
 }
 
 // Encoder is provided by a selected adapter; core code does not invent embeddings.
