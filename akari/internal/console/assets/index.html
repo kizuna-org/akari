@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Akari — 管理コンソール</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/assets/style.css" />
+    <script defer src="/assets/marked.js"></script>
+    <script defer src="/assets/purify.js"></script>
+    <script defer src="/assets/mermaid.js"></script>
+    <script defer src="/assets/app.js"></script>
+  </head>
+  <body>
+    <section id="login" class="login" aria-labelledby="login-title">
+      <form id="login-form" class="login-card">
+        <div class="brand-mark">a<span>·</span></div>
+        <p class="eyebrow">AKARI / MANAGEMENT</p>
+        <h1 id="login-title">管理コンソール</h1>
+        <p>設計を読み、いまの状態を見渡す。</p>
+        <label for="code">管理用コード</label>
+        <input
+          id="code"
+          type="password"
+          autocomplete="current-password"
+          required
+          placeholder="起動時に発行されたコード"
+        />
+        <p class="hint">
+          保存ディレクトリの
+          <code>admin.token</code>
+          を確認してください。<br />コードは起動ごとに更新されます。
+        </p>
+        <button class="primary" type="submit">
+          コンソールを開く <span>→</span>
+        </button>
+        <p id="login-error" role="alert"></p>
+      </form>
+    </section>
+    <div id="app" class="app" hidden>
+      <aside class="sidebar">
+        <a class="brand" href="#map"
+          ><span class="brand-mark">a<span>·</span></span
+          ><span>Akari<small>MANAGEMENT CONSOLE</small></span></a
+        >
+        <p class="nav-label">WORKSPACE</p>
+        <nav aria-label="メインメニュー">
+          <a href="#map" data-nav="map"><span>◈</span>設計マップ</a>
+          <a href="#docs" data-nav="docs"><span>▤</span>ドキュメント</a>
+          <a href="#status" data-nav="status"><span>◉</span>稼働状態</a>
+        </nav>
+        <div class="sidebar-note">
+          <span class="status-dot"></span> FOUNDATION
+          <p>状態基盤を稼働中<br />常設Channelは未接続</p>
+        </div>
+        <div class="sidebar-bottom">
+          <span class="avatar">A</span>
+          <div>ローカル管理<small>閲覧権限</small></div>
+          <button id="logout" title="ログアウト" aria-label="ログアウト">
+            ↗
+          </button>
+        </div>
+      </aside>
+      <div class="workspace">
+        <header class="topbar">
+          <div>
+            <span class="muted">ワークスペース</span
+            ><span class="separator">/</span
+            ><span id="breadcrumb">設計マップ</span>
+          </div>
+          <div class="top-meta">
+            <span class="status-dot"></span><span id="connection">接続中</span
+            ><span class="pill">閲覧のみ</span>
+          </div>
+        </header>
+        <main id="main" tabindex="-1">
+          <section id="map-view" class="view">
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">DESIGN EXPLORER</p>
+                <h1>設計マップ<span class="accent-dot">.</span></h1>
+                <p class="muted">Akariの仕様と仕組みを、つながりから読む。</p>
+              </div>
+              <a href="#docs" class="quiet-button"
+                >すべてのドキュメント <span>↗</span></a
+              >
+            </div>
+            <div class="stat-strip">
+              <div>
+                <span>ドキュメント</span><strong id="doc-count">—</strong>
+              </div>
+              <div>
+                <span>参照リンク</span><strong id="link-count">—</strong>
+              </div>
+              <div><span>内面の柱</span><strong>4</strong></div>
+              <div class="strip-note">
+                原文の相互参照を可視化<br /><span>ノードを選んで本文へ</span>
+              </div>
+            </div>
+            <div class="map-card">
+              <div class="map-toolbar">
+                <div class="segmented" aria-label="マップの表示対象">
+                  <button data-group="docs" class="active">
+                    振る舞いの仕様</button
+                  ><button data-group="design">技術設計</button>
+                </div>
+                <span id="map-caption" class="muted">docs / 13 documents</span>
+              </div>
+              <div class="map-explanation">
+                <span class="legend-dot"></span><span>内面</span
+                ><span class="legend-dot mechanism"></span
+                ><span>思考と行動</span><span class="legend-dot other"></span
+                ><span>原則・能力・発展</span
+                ><span class="map-instruction">線に触れると参照先を強調</span>
+              </div>
+              <div id="map-stage" class="map-stage">
+                <svg
+                  id="graph"
+                  viewBox="0 0 1080 610"
+                  role="group"
+                  aria-label="ドキュメントの参照関係図"
+                ></svg>
+              </div>
+              <div class="map-footer">
+                <span id="graph-detail"
+                  >リンクはドキュメント本文にある参照です。</span
+                >
+                <div class="zoom-controls">
+                  <button id="zoom-out" aria-label="縮小">−</button
+                  ><button id="zoom-reset">100%</button
+                  ><button id="zoom-in" aria-label="拡大">＋</button>
+                </div>
+              </div>
+            </div>
+            <div class="starting">
+              <div>
+                <p class="eyebrow">START READING</p>
+                <h2>ここから読む</h2>
+              </div>
+              <a href="#doc=docs/01-vision.md"
+                ><span class="chapter">01</span>
+                <div>
+                  ビジョンと設計思想<small>何を作り、何を大切にするか</small>
+                </div>
+                <span>↗</span></a
+              ><a href="#doc=docs/06-architecture.md"
+                ><span class="chapter">06</span>
+                <div>
+                  思考アーキテクチャ<small>並列のChannelと一つの意識</small>
+                </div>
+                <span>↗</span></a
+              ><a href="#doc=docs/10-roadmap.md"
+                ><span class="chapter">10</span>
+                <div>
+                  段階的ロードマップ<small
+                    >確定した順序と、これからの判断</small
+                  >
+                </div>
+                <span>↗</span></a
+              >
+            </div>
+          </section>
+          <section id="docs-view" class="view" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">DOCUMENT LIBRARY</p>
+                <h1>ドキュメント<span class="accent-dot">.</span></h1>
+                <p class="muted">仕様と技術設計を、原文のまま確認する。</p>
+              </div>
+            </div>
+            <div class="search-wrap">
+              <span>⌕</span
+              ><input
+                id="search"
+                type="search"
+                placeholder="タイトル・本文を検索"
+                aria-label="ドキュメントを検索"
+              /><span id="search-count" class="muted"></span>
+            </div>
+            <div class="library-filter">
+              <button data-filter="all" class="active">すべて</button
+              ><button data-filter="docs">振る舞いの仕様</button
+              ><button data-filter="design">技術設計</button>
+            </div>
+            <div id="doc-list" class="doc-list"></div>
+            <p id="no-results" class="empty" hidden>
+              一致するドキュメントがありません。検索語を変えてみてください。
+            </p>
+          </section>
+          <section id="reader-view" class="view reader-view" hidden>
+            <div class="reader-heading">
+              <a href="#docs" class="back-link">← ドキュメント一覧</a
+              ><span id="doc-path" class="muted"></span>
+            </div>
+            <div class="reader-layout">
+              <article id="article" class="prose"></article>
+              <aside class="toc">
+                <p class="eyebrow">ON THIS PAGE</p>
+                <nav id="toc" aria-label="章の目次"></nav>
+                <div class="related">
+                  <p class="eyebrow">REFERENCES</p>
+                  <div id="related"></div>
+                </div>
+              </aside>
+            </div>
+          </section>
+          <section id="status-view" class="view" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">RUNTIME OBSERVER</p>
+                <h1>稼働状態<span class="accent-dot">.</span></h1>
+                <p class="muted">最後に採用された状態と、行為の保存記録。</p>
+              </div>
+              <button id="refresh" class="quiet-button">↻ 更新</button>
+            </div>
+            <div class="foundation-banner">
+              <span class="status-dot"></span>
+              <div>
+                <strong>Foundation</strong>
+                <p>
+                  状態の保存・復元を稼働中。常設Channel・実LLM・MCPは未接続です。
+                </p>
+              </div>
+              <span class="pill">閲覧権限</span>
+            </div>
+            <div id="runtime-stats" class="runtime-stats"></div>
+            <div class="outbox-card">
+              <div class="panel-heading">
+                <h2>行為の記録 <span class="muted">Outbox</span></h2>
+                <span id="updated-at" class="muted"></span>
+              </div>
+              <div id="outbox" class="outbox"></div>
+              <p class="hint">
+                結果不明の行為は自動再送しません。原文・記憶の内容・ツール引数はこの画面に表示しません。
+              </p>
+            </div>
+            <div class="status-notes">
+              <div>
+                <h3>内面・共有状態</h3>
+                <div id="inner-stats"></div>
+              </div>
+              <div>
+                <h3>まだ接続されていないもの</h3>
+                <p>
+                  Channelの稼働一覧、モデルの遅延・コスト、外部への状態投影は、実接続後に表示します。
+                </p>
+                <a href="#doc=design/05-delivery.md"
+                  >実装順と未決の項目を確認 →</a
+                >
+              </div>
+            </div>
+          </section>
+          <p id="app-error" role="alert" hidden></p>
+        </main>
+        <footer class="workspace-footer">
+          <span>Akari · 基礎設計ワークスペース</span
+          ><span
+            >原文：docs / design<span class="separator">·</span
+            >ローカル配信</span
+          >
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>

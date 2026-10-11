@@ -2,16 +2,24 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/kizuna-org/akari/internal/action"
+	"github.com/kizuna-org/akari/internal/console"
 	"github.com/kizuna-org/akari/internal/host"
 	"github.com/kizuna-org/akari/internal/lifecycle"
 	"github.com/kizuna-org/akari/internal/persistence"
 )
+
+type managed struct {
+	session *lifecycle.Session
+	console *console.Server
+}
 
 func main() {
 	os.Exit(run())
@@ -31,18 +39,13 @@ func run() int {
 		directory = "data"
 	}
 
+	adminAddress := os.Getenv("AKARI_ADMIN_ADDR")
+	if adminAddress == "" {
+		adminAddress = "127.0.0.1:8082"
+	}
+
 	err := host.RunWith(ctx, address, func(ctx context.Context) (host.Service, error) {
-		store, err := persistence.New(directory)
-		if err != nil {
-			return nil, err
-		}
-
-		gateway, err := action.New(nil, 1)
-		if err != nil {
-			return nil, err
-		}
-
-		return lifecycle.Open(ctx, store, gateway, lifecycle.FoundationConfig())
+		return startManaged(ctx, adminAddress, directory, stop)
 	})
 	if err != nil {
 		slog.Error("foundation host stopped", "error", err)
@@ -51,4 +54,50 @@ func run() int {
 	}
 
 	return 0
+}
+
+func (service managed) Close(ctx context.Context) error {
+	stateErr := service.session.Close(ctx)
+	consoleErr := service.console.Close(ctx)
+
+	return errors.Join(stateErr, consoleErr)
+}
+
+func startManaged(ctx context.Context, address, directory string, stop context.CancelFunc) (host.Service, error) {
+	store, err := persistence.New(directory)
+	if err != nil {
+		return nil, err
+	}
+
+	gateway, err := action.New(nil, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	session, err := lifecycle.Open(ctx, store, gateway, lifecycle.FoundationConfig())
+	if err != nil {
+		return nil, err
+	}
+
+	admin, err := console.Start(ctx, address, directory, session)
+	if err != nil {
+		const cleanupTimeout = 5 * time.Second
+
+		cleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), cleanupTimeout)
+		defer cancel()
+
+		return nil, errors.Join(err, session.Close(cleanup))
+	}
+
+	go func() {
+		select {
+		case <-admin.Done():
+			stop()
+		case <-ctx.Done():
+		}
+	}()
+
+	slog.Info("management console listening", "address", admin.Address(), "permission", "observer")
+
+	return managed{session: session, console: admin}, nil
 }
