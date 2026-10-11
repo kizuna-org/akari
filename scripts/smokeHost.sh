@@ -5,8 +5,13 @@ export AKARI_ADMIN_ADDR=127.0.0.1:0
 binary=${1:?usage: smokeHost.sh /path/to/akari}
 scratch=$(mktemp -d)
 host_pid=
+rejected_pid=
 
 cleanup() {
+  if [[ -n "$rejected_pid" ]]; then
+    kill -KILL "$rejected_pid" 2>/dev/null || true
+    wait "$rejected_pid" 2>/dev/null || true
+  fi
   if [[ -n "$host_pid" ]]; then
     kill -TERM "$host_pid" 2>/dev/null || true
     wait "$host_pid" 2>/dev/null || true
@@ -15,10 +20,32 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if AKARI_DATA_DIR="$scratch/state" AKARI_ADDR=invalid "$binary" >"$scratch/invalid.log" 2>&1; then
-  echo "invalid address was accepted" >&2
+reject_within_deadline() {
+  local log=$1
+  local description=$2
+  shift 2
+  "$@" >"$log" 2>&1 &
+  rejected_pid=$!
+  for ((attempt = 0; attempt < 100; attempt++)); do
+    if ! kill -0 "$rejected_pid" 2>/dev/null; then
+      if wait "$rejected_pid"; then
+        rejected_pid=
+        echo "$description was accepted" >&2
+        exit 1
+      fi
+      rejected_pid=
+      return
+    fi
+    sleep 0.05
+  done
+  kill -KILL "$rejected_pid" 2>/dev/null || true
+  wait "$rejected_pid" 2>/dev/null || true
+  rejected_pid=
+  echo "$description did not fail within deadline" >&2
   exit 1
-fi
+}
+
+reject_within_deadline "$scratch/invalid.log" "invalid address" env AKARI_DATA_DIR="$scratch/state" AKARI_ADDR=invalid "$binary"
 
 start_host() {
   AKARI_DATA_DIR="$scratch/state" AKARI_ADDR=127.0.0.1:0 "$binary" >"$scratch/host.log" 2>&1 &
@@ -67,15 +94,9 @@ response=$(curl --noproxy '*' --max-time 5 --fail --silent "http://$address/heal
 status=$(curl --noproxy '*' --max-time 5 --silent --output /dev/null --write-out '%{http_code}' "http://$address/readyz")
 [[ "$status" == 404 ]]
 
-if AKARI_DATA_DIR="$scratch/state" AKARI_ADDR="$address" "$binary" >"$scratch/occupied.log" 2>&1; then
-  echo "occupied address was accepted" >&2
-  exit 1
-fi
+reject_within_deadline "$scratch/occupied.log" "occupied address" env AKARI_DATA_DIR="$scratch/state" AKARI_ADDR="$address" "$binary"
 
-if AKARI_DATA_DIR="$scratch/state" AKARI_ADDR=127.0.0.1:0 "$binary" >"$scratch/lease.log" 2>&1; then
-  echo "second host acquired an active installation" >&2
-  exit 1
-fi
+reject_within_deadline "$scratch/lease.log" "second host with active installation" env AKARI_DATA_DIR="$scratch/state" AKARI_ADDR=127.0.0.1:0 "$binary"
 
 kill -TERM "$host_pid"
 wait "$host_pid"
@@ -96,10 +117,7 @@ host_pid=
 
 cp -R "$scratch/state" "$scratch/corrupt"
 printf '{' >"$scratch/corrupt/state.json"
-if AKARI_DATA_DIR="$scratch/corrupt" AKARI_ADDR=127.0.0.1:0 "$binary" >"$scratch/corrupt.log" 2>&1; then
-  echo "corrupt saved state was accepted" >&2
-  exit 1
-fi
+reject_within_deadline "$scratch/corrupt.log" "corrupt saved state" env AKARI_DATA_DIR="$scratch/corrupt" AKARI_ADDR=127.0.0.1:0 "$binary"
 [[ -z "$(sed -n '/foundation host listening/p' "$scratch/corrupt.log")" ]]
 
 echo "host smoke passed: restore, exclusive ownership, SIGTERM save, SIGKILL restart, corrupt-state rejection, liveness"
