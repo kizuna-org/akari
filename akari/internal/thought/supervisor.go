@@ -24,6 +24,14 @@ const (
 
 type Runner func(context.Context, mind.Snapshot) (mind.Proposal, error)
 
+// Workspace is consumed here; durable and in-memory owners provide the same thought context.
+type Workspace interface {
+	Snapshot() mind.Snapshot
+	CommitContext(ctx context.Context, proposal mind.Proposal) (uint64, error)
+}
+
+type Adopter func(context.Context, mind.Proposal) (uint64, error)
+
 type Token struct {
 	Channel    string
 	Generation uint64
@@ -43,6 +51,7 @@ type task struct { //nolint:containedctx // Lifecycle ownership, not request con
 	proposal  mind.Proposal
 	err       error
 	delivered bool
+	adopting  bool
 }
 
 // Supervisor bounds running AND unresolved work so completed results cannot grow without limit.
@@ -50,7 +59,7 @@ type Supervisor struct {
 	mu         sync.Mutex
 	ctx        context.Context //nolint:containedctx // The supervisor owns the worker lifetime.
 	cancel     context.CancelFunc
-	workspace  *mind.Workspace
+	workspace  Workspace
 	capacity   int
 	generation uint64
 	tasks      map[string]*task
@@ -60,7 +69,7 @@ type Supervisor struct {
 	done       chan struct{}
 }
 
-func New(ctx context.Context, workspace *mind.Workspace, capacity int) (*Supervisor, error) {
+func New(ctx context.Context, workspace Workspace, capacity int) (*Supervisor, error) {
 	if workspace == nil || capacity < 1 {
 		return nil, ErrConfig
 	}
@@ -89,7 +98,7 @@ func (supervisor *Supervisor) Start(identity string, runner Runner) (Token, erro
 	token := Token{Channel: identity, Generation: supervisor.generation}
 	work := &task{
 		ctx: ctx, cancel: cancel, token: token,
-		proposal: mind.Proposal{ID: "", Reads: nil, Writes: nil}, err: nil, delivered: false,
+		proposal: mind.Proposal{ID: "", Reads: nil, Writes: nil}, err: nil, delivered: false, adopting: false,
 	}
 	supervisor.tasks[identity] = work
 	snapshot := supervisor.workspace.Snapshot()
@@ -143,26 +152,46 @@ func (supervisor *Supervisor) Next(ctx context.Context) (Result, error) {
 
 // Accept commits only a current, delivered, uncanceled generation, and releases its slot.
 func (supervisor *Supervisor) Accept(token Token) (uint64, error) {
+	return supervisor.AcceptWith(token, supervisor.workspace.CommitContext)
+}
+
+// AcceptWith lets trusted runtime atomically couple the private proposal and planned actions.
+// Disk I/O does not hold the supervisor lock; cancellation and other Channels can proceed.
+func (supervisor *Supervisor) AcceptWith(token Token, adopt Adopter) (uint64, error) {
 	supervisor.mu.Lock()
-	defer supervisor.mu.Unlock()
 
 	work, err := supervisor.delivered(token)
+	if err != nil || adopt == nil {
+		supervisor.mu.Unlock()
+
+		return 0, ErrToken
+	}
+
+	err = work.ctx.Err()
+	if err == nil {
+		err = work.err
+	}
+
 	if err != nil {
+		supervisor.release(work)
+		supervisor.mu.Unlock()
+
 		return 0, err
 	}
 
-	defer supervisor.release(work)
+	work.adopting = true
 
-	contextErr := work.ctx.Err()
-	if contextErr != nil {
-		return 0, contextErr
-	}
+	supervisor.workers.Add(1)
+	supervisor.mu.Unlock()
 
-	if work.err != nil {
-		return 0, work.err
-	}
+	defer func() {
+		supervisor.mu.Lock()
+		supervisor.release(work)
+		supervisor.mu.Unlock()
+		supervisor.workers.Done()
+	}()
 
-	return supervisor.workspace.Commit(work.proposal)
+	return adopt(work.ctx, work.proposal.Clone())
 }
 
 func (supervisor *Supervisor) Discard(token Token) error {
@@ -250,7 +279,7 @@ func (supervisor *Supervisor) run(work *task, snapshot mind.Snapshot, runner Run
 
 func (supervisor *Supervisor) delivered(token Token) (*task, error) {
 	work, exists := supervisor.tasks[token.Channel]
-	if !exists || work.token != token || !work.delivered {
+	if !exists || work.token != token || !work.delivered || work.adopting {
 		return nil, ErrToken
 	}
 

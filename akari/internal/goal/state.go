@@ -20,16 +20,16 @@ const (
 
 // Intention claims normalized shared targets, not complete semantic contradiction detection.
 type Intention struct {
-	Meaning meaning.Point
-	Claims  map[string]string
-	Steps   []meaning.Point
-	Next    int
-	Paused  bool
+	Meaning meaning.Point     `json:"meaning"`
+	Claims  map[string]string `json:"claims"`
+	Steps   []meaning.Point   `json:"steps"`
+	Next    int               `json:"next"`
+	Paused  bool              `json:"paused"`
 }
 
 type State struct {
-	Desires    map[string]meaning.Point
-	Intentions map[string]Intention
+	Desires    map[string]meaning.Point `json:"desires"`
+	Intentions map[string]Intention     `json:"intentions"`
 }
 
 type Change struct {
