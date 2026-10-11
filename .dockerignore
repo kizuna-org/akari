@@ -1,0 +1,12 @@
+.git
+.idea
+.vscode
+work
+output
+secrets
+**/.env
+**/.env.*
+**/bin
+**/*.out
+docs
+design

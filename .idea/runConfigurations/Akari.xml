@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Akari" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="akari" />
+    <working_directory value="$PROJECT_DIR$/akari" />
+    <kind value="PACKAGE" />
+    <package value="github.com/kizuna-org/akari/cmd/akari" />
+    <directory value="$PROJECT_DIR$/akari" />
+    <filePath value="$PROJECT_DIR$/akari/cmd/akari/main.go" />
+    <method v="2" />
+  </configuration>
+</component>

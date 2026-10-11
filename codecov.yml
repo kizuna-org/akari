@@ -1,3 +1,2 @@
 ignore:
   - akari/cmd/akari/main.go
-  - akari/gen/ent/**
