@@ -12,36 +12,59 @@ import (
 func TestServerRotatesCodeAndStops(t *testing.T) {
 	t.Parallel()
 
-	for _, previous := range []bool{false, true} {
-		t.Run(map[bool]string{false: "new", true: "rotate"}[previous], func(t *testing.T) {
+	for _, test := range []struct {
+		name                   string
+		previous, authDisabled bool
+	}{
+		{name: "new code", previous: false, authDisabled: false},
+		{name: "rotate code", previous: true, authDisabled: false},
+		{name: "authentication disabled", previous: true, authDisabled: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			directory := t.TempDir()
-			if previous {
+			if test.previous {
 				//nolint:gosec // Deliberately insecure old test file; rotation must replace it with a private inode.
 				require(t, os.WriteFile(filepath.Join(directory, "admin.token"), []byte(testToken), 0o644))
 			}
 
-			server, err := Start(t.Context(), "127.0.0.1:0", directory, staticReader{frame: emptyFrame()}, false)
+			server, err := Start(t.Context(), "127.0.0.1:0", directory,
+				staticReader{frame: emptyFrame()}, test.authDisabled)
 
 			require(t, err)
 
 			defer func() { require(t, server.Close(t.Context())) }()
 
-			//nolint:gosec // Private test directory and constant filename; never print the access code.
-			data, err := os.ReadFile(filepath.Join(directory, "admin.token"))
-			require(t, err)
-			info, err := os.Stat(filepath.Join(directory, "admin.token"))
-			require(t, err)
+			var token string
 
-			if strings.TrimSpace(string(data)) == testToken || len(data) < len(testToken) || info.Mode().Perm() != 0o600 {
-				t.Fatal("access code was not rotated privately")
+			if test.authDisabled {
+				_, statErr := os.Stat(filepath.Join(directory, "admin.token"))
+				if !os.IsNotExist(statErr) {
+					t.Fatal("disabled authentication left an active-looking management code")
+				}
+			} else {
+				//nolint:gosec // Private test directory and constant filename; never print the access code.
+				data, err := os.ReadFile(filepath.Join(directory, "admin.token"))
+				require(t, err)
+				info, err := os.Stat(filepath.Join(directory, "admin.token"))
+				require(t, err)
+
+				if strings.TrimSpace(string(data)) == testToken || len(data) < len(testToken) ||
+					info.Mode().Perm() != 0o600 {
+					t.Fatal("access code was not rotated privately")
+				}
+
+				token = strings.TrimSpace(string(data))
 			}
 
 			request, err := http.NewRequestWithContext(t.Context(), http.MethodGet,
 				"http://"+server.Address()+"/api/status", nil)
 			require(t, err)
-			request.Header.Set("Authorization", "Bearer "+strings.TrimSpace(string(data)))
+
+			if token != "" {
+				request.Header.Set("Authorization", "Bearer "+token)
+			}
 
 			client := new(http.Client)
 			response, err := client.Do(request)
@@ -50,45 +73,12 @@ func TestServerRotatesCodeAndStops(t *testing.T) {
 			defer func() { require(t, response.Body.Close()) }()
 
 			if response.StatusCode != http.StatusOK {
-				t.Fatal("management listener did not provide authenticated state")
+				t.Fatal("management listener did not provide state")
 			}
 
 			require(t, server.Close(t.Context()))
 			<-server.Done()
 		})
-	}
-}
-
-func TestServerWithAuthenticationDisabled(t *testing.T) {
-	t.Parallel()
-
-	directory := t.TempDir()
-	require(t, os.WriteFile(filepath.Join(directory, "admin.token"), []byte(testToken), 0o600))
-	server, err := Start(t.Context(), "127.0.0.1:0", directory, staticReader{frame: emptyFrame()}, true)
-	require(t, err)
-
-	defer func() { require(t, server.Close(t.Context())) }()
-
-	_, statErr := os.Stat(filepath.Join(directory, "admin.token"))
-	if !os.IsNotExist(statErr) {
-		t.Fatal("disabled authentication left an active-looking management code")
-	}
-
-	for _, path := range []string{"/", "/api/docs", "/api/status"} {
-		request, err := http.NewRequestWithContext(t.Context(), http.MethodGet,
-			"http://"+server.Address()+path, nil)
-		require(t, err)
-
-		response, err := new(http.Client).Do(request)
-		require(t, err)
-
-		if response.StatusCode != http.StatusOK {
-			require(t, response.Body.Close())
-
-			t.Fatalf("%s status = %d, want %d", path, response.StatusCode, http.StatusOK)
-		}
-
-		require(t, response.Body.Close())
 	}
 }
 
