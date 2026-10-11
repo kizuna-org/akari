@@ -177,12 +177,14 @@ func TestAuthenticationDisabled(t *testing.T) {
 		})
 	}
 
-	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
-	response := httptest.NewRecorder()
-	NewHandler("", staticReader{frame: emptyFrame()}, true).ServeHTTP(response, request)
+	for _, path := range []string{"/", "/assets/index.html"} {
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil)
+		response := httptest.NewRecorder()
+		NewHandler("", staticReader{frame: emptyFrame()}, true).ServeHTTP(response, request)
 
-	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `data-auth-disabled="true"`) {
-		t.Fatal("authentication-disabled console did not advertise its mode to the UI")
+		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `data-auth-disabled="true"`) {
+			t.Fatalf("%s did not advertise the authentication-disabled mode to the UI", path)
+		}
 	}
 }
 

@@ -32,7 +32,7 @@ func NewHandler(token string, reader Reader, authDisabled bool) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", asset("index.html", authDisabled))
 	mux.HandleFunc("GET /assets/{name}", func(writer http.ResponseWriter, request *http.Request) {
-		asset(request.PathValue("name"), false)(writer, request)
+		asset(request.PathValue("name"), authDisabled)(writer, request)
 	})
 	mux.HandleFunc("POST /api/session", login(token, authDisabled))
 	mux.HandleFunc("DELETE /api/session", logout(authDisabled))
