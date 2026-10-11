@@ -10,7 +10,8 @@
 [内面状態の接続](./design/07-inner-state.md) は疑似モデルを使って検証しています。
 [保存・復元・outbox](./design/08-durable-state.md) はローカルファイルと疑似の行為で検証し、
 プロセスの強制終了後も結果不明の行為を再送しない基盤を実装しています。
-**ホストへの常設Channel・保存復元の配線、実LLM・実MCPはまだ接続していません。**
+[ホスト起動・停止](./design/09-host-lifecycle.md)にも保存復元を接続しました。
+**常設Channel、実LLM・実MCPはまだ接続していません。**
 `/healthz` はホストの生存だけを示し、Akariが思考できることは示しません。
 
 ## Go / GoLand
@@ -33,7 +34,9 @@ curl http://127.0.0.1:8080/healthz
 # {"status":"alive","mode":"foundation"}
 ```
 
-終了はCtrl+Cです。アドレスを変える場合は `AKARI_ADDR=127.0.0.1:8081 make run` とします。
+終了はCtrl+Cで、採用済み状態を保存して終了します。起動時には前回の状態を復元します。
+保存先は既定で作業ディレクトリの `data` で、`AKARI_DATA_DIR` で変更できます。
+アドレスを変える場合は `AKARI_ADDR=127.0.0.1:8081 make run` とします。
 `.env.example` は設定例です。ホストはdotenvを自動では読みません。
 
 ## Docker
@@ -48,7 +51,8 @@ docker compose down
 
 公開先は既定でlocalhostです。ポートは `AKARI_PORT=8081 docker compose up --build -d --wait`
 で変えられます。非rootで実行し、root filesystemは読み取り専用です。
-`akari-data` volumeは将来の永続化用で、現在は人格や記憶を保存していません。
+`akari-data` volumeの`/data`に人格・内面・記憶・outboxを保存し、再起動時に復元します。
+破損や人格不一致では起動を拒否し、空の状態に上書きしません。
 既存DB volumeの削除・変換は行いません。旧環境からの移行は別途扱います。
 
 ## 検証

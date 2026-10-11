@@ -8,5 +8,6 @@ secrets
 **/.env.*
 **/bin
 **/*.out
+**/data
 docs
 design

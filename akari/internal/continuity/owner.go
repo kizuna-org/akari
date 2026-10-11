@@ -23,6 +23,7 @@ type Owner struct {
 	workspace   *mind.Workspace
 	frame       Frame
 	unavailable bool
+	sealed      bool
 }
 
 func Open(ctx context.Context, repository Repository, gateway *action.Gateway, config Config) (*Owner, error) {
@@ -54,7 +55,7 @@ func Open(ctx context.Context, repository Repository, gateway *action.Gateway, c
 
 	owner := &Owner{
 		mu: sync.RWMutex{}, gate: make(chan struct{}, 1), repository: repository, gateway: gateway,
-		config: config, workspace: workspace, frame: frame.Clone(), unavailable: false,
+		config: config, workspace: workspace, frame: frame.Clone(), unavailable: false, sealed: false,
 	}
 
 	err = owner.recoverRunning(ctx)
@@ -239,6 +240,40 @@ func (owner *Owner) Reconcile(ctx context.Context, identity string, resolver Res
 	return owner.save(ctx, next, nil)
 }
 
+// Seal stops further mutations and persists a final frame, classifying unfinished calls as unknown.
+// If an earlier save was ambiguous it refuses to overwrite the repository's authoritative state.
+func (owner *Owner) Seal(ctx context.Context) error {
+	owner.mu.Lock()
+	owner.sealed = true
+	owner.mu.Unlock()
+
+	select {
+	case owner.gate <- struct{}{}:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
+	defer owner.leave()
+
+	owner.mu.RLock()
+	unavailable := owner.unavailable
+	owner.mu.RUnlock()
+
+	if unavailable {
+		return ErrUnavailable
+	}
+
+	next := owner.Export()
+	for identity, record := range next.Outbox {
+		if record.Stage == Running {
+			record.Stage = Unknown
+			next.Outbox[identity] = record
+		}
+	}
+
+	return owner.save(ctx, next, nil)
+}
+
 func (owner *Owner) claim(ctx context.Context, identity string) (Record, *action.Pending, string, error) {
 	err := owner.enter(ctx)
 	if err != nil {
@@ -296,14 +331,11 @@ func (owner *Owner) enter(ctx context.Context) error {
 		return ErrBusy
 	}
 
-	owner.mu.RLock()
-	unavailable := owner.unavailable
-	owner.mu.RUnlock()
-
-	if unavailable {
+	err = owner.available()
+	if err != nil {
 		owner.leave()
 
-		return ErrUnavailable
+		return err
 	}
 
 	return nil
@@ -318,13 +350,25 @@ func (owner *Owner) enterWait(ctx context.Context) error {
 		return ctx.Err()
 	}
 
-	owner.mu.RLock()
-	unavailable := owner.unavailable
-	owner.mu.RUnlock()
-
-	if unavailable {
+	err := owner.available()
+	if err != nil {
 		owner.leave()
 
+		return err
+	}
+
+	return nil
+}
+
+func (owner *Owner) available() error {
+	owner.mu.RLock()
+	defer owner.mu.RUnlock()
+
+	if owner.sealed {
+		return ErrClosed
+	}
+
+	if owner.unavailable {
 		return ErrUnavailable
 	}
 
