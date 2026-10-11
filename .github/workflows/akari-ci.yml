@@ -16,13 +16,14 @@ permissions:
 jobs:
   all-status-check:
     runs-on: ubuntu-latest
-    needs: [go, docker]
+    needs: [go, docker, browser]
     if: always()
     steps:
       - name: Require all foundation checks
         run: |
           test "${{ needs.go.result }}" = success
           test "${{ needs.docker.result }}" = success
+          test "${{ needs.browser.result }}" = success
 
   go:
     runs-on: ubuntu-latest
