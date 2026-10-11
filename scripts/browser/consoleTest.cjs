@@ -15,12 +15,16 @@ const assert = require("node:assert/strict");
       ...process.env,
       AKARI_ADDR: "127.0.0.1:0",
       AKARI_ADMIN_ADDR: "127.0.0.1:0",
+      AKARI_ADMIN_AUTH_DISABLED: "false",
       AKARI_DATA_DIR: directory,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let logs = "",
-    browser;
+    browser,
+    authDisabledHost,
+    authDisabledExited,
+    authDisabledContext;
   const exited = new Promise((done) => host.once("exit", (code) => done(code)));
   try {
     await new Promise((done, fail) => {
@@ -192,17 +196,92 @@ const assert = require("node:assert/strict");
       (await context.request.get(`http://${address}/api/status`)).status(),
       401,
     );
+
+    const authDisabledDirectory = join(directory, "auth-disabled");
+    await mkdir(authDisabledDirectory);
+    authDisabledHost = spawn(resolve(process.argv[2]), [], {
+      env: {
+        ...process.env,
+        AKARI_ADDR: "127.0.0.1:0",
+        AKARI_ADMIN_ADDR: "127.0.0.1:0",
+        AKARI_ADMIN_AUTH_DISABLED: "true",
+        AKARI_DATA_DIR: authDisabledDirectory,
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let authDisabledLogs = "";
+    authDisabledExited = new Promise((done) =>
+      authDisabledHost.once("exit", (code) => done(code)),
+    );
+    await new Promise((done, fail) => {
+      const timeout = setTimeout(
+        () => fail(new Error("Authentication-disabled host startup timed out")),
+        10000,
+      );
+      authDisabledHost.once("error", fail);
+      const capture = (chunk) => {
+        authDisabledLogs += chunk.toString();
+        if (authDisabledLogs.includes("management console listening")) {
+          clearTimeout(timeout);
+          done();
+        }
+      };
+      authDisabledHost.stderr.on("data", capture);
+      authDisabledHost.stdout.on("data", capture);
+      authDisabledHost.once("exit", (code) => {
+        clearTimeout(timeout);
+        if (code !== null)
+          fail(new Error(`Authentication-disabled host exited during startup: ${code}`));
+      });
+    });
+    const authDisabledAddress = authDisabledLogs.match(
+      /management console listening.*address=(127\.0\.0\.1:\d+)/,
+    )[1];
+    assert.equal(
+      (await context.request.get(`http://${authDisabledAddress}/api/status`)).status(),
+      200,
+    );
+    await assert.rejects(readFile(join(authDisabledDirectory, "admin.token")), {
+      code: "ENOENT",
+    });
+    authDisabledContext = await browser.newContext();
+    const authDisabledPage = await authDisabledContext.newPage();
+    authDisabledPage.on("pageerror", (error) => errors.push(error.message));
+    authDisabledPage.on("request", (request) => {
+      if (
+        !request.url().startsWith(`http://${authDisabledAddress}/`) &&
+        !request.url().startsWith("data:")
+      )
+        externalRequests.push(request.url());
+    });
+    await authDisabledPage.goto(`http://${authDisabledAddress}/`);
+    await authDisabledPage.locator("#app:not([hidden])").waitFor();
+    assert.equal(await authDisabledPage.locator("#login").isVisible(), false);
+    assert.equal(await authDisabledPage.locator("#logout").isVisible(), false);
+
     assert.deepEqual(errors, [], "Browser JavaScript errors");
     assert.deepEqual(externalRequests, [], "External browser requests");
     console.log(
       `Console browser passed: authentication, map, search, ${diagramDocs.length} Mermaid documents, links, state, mobile, logout, no external requests`,
     );
+    console.log("Console browser passed: authentication-disabled mode opens without login or logout");
   } finally {
+    if (authDisabledContext) await authDisabledContext.close();
     if (browser) await browser.close();
+    if (authDisabledHost) authDisabledHost.kill("SIGTERM");
     host.kill("SIGTERM");
     const deadline = setTimeout(() => host.kill("SIGKILL"), 6000);
     const code = await exited;
     clearTimeout(deadline);
+    if (authDisabledExited) {
+      const authDisabledDeadline = setTimeout(
+        () => authDisabledHost.kill("SIGKILL"),
+        6000,
+      );
+      const authDisabledCode = await authDisabledExited;
+      clearTimeout(authDisabledDeadline);
+      if (authDisabledCode !== 0) process.exitCode = 1;
+    }
     await rm(directory, { recursive: true, force: true });
     if (code !== 0) process.exitCode = 1;
   }
