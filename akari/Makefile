@@ -11,10 +11,10 @@ COMPOSE := docker compose -f ../compose.yml
 init:
 	$(GO) mod download
 
-build:
+build: generate
 	CGO_ENABLED=0 $(GO) build -trimpath -o $(BIN) ./cmd/akari
 
-run:
+run: generate
 	$(GO) run ./cmd/akari
 
 smoke: build

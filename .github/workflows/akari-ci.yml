@@ -60,6 +60,12 @@ jobs:
       - run: docker compose up --build -d --wait --wait-timeout 120
       - name: Verify host liveness
         run: curl --fail http://127.0.0.1:8080/healthz
+      - name: Verify management boundary
+        run: |
+          code=$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8082/api/status)
+          test "$code" -eq 401
+          token=$(docker compose exec -T akari cat /data/admin.token)
+          curl --fail --silent -H "Authorization: Bearer $token" http://127.0.0.1:8082/api/docs > /dev/null
       - name: Verify state survives restart
         run: |
           before=$(docker compose exec -T akari sed -n 's/.*"sequence":\([0-9]*\).*/\1/p' /data/state.json)
@@ -80,3 +86,27 @@ jobs:
       - name: Stop test deployment
         if: always()
         run: docker compose down
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-golang
+      - run: make -C akari build
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: scripts/browser/package-lock.json
+      - run: npm ci --ignore-scripts
+        working-directory: scripts/browser
+      - run: npx playwright install --with-deps chromium
+        working-directory: scripts/browser
+      - run: npm test
+        working-directory: scripts/browser
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: console-browser-screenshots
+          path: scripts/browser/artifacts
