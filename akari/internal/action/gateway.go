@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"maps"
+	"slices"
 	"sync"
 	"sync/atomic"
 )
@@ -22,6 +23,7 @@ const (
 	ErrApproval   fault = "operation requires a matching external approval"
 	ErrUsed       fault = "operation has already been consumed"
 	ErrPanic      fault = "execution adapter panicked"
+	ErrDisclosure fault = "known memory sources are not permitted for this destination"
 )
 
 type Impact string
@@ -39,6 +41,7 @@ type Operation struct {
 	Destination string
 	ConflictKey string
 	Call        func(context.Context) ([]byte, error)
+	Sources     []string `exhaustruct:"optional"`
 }
 
 // Prepare must be pure: it normalizes arguments without performing external effects.
@@ -48,6 +51,7 @@ type Prepare func([]byte) (Operation, error)
 type Scope struct {
 	AllowedDestinations []string
 	ReadyRecipients     []string
+	Disclosure          func(sources []string, destination string) bool `exhaustruct:"optional"`
 }
 
 type target struct {
@@ -90,6 +94,7 @@ type Session struct {
 	prediction bool
 	allowed    map[string]bool
 	ready      map[string]bool
+	disclosure func([]string, string) bool
 }
 
 func (gateway *Gateway) Open(prediction bool, scope Scope) *Session {
@@ -104,7 +109,9 @@ func (gateway *Gateway) Open(prediction bool, scope Scope) *Session {
 		ready[recipient] = true
 	}
 
-	return &Session{gateway: gateway, prediction: prediction, allowed: allowed, ready: ready}
+	return &Session{
+		gateway: gateway, prediction: prediction, allowed: allowed, ready: ready, disclosure: scope.Disclosure,
+	}
 }
 
 // Pending freezes one normalized operation. Approval is bound to this exact object.
@@ -114,6 +121,7 @@ type Pending struct {
 	needsApproval bool
 	approved      atomic.Bool
 	used          atomic.Bool
+	disclosure    func([]string, string) bool
 }
 
 func (session *Session) Plan(ctx context.Context, name string, arguments []byte) (*Pending, error) {
@@ -132,6 +140,8 @@ func (session *Session) Plan(ctx context.Context, name string, arguments []byte)
 		return nil, err
 	}
 
+	operation.Sources = slices.Clone(operation.Sources)
+
 	validationErr := session.check(operation)
 	if validationErr != nil {
 		return nil, validationErr
@@ -144,17 +154,12 @@ func (session *Session) Plan(ctx context.Context, name string, arguments []byte)
 		gateway: session.gateway, operation: operation,
 		needsApproval: needsApproval,
 		approved:      atomic.Bool{}, used: atomic.Bool{},
+		disclosure: session.disclosure,
 	}, nil
 }
 
 func (session *Session) check(operation Operation) error {
-	switch operation.Impact {
-	case Read, Reversible, Speech, Irreversible:
-	default:
-		return ErrOperation
-	}
-
-	if operation.Call == nil || operation.Destination == "" || (operation.Impact != Read && operation.ConflictKey == "") {
+	if !validOperation(operation) {
 		return ErrOperation
 	}
 
@@ -164,6 +169,10 @@ func (session *Session) check(operation Operation) error {
 
 	if !session.allowed[operation.Destination] {
 		return ErrScope
+	}
+
+	if !allows(session.disclosure, operation) {
+		return ErrDisclosure
 	}
 
 	return nil
@@ -233,6 +242,10 @@ func (pending *Pending) Execute(ctx context.Context) (Observation, error) {
 	contextErr := ctx.Err()
 	if contextErr != nil {
 		return Observation{Status: NotExecuted, Data: nil}, contextErr
+	}
+
+	if !allows(pending.disclosure, pending.operation) {
+		return Observation{Status: NotExecuted, Data: nil}, ErrDisclosure
 	}
 
 	data, err := invoke(ctx, pending.operation.Call)
@@ -309,5 +322,23 @@ func (gateway *Gateway) dropTarget(key string, resource *target) {
 	resource.users--
 	if resource.users == 0 {
 		delete(gateway.targets, key)
+	}
+}
+
+func allows(policy func([]string, string) bool, operation Operation) bool {
+	if len(operation.Sources) == 0 {
+		return true
+	}
+
+	return policy != nil && policy(slices.Clone(operation.Sources), operation.Destination)
+}
+
+func validOperation(operation Operation) bool {
+	switch operation.Impact {
+	case Read, Reversible, Speech, Irreversible:
+		return operation.Call != nil && operation.Destination != "" &&
+			(operation.Impact == Read || operation.ConflictKey != "")
+	default:
+		return false
 	}
 }

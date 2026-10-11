@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	testTimeout = 3 * time.Second
-	fastChannel = "fast"
+	testTimeout       = 3 * time.Second
+	fastChannel       = "fast"
+	fixtureProposalID = "ignored"
 )
 
 func TestParallelIndependence(t *testing.T) {
@@ -112,7 +113,7 @@ func TestCompletionOutcomes(t *testing.T) {
 			runner: func(context.Context, mind.Snapshot) (mind.Proposal, error) { return proposal("a"), nil },
 			want:   nil, discard: true},
 		{name: "invalid dependency", runner: func(context.Context, mind.Snapshot) (mind.Proposal, error) {
-			return mind.Proposal{ID: "ignored", Reads: nil, Writes: map[string]string{"a": "a"}}, nil
+			return mind.Proposal{ID: fixtureProposalID, Reads: nil, Writes: map[string]string{"a": "a"}}, nil
 		}, want: mind.ErrProposal, discard: false},
 	}
 
