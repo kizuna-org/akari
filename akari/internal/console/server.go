@@ -19,16 +19,22 @@ type Server struct {
 	address string
 }
 
-// Start binds the separate management listener and rotates its private per-process access code.
-func Start(ctx context.Context, address, directory string, reader Reader) (*Server, error) {
+// Start binds the separate management listener and configures its per-process access code.
+func Start(ctx context.Context, address, directory string, reader Reader, authDisabled bool) (*Server, error) {
 	listener, err := new(net.ListenConfig).Listen(ctx, "tcp", address)
 	if err != nil {
 		return nil, err
 	}
 
-	token := rand.Text()
+	token := ""
 
-	err = writeToken(directory, token)
+	if authDisabled {
+		err = removeToken(directory)
+	} else {
+		token = rand.Text()
+		err = writeToken(directory, token)
+	}
+
 	if err != nil {
 		_ = listener.Close()
 
@@ -38,7 +44,7 @@ func Start(ctx context.Context, address, directory string, reader Reader) (*Serv
 	const timeout = 5 * time.Second
 
 	transport := new(http.Server)
-	transport.Handler = NewHandler(token, reader)
+	transport.Handler = NewHandler(token, reader, authDisabled)
 	transport.ReadHeaderTimeout = timeout
 	transport.ReadTimeout = timeout
 	transport.WriteTimeout = timeout
@@ -53,6 +59,15 @@ func Start(ctx context.Context, address, directory string, reader Reader) (*Serv
 	}()
 
 	return server, nil
+}
+
+func removeToken(directory string) error {
+	err := os.Remove(filepath.Join(directory, "admin.token"))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+
+	return err
 }
 
 func (server *Server) Done() <-chan struct{} { return server.done }

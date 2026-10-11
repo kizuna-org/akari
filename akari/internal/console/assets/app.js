@@ -86,6 +86,7 @@
     $("link-count").textContent = state.links.length;
     $("login").hidden = true;
     $("app").hidden = false;
+    if (document.body.dataset.authDisabled === "true") $("logout").hidden = true;
     $("code").value = "";
     $("app-error").hidden = true;
     mermaid.initialize({

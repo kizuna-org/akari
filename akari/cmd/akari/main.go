@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -44,8 +45,15 @@ func run() int {
 		adminAddress = "127.0.0.1:8082"
 	}
 
-	err := host.RunWith(ctx, address, func(ctx context.Context) (host.Service, error) {
-		return startManaged(ctx, adminAddress, directory, stop)
+	authDisabled, err := adminAuthDisabled()
+	if err != nil {
+		slog.Error("invalid AKARI_ADMIN_AUTH_DISABLED value", "error", err)
+
+		return 1
+	}
+
+	err = host.RunWith(ctx, address, func(ctx context.Context) (host.Service, error) {
+		return startManaged(ctx, adminAddress, directory, authDisabled, stop)
 	})
 	if err != nil {
 		slog.Error("foundation host stopped", "error", err)
@@ -56,6 +64,15 @@ func run() int {
 	return 0
 }
 
+func adminAuthDisabled() (bool, error) {
+	value := os.Getenv("AKARI_ADMIN_AUTH_DISABLED")
+	if value == "" {
+		return false, nil
+	}
+
+	return strconv.ParseBool(value)
+}
+
 func (service managed) Close(ctx context.Context) error {
 	stateErr := service.session.Close(ctx)
 	consoleErr := service.console.Close(ctx)
@@ -63,7 +80,8 @@ func (service managed) Close(ctx context.Context) error {
 	return errors.Join(stateErr, consoleErr)
 }
 
-func startManaged(ctx context.Context, address, directory string, stop context.CancelFunc) (host.Service, error) {
+func startManaged(ctx context.Context, address, directory string, authDisabled bool,
+	stop context.CancelFunc) (host.Service, error) {
 	store, err := persistence.New(directory)
 	if err != nil {
 		return nil, err
@@ -79,7 +97,7 @@ func startManaged(ctx context.Context, address, directory string, stop context.C
 		return nil, err
 	}
 
-	admin, err := console.Start(ctx, address, directory, session)
+	admin, err := console.Start(ctx, address, directory, session, authDisabled)
 	if err != nil {
 		const cleanupTimeout = 5 * time.Second
 

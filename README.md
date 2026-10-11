@@ -52,6 +52,10 @@ GoLand / `make run`では、`akari/data/admin.token`にある管理用コード�
 - 稼働状態：採用版・保存版・outboxの概要。
 
 管理アドレスは`AKARI_ADMIN_ADDR`で変更します。通常のhealthポートとは分離しています。
+`AKARI_ADMIN_AUTH_DISABLED=true`を設定すると、管理画面のアプリケーション認証を無効にします。
+この設定では`admin.token`を作成せず、管理画面のデータAPIをトークンなしで利用できます。
+管理アドレスを信頼できるネットワークや認証付きプロキシの内側に限定してください。
+TLS終端プロキシを使う場合、同一オリジン検証とSecure Cookieには`X-Forwarded-Proto: https`を使います。
 ドキュメントはビルド時に同梱し、画面の利用にNodeや外部CDNは不要です。
 
 ## Docker

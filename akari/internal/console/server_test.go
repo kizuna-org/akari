@@ -22,7 +22,7 @@ func TestServerRotatesCodeAndStops(t *testing.T) {
 				require(t, os.WriteFile(filepath.Join(directory, "admin.token"), []byte(testToken), 0o644))
 			}
 
-			server, err := Start(t.Context(), "127.0.0.1:0", directory, staticReader{frame: emptyFrame()})
+			server, err := Start(t.Context(), "127.0.0.1:0", directory, staticReader{frame: emptyFrame()}, false)
 
 			require(t, err)
 
@@ -59,6 +59,39 @@ func TestServerRotatesCodeAndStops(t *testing.T) {
 	}
 }
 
+func TestServerWithAuthenticationDisabled(t *testing.T) {
+	t.Parallel()
+
+	directory := t.TempDir()
+	require(t, os.WriteFile(filepath.Join(directory, "admin.token"), []byte(testToken), 0o600))
+	server, err := Start(t.Context(), "127.0.0.1:0", directory, staticReader{frame: emptyFrame()}, true)
+	require(t, err)
+
+	defer func() { require(t, server.Close(t.Context())) }()
+
+	_, statErr := os.Stat(filepath.Join(directory, "admin.token"))
+	if !os.IsNotExist(statErr) {
+		t.Fatal("disabled authentication left an active-looking management code")
+	}
+
+	for _, path := range []string{"/", "/api/docs", "/api/status"} {
+		request, err := http.NewRequestWithContext(t.Context(), http.MethodGet,
+			"http://"+server.Address()+path, nil)
+		require(t, err)
+
+		response, err := new(http.Client).Do(request)
+		require(t, err)
+
+		if response.StatusCode != http.StatusOK {
+			require(t, response.Body.Close())
+
+			t.Fatalf("%s status = %d, want %d", path, response.StatusCode, http.StatusOK)
+		}
+
+		require(t, response.Body.Close())
+	}
+}
+
 func TestServerRejectsFailedStartup(t *testing.T) {
 	t.Parallel()
 
@@ -81,7 +114,7 @@ func TestServerRejectsFailedStartup(t *testing.T) {
 			}
 
 			server, err := Start(ctx, test.address, filepath.Join(t.TempDir(), "missing"),
-				staticReader{frame: emptyFrame()})
+				staticReader{frame: emptyFrame()}, false)
 			if err == nil || server != nil {
 				t.Fatal("failed startup succeeded")
 			}
