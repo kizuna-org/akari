@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export AKARI_ADMIN_ADDR=127.0.0.1:0
 
 binary=${1:?usage: smokeHost.sh /path/to/akari}
 scratch=$(mktemp -d)
@@ -25,7 +26,7 @@ start_host() {
   address=
 
   for ((attempt = 0; attempt < 100; attempt++)); do
-    address=$(sed -n 's/.*address=\(127\.0\.0\.1:[0-9]*\).*/\1/p' "$scratch/host.log")
+    address=$(sed -n 's/.*foundation host listening.*address=\(127\.0\.0\.1:[0-9]*\).*/\1/p' "$scratch/host.log")
     if [[ -n "$address" ]]; then
       break
     fi
@@ -49,6 +50,17 @@ saved_sequence() {
 start_host
 initial_sequence=$(saved_sequence)
 [[ "$initial_sequence" == 1 ]]
+admin_address=$(sed -n 's/.*management console listening.*address=\(127\.0\.0\.1:[0-9]*\).*/\1/p' "$scratch/host.log")
+[[ -n "$admin_address" ]]
+unauthorized=$(curl --noproxy '*' --max-time 5 --silent --output /dev/null --write-out '%{http_code}' "http://$admin_address/api/status")
+[[ "$unauthorized" == 401 ]]
+admin_token=$(cat "$scratch/state/admin.token")
+status_json=$(curl --noproxy '*' --max-time 5 --fail --silent -H "Authorization: Bearer $admin_token" "http://$admin_address/api/status")
+[[ "$status_json" == *'"permission":"observer"'* ]]
+curl --noproxy '*' --max-time 5 --fail --silent -H "Authorization: Bearer $admin_token" "http://$admin_address/api/docs" > "$scratch/docs.json"
+[[ -n "$(sed -n '/docs\/06-architecture.md/p' "$scratch/docs.json")" ]]
+public_admin=$(curl --noproxy '*' --max-time 5 --silent --output /dev/null --write-out '%{http_code}' "http://$address/api/status")
+[[ "$public_admin" == 404 ]]
 
 response=$(curl --noproxy '*' --max-time 5 --fail --silent "http://$address/healthz")
 [[ "$response" == '{"status":"alive","mode":"foundation"}' ]]

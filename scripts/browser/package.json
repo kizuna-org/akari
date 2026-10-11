@@ -1,0 +1,11 @@
+{
+  "name": "akari-console-checks",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node consoleTest.cjs ../../akari/bin/akari"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

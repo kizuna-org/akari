@@ -61,4 +61,5 @@ Composeは既存の`akari-data` volumeを`/data`にmountし、`AKARI_DATA_DIR=/d
 - Dockerの正常再起動で同じvolumeを復元し、保存Sequenceが一回だけ進むこと。CIにも追加。
 
 実サービスの冪等性、物理的な電源断、OS内で停止するfsyncの強制中断は実証していません。
-常設Channel、入力媒体、最低応答、管理画面、実LLM・MCPは引き続き後続です。
+管理画面の概要閲覧とdocs可視化は [10](./10-console.md) にあります。
+常設Channel、入力媒体、最低応答、管理操作、実LLM・MCPは引き続き後続です。

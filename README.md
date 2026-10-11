@@ -11,6 +11,7 @@
 [保存・復元・outbox](./design/08-durable-state.md) はローカルファイルと疑似の行為で検証し、
 プロセスの強制終了後も結果不明の行為を再送しない基盤を実装しています。
 [ホスト起動・停止](./design/09-host-lifecycle.md)にも保存復元を接続しました。
+[管理コンソール](./design/10-console.md)にはdocsの関係図・検索・図の表示と、稼働状態の概要を用意しました。
 **常設Channel、実LLM・実MCPはまだ接続していません。**
 `/healthz` はホストの生存だけを示し、Akariが思考できることは示しません。
 
@@ -39,6 +40,20 @@ curl http://127.0.0.1:8080/healthz
 アドレスを変える場合は `AKARI_ADDR=127.0.0.1:8081 make run` とします。
 `.env.example` は設定例です。ホストはdotenvを自動では読みません。
 
+## 管理コンソール
+
+起動後、[http://127.0.0.1:8082](http://127.0.0.1:8082)を開きます。
+GoLand / `make run`では、`akari/data/admin.token`にある管理用コードでログインします。
+`AKARI_DATA_DIR`を変更している場合は、そのディレクトリの`admin.token`を確認してください。
+コードは起動ごとに更新します。画面は閲覧専用です。
+
+- 設計マップ：docs / designの参照関係から本文へ移動。
+- ドキュメント：全文検索、章の目次、関連資料、Mermaid図の拡大縮小。
+- 稼働状態：採用版・保存版・outboxの概要。
+
+管理アドレスは`AKARI_ADMIN_ADDR`で変更します。通常のhealthポートとは分離しています。
+ドキュメントはビルド時に同梱し、画面の利用にNodeや外部CDNは不要です。
+
 ## Docker
 
 リポジトリのルートで実行します。
@@ -48,6 +63,10 @@ docker compose up --build -d --wait
 curl http://127.0.0.1:8080/healthz
 docker compose down
 ```
+
+管理画面は同じく[http://127.0.0.1:8082](http://127.0.0.1:8082)です。
+起動中に`docker compose exec akari cat /data/admin.token`でコードを確認します。
+管理側のポートは`AKARI_ADMIN_PORT`で変更できます。
 
 公開先は既定でlocalhostです。ポートは `AKARI_PORT=8081 docker compose up --build -d --wait`
 で変えられます。非rootで実行し、root filesystemは読み取り専用です。
@@ -70,3 +89,6 @@ make docker-check
 lintは既存のgolangci-lint（default: all）を継続し、初回はツールのダウンロードが必要です。
 coverageはinternalパッケージを対象にし、薄いプロセス入口は実バイナリの起動・停止で検証します。
 HTTPのホスト基盤・並列実行の契約と、後続で実装する人格の振る舞いの検証は分けて報告します。
+
+ブラウザ検証は`make build`後、`scripts/browser`で`npm ci`、
+`npx playwright install chromium`、`npm test`を実行します。Nodeは検証時だけ必要です。
