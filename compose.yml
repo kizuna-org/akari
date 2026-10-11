@@ -10,6 +10,7 @@ services:
     environment:
       AKARI_ADDR: ":8080"
       AKARI_ADMIN_ADDR: ":8082"
+      AKARI_ADMIN_AUTH_DISABLED: "${AKARI_ADMIN_AUTH_DISABLED:-false}"
       AKARI_DATA_DIR: "/data"
     ports:
       - "127.0.0.1:${AKARI_PORT:-8080}:8080"

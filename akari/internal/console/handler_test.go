@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	testToken  = "test-only-management-code"
-	statusPath = "/api/status"
-	docsPath   = "/api/docs"
-	testOrigin = "http://example.com"
+	testToken     = "test-only-management-code"
+	statusPath    = "/api/status"
+	docsPath      = "/api/docs"
+	testOrigin    = "http://example.com"
+	testOriginTLS = "https://example.com"
 )
 
 type staticReader struct{ frame continuity.Frame }
@@ -64,7 +65,7 @@ func TestConsoleRoutesAndRedaction(t *testing.T) {
 			request.Header.Set("Authorization", "Bearer "+test.auth)
 
 			response := httptest.NewRecorder()
-			NewHandler(testToken, staticReader{frame: frame}).ServeHTTP(response, request)
+			NewHandler(testToken, staticReader{frame: frame}, false).ServeHTTP(response, request)
 
 			if response.Code != test.want || response.Header().Get("Cache-Control") != "no-store" ||
 				response.Header().Get("Content-Security-Policy") == "" {
@@ -80,29 +81,32 @@ func TestAuthenticationAndOrigin(t *testing.T) {
 	t.Parallel()
 
 	for _, test := range []struct {
-		name   string
-		method string
-		body   string
-		origin string
-		tls    bool
-		want   int
+		name           string
+		method         string
+		body           string
+		origin         string
+		forwardedProto string
+		tls            bool
+		want           int
 	}{
 		{name: "login", method: http.MethodPost, body: `{"token":"` + testToken + `"}`,
-			origin: testOrigin, tls: false, want: http.StatusNoContent},
+			origin: testOrigin, forwardedProto: "", tls: false, want: http.StatusNoContent},
 		{name: "TLS", method: http.MethodPost, body: `{"token":"` + testToken + `"}`,
-			origin: "https://example.com", tls: true, want: http.StatusNoContent},
+			origin: testOriginTLS, forwardedProto: "", tls: true, want: http.StatusNoContent},
+		{name: "TLS proxy", method: http.MethodPost, body: `{"token":"` + testToken + `"}`,
+			origin: testOriginTLS, forwardedProto: schemeHTTPS, tls: false, want: http.StatusNoContent},
 		{name: "wrong token", method: http.MethodPost, body: `{"token":"wrong"}`,
-			origin: testOrigin, tls: false, want: http.StatusUnauthorized},
+			origin: testOrigin, forwardedProto: "", tls: false, want: http.StatusUnauthorized},
 		{name: "invalid JSON", method: http.MethodPost, body: `{`,
-			origin: testOrigin, tls: false, want: http.StatusUnauthorized},
+			origin: testOrigin, forwardedProto: "", tls: false, want: http.StatusUnauthorized},
 		{name: "oversize", method: http.MethodPost, body: strings.Repeat("x", 2048),
-			origin: testOrigin, tls: false, want: http.StatusUnauthorized},
+			origin: testOrigin, forwardedProto: "", tls: false, want: http.StatusUnauthorized},
 		{name: "foreign login", method: http.MethodPost, body: "", origin: "http://foreign.example",
-			tls: false, want: http.StatusForbidden},
+			forwardedProto: "", tls: false, want: http.StatusForbidden},
 		{name: "logout", method: http.MethodDelete, body: "", origin: testOrigin,
-			tls: false, want: http.StatusNoContent},
+			forwardedProto: "", tls: false, want: http.StatusNoContent},
 		{name: "foreign logout", method: http.MethodDelete, body: "", origin: "",
-			tls: false, want: http.StatusForbidden},
+			forwardedProto: "", tls: false, want: http.StatusForbidden},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -111,12 +115,16 @@ func TestAuthenticationAndOrigin(t *testing.T) {
 				strings.NewReader(test.body))
 			request.Header.Set("Origin", test.origin)
 
+			if test.forwardedProto != "" {
+				request.Header.Set("X-Forwarded-Proto", test.forwardedProto)
+			}
+
 			if test.tls {
 				request.TLS = new(tls.ConnectionState)
 			}
 
 			response := httptest.NewRecorder()
-			NewHandler(testToken, staticReader{frame: emptyFrame()}).ServeHTTP(response, request)
+			NewHandler(testToken, staticReader{frame: emptyFrame()}, false).ServeHTTP(response, request)
 
 			if response.Code != test.want {
 				t.Fatalf("code = %d, want %d", response.Code, test.want)
@@ -126,7 +134,8 @@ func TestAuthenticationAndOrigin(t *testing.T) {
 				result := response.Result()
 				defer func() { require(t, result.Body.Close()) }()
 
-				checkCookie(t, result.Cookies()[0], test.method, test.tls)
+				checkCookie(t, result.Cookies()[0], test.method,
+					test.tls || test.forwardedProto == schemeHTTPS)
 			}
 		})
 	}
@@ -143,12 +152,39 @@ func TestCookieAndEmptyCode(t *testing.T) {
 			request.AddCookie(sessionCookie(testToken, false, 0))
 
 			response := httptest.NewRecorder()
-			NewHandler(token, staticReader{frame: emptyFrame()}).ServeHTTP(response, request)
+			NewHandler(token, staticReader{frame: emptyFrame()}, false).ServeHTTP(response, request)
 
 			if (response.Code == http.StatusOK) != (token != "") {
 				t.Fatal("empty code allowed administrative access or valid cookie was rejected")
 			}
 		})
+	}
+}
+
+func TestAuthenticationDisabled(t *testing.T) {
+	t.Parallel()
+
+	for _, path := range []string{docsPath, statusPath} {
+		t.Run(path, func(t *testing.T) {
+			t.Parallel()
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil)
+			response := httptest.NewRecorder()
+			NewHandler("", staticReader{frame: emptyFrame()}, true).ServeHTTP(response, request)
+
+			if response.Code != http.StatusOK {
+				t.Fatalf("code = %d, want %d", response.Code, http.StatusOK)
+			}
+		})
+	}
+
+	for _, path := range []string{"/", "/assets/index.html"} {
+		request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil)
+		response := httptest.NewRecorder()
+		NewHandler("", staticReader{frame: emptyFrame()}, true).ServeHTTP(response, request)
+
+		if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `data-auth-disabled="true"`) {
+			t.Fatalf("%s did not advertise the authentication-disabled mode to the UI", path)
+		}
 	}
 }
 

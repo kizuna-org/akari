@@ -6,6 +6,7 @@ binary=${1:?usage: smokeHost.sh /path/to/akari}
 scratch=$(mktemp -d)
 host_pid=
 rejected_pid=
+host_log=
 
 cleanup() {
   if [[ -n "$rejected_pid" ]]; then
@@ -48,17 +49,20 @@ reject_within_deadline() {
 reject_within_deadline "$scratch/invalid.log" "invalid address" env AKARI_DATA_DIR="$scratch/state" AKARI_ADDR=invalid "$binary"
 
 start_host() {
-  AKARI_DATA_DIR="$scratch/state" AKARI_ADDR=127.0.0.1:0 "$binary" >"$scratch/host.log" 2>&1 &
+  local auth_disabled=${1:-false}
+  host_log="$scratch/host-$auth_disabled.log"
+  AKARI_DATA_DIR="$scratch/state" AKARI_ADDR=127.0.0.1:0 \
+    AKARI_ADMIN_AUTH_DISABLED="$auth_disabled" "$binary" >"$host_log" 2>&1 &
   host_pid=$!
   address=
 
   for ((attempt = 0; attempt < 100; attempt++)); do
-    address=$(sed -n 's/.*foundation host listening.*address=\(127\.0\.0\.1:[0-9]*\).*/\1/p' "$scratch/host.log")
+    address=$(sed -n 's/.*foundation host listening.*address=\(127\.0\.0\.1:[0-9]*\).*/\1/p' "$host_log")
     if [[ -n "$address" ]]; then
       break
     fi
     if ! kill -0 "$host_pid" 2>/dev/null; then
-      cat "$scratch/host.log" >&2
+      cat "$host_log" >&2
       exit 1
     fi
     sleep 0.05
@@ -77,7 +81,7 @@ saved_sequence() {
 start_host
 initial_sequence=$(saved_sequence)
 [[ "$initial_sequence" == 1 ]]
-admin_address=$(sed -n 's/.*management console listening.*address=\(127\.0\.0\.1:[0-9]*\).*/\1/p' "$scratch/host.log")
+admin_address=$(sed -n 's/.*management console listening.*address=\(127\.0\.0\.1:[0-9]*\).*/\1/p' "$host_log")
 [[ -n "$admin_address" ]]
 unauthorized=$(curl --noproxy '*' --max-time 5 --silent --output /dev/null --write-out '%{http_code}' "http://$admin_address/api/status")
 [[ "$unauthorized" == 401 ]]
@@ -121,3 +125,18 @@ reject_within_deadline "$scratch/corrupt.log" "corrupt saved state" env AKARI_DA
 [[ -z "$(sed -n '/foundation host listening/p' "$scratch/corrupt.log")" ]]
 
 echo "host smoke passed: restore, exclusive ownership, SIGTERM save, SIGKILL restart, corrupt-state rejection, liveness"
+
+start_host true
+[[ ! -e "$scratch/state/admin.token" ]]
+admin_address=$(sed -n 's/.*management console listening.*address=\(127\.0\.0\.1:[0-9]*\).*/\1/p' "$host_log")
+[[ -n "$admin_address" ]]
+status_json=$(curl --noproxy '*' --max-time 5 --fail --silent "http://$admin_address/api/status")
+[[ "$status_json" == *'"permission":"observer"'* ]]
+curl --noproxy '*' --max-time 5 --fail --silent "http://$admin_address/assets/index.html" > "$scratch/console.html"
+[[ "$(sed -n '/data-auth-disabled="true"/p' "$scratch/console.html")" ]]
+
+kill -TERM "$host_pid"
+wait "$host_pid"
+host_pid=
+
+echo "admin smoke passed: authentication disabled without a token"

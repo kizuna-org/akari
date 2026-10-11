@@ -6,6 +6,7 @@ import (
 	"embed"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/kizuna-org/akari/internal/continuity"
@@ -20,33 +21,48 @@ var assets embed.FS
 var documents []byte
 
 const cookieName = "akari_console"
+const schemeHTTPS = "https"
 
 // Reader is management-only. Its raw export never crosses this console's HTTP boundary.
 type Reader interface {
 	Export() continuity.Frame
 }
 
-func NewHandler(token string, reader Reader) http.Handler {
+func NewHandler(token string, reader Reader, authDisabled bool) http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /{$}", asset("index.html"))
+	mux.HandleFunc("GET /{$}", asset("index.html", authDisabled))
 	mux.HandleFunc("GET /assets/{name}", func(writer http.ResponseWriter, request *http.Request) {
-		asset(request.PathValue("name"))(writer, request)
+		asset(request.PathValue("name"), authDisabled)(writer, request)
 	})
-	mux.HandleFunc("POST /api/session", login(token))
-	mux.HandleFunc("DELETE /api/session", logout)
-	mux.Handle("GET /api/docs", authorize(token, http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc("POST /api/session", login(token, authDisabled))
+	mux.HandleFunc("DELETE /api/session", logout(authDisabled))
+
+	docsHandler := http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
 		_, _ = writer.Write(documents)
-	})))
-	mux.Handle("GET /api/status", authorize(token, http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
-		writer.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(writer).Encode(project(reader.Export()))
-	})))
+	})
+	mux.Handle("GET /api/docs", authorize(token, authDisabled, docsHandler))
+
+	mux.Handle("GET /api/status", authorize(token, authDisabled, statusHandler(reader)))
 
 	return headers(mux)
 }
 
-func asset(name string) http.HandlerFunc {
+func statusHandler(reader Reader) http.HandlerFunc {
+	return func(writer http.ResponseWriter, _ *http.Request) {
+		data, err := json.Marshal(project(reader.Export()))
+		if err != nil {
+			http.Error(writer, "status unavailable", http.StatusInternalServerError)
+
+			return
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, _ = writer.Write(data)
+	}
+}
+
+func asset(name string, authDisabled bool) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if strings.ContainsAny(name, "/\\") || strings.HasPrefix(name, ".") {
 			http.NotFound(writer, request)
@@ -59,6 +75,11 @@ func asset(name string) http.HandlerFunc {
 			http.NotFound(writer, request)
 
 			return
+		}
+
+		if name == "index.html" {
+			data = []byte(strings.ReplaceAll(string(data), `data-auth-disabled="false"`,
+				`data-auth-disabled="`+strconv.FormatBool(authDisabled)+`"`))
 		}
 
 		switch {
@@ -88,8 +109,14 @@ func headers(next http.Handler) http.Handler {
 	})
 }
 
-func authorize(token string, next http.Handler) http.Handler {
+func authorize(token string, authDisabled bool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if authDisabled {
+			next.ServeHTTP(writer, request)
+
+			return
+		}
+
 		provided := strings.TrimPrefix(request.Header.Get("Authorization"), "Bearer ")
 
 		cookie, err := request.Cookie(cookieName)
@@ -107,8 +134,14 @@ func authorize(token string, next http.Handler) http.Handler {
 	})
 }
 
-func login(token string) http.HandlerFunc {
+func login(token string, authDisabled bool) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+		if authDisabled {
+			writer.WriteHeader(http.StatusNoContent)
+
+			return
+		}
+
 		if !sameOrigin(request) {
 			http.Error(writer, "same-origin request required", http.StatusForbidden)
 
@@ -128,29 +161,46 @@ func login(token string) http.HandlerFunc {
 			return
 		}
 
-		http.SetCookie(writer, sessionCookie(token, request.TLS != nil, 0))
+		http.SetCookie(writer, sessionCookie(token, requestScheme(request) == schemeHTTPS, 0))
 		writer.WriteHeader(http.StatusNoContent)
 	}
 }
 
-func logout(writer http.ResponseWriter, request *http.Request) {
-	if !sameOrigin(request) {
-		http.Error(writer, "same-origin request required", http.StatusForbidden)
+func logout(authDisabled bool) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if authDisabled {
+			writer.WriteHeader(http.StatusNoContent)
 
-		return
+			return
+		}
+
+		if !sameOrigin(request) {
+			http.Error(writer, "same-origin request required", http.StatusForbidden)
+
+			return
+		}
+
+		http.SetCookie(writer, sessionCookie("", requestScheme(request) == schemeHTTPS, -1))
+		writer.WriteHeader(http.StatusNoContent)
 	}
-
-	http.SetCookie(writer, sessionCookie("", request.TLS != nil, -1))
-	writer.WriteHeader(http.StatusNoContent)
 }
 
 func sameOrigin(request *http.Request) bool {
-	scheme := "http://"
+	return request.Header.Get("Origin") == requestScheme(request)+"://"+request.Host
+}
+
+func requestScheme(request *http.Request) string {
 	if request.TLS != nil {
-		scheme = "https://"
+		return schemeHTTPS
+	}
+	// Reverse proxies terminate TLS before forwarding the request over HTTP.
+	// Use the first forwarded value, following the standard proxy header format.
+	forwarded := strings.TrimSpace(strings.Split(request.Header.Get("X-Forwarded-Proto"), ",")[0])
+	if forwarded == schemeHTTPS {
+		return schemeHTTPS
 	}
 
-	return request.Header.Get("Origin") == scheme+request.Host
+	return "http"
 }
 
 func sessionCookie(token string, secure bool, maxAge int) *http.Cookie {
