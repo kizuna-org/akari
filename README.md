@@ -63,8 +63,10 @@ GoLand / `make run`では、`akari/data/admin.token`にある管理用コード�
 TLS終端プロキシを使う場合、同一オリジン検証とSecure Cookieには`X-Forwarded-Proto: https`を使います。
 文書は初回だけ同梱データからGitリポジトリを作成し、以降はGitのHEADから読みます。
 `AKARI_DOCS_REPO`で既存のworktreeも指定できます。画面の利用にNodeや外部CDNは不要です。
-MCPの接続先は`http://127.0.0.1:8082/mcp`です。
-認証・ツール一覧・REST APIは[接続手順](./design/11-development-workspace.md)を参照してください。
+ローカル開発時のMCP接続先は`http://127.0.0.1:8082/mcp`です。本番接続先とCodex設定は
+`.codex/config.toml`にあります。本番MCPはCloudflare Access Managed OAuthで認証し、AkariでもAccess JWTを検証します。
+Cloudflare Tunnel経由の接続とJWT検証設定は[接続手順](./design/11-development-workspace.md)を参照してください。
+認証・ツール一覧・REST APIも同じ接続手順に記載しています。
 
 ## Docker
 
