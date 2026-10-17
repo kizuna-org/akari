@@ -396,19 +396,6 @@
       "title": "Akari MCPとREST API",
       "description": "タスクCRUDとGit文書の8ツールをStreamable HTTPで公開し、実クライアントで検証する。",
       "status": "done"
-    },
-    {
-      "version": 1,
-      "priority": "high",
-      "category": "runtime",
-      "notes": "最優先の管理基盤ができた後の次段階。実行するモデル・CLIと権限の接続も必要。",
-      "references": [
-        "design/11-development-workspace.md"
-      ],
-      "id": "PAR-01",
-      "title": "開発タスクを並列に実行する",
-      "description": "先行するDB・Git文書・MCP/APIを使い、依存関係、リース、二重実行防止、取消、並列上限、worktree分離を備えた実行ワーカーを実装する。",
-      "status": "todo"
     }
   ]
 }

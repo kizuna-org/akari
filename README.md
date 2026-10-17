@@ -14,7 +14,8 @@
 [管理コンソール](./design/10-console.md)にはdocsの関係図・検索・図の表示と、稼働状態の概要を用意しました。
 [開発ワークスペース](./design/11-development-workspace.md)では、SQLiteのタスク管理、GitのMarkdown編集、
 Akari MCPとREST APIを同じコンソールへ接続しています。
-**常設Channel、実LLM、Akariが外部の道具を使うMCP接続と、開発タスクの実行ワーカーは未接続です。**
+**常設Channel、実LLM、Akariが外部の道具を使うMCP接続は未接続です。**
+開発タスクの実行・並列化は外部のコーディングエージェントが担い、Akariはタスク・文書とMCP/APIを提供します。
 `/healthz` はホストの生存だけを示し、Akariが思考できることは示しません。
 
 ## Go / GoLand
