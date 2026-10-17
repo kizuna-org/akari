@@ -66,7 +66,7 @@ coverageは `-count=1` で全パッケージを同じソース版から再実行
 
 [開発タスク・Git文書・Akari MCP](./11-development-workspace.md)を追加しました。
 
-- lint 0 issues、race付きテスト成功、internal合算のstatement coverageは95.1%。
+- lint 0 issues、race付きテスト成功、internal合算のstatement coverageは95.0%。
 - SQLiteの保存復元、タスクごとの同時編集、失敗したトランザクションの全体ロールバックを検証。
 - 破損・欠損schemaを初期データで上書きせず、Gitのパス制限・symlink・競合・コミット失敗を検証。
 - 公式MCPクライアントの初期化・8ツールの発見・タスクCRUD・Git更新をHTTPで検証。

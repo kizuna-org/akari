@@ -12,17 +12,25 @@ import (
 func TestGitDocumentLifecycle(t *testing.T) {
 	t.Parallel()
 
-	for _, name := range []string{"create edit commit reopen"} {
-		t.Run(name, func(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		seed []Document
+	}{
+		{name: "create edit commit reopen", seed: testDocuments()},
+		{name: "docs-only repository", seed: testDocuments()[:1]},
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
 			directory := filepath.Join(t.TempDir(), "repository")
-			repository, err := Open(t.Context(), directory, true, testDocuments())
+			seed := test.seed
+
+			repository, err := Open(t.Context(), directory, true, seed)
 			must(t, err)
 			library, err := repository.List(t.Context())
 			must(t, err)
 
-			if len(library) != 2 || library[0].Revision == "" {
+			if len(library) != len(seed) || library[0].Revision == "" {
 				t.Fatal("Git seed documents missing")
 			}
 

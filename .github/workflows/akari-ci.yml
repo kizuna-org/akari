@@ -43,6 +43,7 @@ jobs:
       - name: Verify no generated changes
         run: |
           git diff --exit-code
+          git status --porcelain
           test -z "$(git status --porcelain)"
       - uses: actions/upload-artifact@v7
         with:

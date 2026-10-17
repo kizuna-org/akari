@@ -26,7 +26,7 @@ const (
 	privateDirectory                  = 0o700
 	privateFile                       = 0o600
 	gitTimeout                        = 5 * time.Second
-	gitFixedArguments                 = 10
+	gitFixedArguments                 = 8
 )
 
 type Document struct {
@@ -79,31 +79,7 @@ func (repository *Repository) List(ctx context.Context) ([]Document, error) {
 		return nil, err
 	}
 
-	paths, err := repository.git(ctx, "ls-tree", "-r", "--name-only", head, "--", "docs", "design")
-	if err != nil {
-		return nil, err
-	}
-
-	documents := []Document{}
-
-	for path := range strings.SplitSeq(strings.TrimSpace(paths), "\n") {
-		if !validPath(path) {
-			continue
-		}
-
-		content, readErr := repository.git(ctx, "show", head+":"+path)
-		if readErr != nil {
-			return nil, readErr
-		}
-
-		if len(content) > maxContent {
-			return nil, ErrInvalid
-		}
-
-		documents = append(documents, Document{Path: path, Content: content, Revision: head})
-	}
-
-	return documents, nil
+	return repository.listAtHead(ctx, head)
 }
 
 func (repository *Repository) Read(ctx context.Context, path string) (Document, error) {
@@ -194,7 +170,7 @@ func (repository *Repository) seed(ctx context.Context, seed []Document) error {
 		}
 	}
 
-	_, err := repository.git(ctx, "add", "--", "docs", "design")
+	err := repository.stageNamespaces(ctx)
 	if err != nil {
 		return err
 	}
@@ -205,9 +181,13 @@ func (repository *Repository) seed(ctx context.Context, seed []Document) error {
 }
 
 func (repository *Repository) commitDocument(ctx context.Context, document Document, head string) (Document, error) {
-	previous, err := repository.git(ctx, "show", head+":"+document.Path)
-	if err == nil && previous == document.Content {
-		return document, nil
+	previous, err := repository.existingAtHead(ctx, head, document.Path)
+	if err != nil {
+		return Document{}, err
+	}
+
+	if previous.Path != "" && previous.Content == document.Content {
+		return previous, nil
 	}
 
 	writeErr := repository.writeFile(document)
@@ -215,12 +195,21 @@ func (repository *Repository) commitDocument(ctx context.Context, document Docum
 		return Document{}, writeErr
 	}
 
-	_, err = repository.git(ctx, "add", "--", document.Path)
+	err = repository.stageNamespaces(ctx)
 	if err != nil {
 		return Document{}, err
 	}
 
-	_, err = repository.git(ctx, "commit", "--only", "-m", "docs: update "+document.Path, "--", document.Path)
+	changed, err := repository.git(ctx, "diff", "--cached", "--name-only")
+	if err != nil {
+		return Document{}, err
+	}
+
+	if strings.TrimSpace(changed) != document.Path {
+		return Document{}, ErrConflict
+	}
+
+	_, err = repository.git(ctx, "commit", "-m", "docs: update Markdown documentation")
 	if err != nil {
 		return Document{}, err
 	}
@@ -228,6 +217,78 @@ func (repository *Repository) commitDocument(ctx context.Context, document Docum
 	document.Revision, err = repository.head(ctx)
 
 	return document, err
+}
+
+// Resolve existing filenames from Git's own tree. Request paths are used only
+// for comparison and rooted file writes, never as executable command arguments.
+func (repository *Repository) existingAtHead(ctx context.Context, head, path string) (Document, error) {
+	documents, err := repository.listAtHead(ctx, head)
+	if err != nil {
+		return Document{}, err
+	}
+
+	for _, document := range documents {
+		if document.Path == path {
+			return document, nil
+		}
+	}
+
+	return Document{Path: "", Content: "", Revision: ""}, nil
+}
+
+func (repository *Repository) listAtHead(ctx context.Context, head string) ([]Document, error) {
+	paths, err := repository.git(ctx, "ls-tree", "-r", "--name-only", head, "--", "docs", "design")
+	if err != nil {
+		return nil, err
+	}
+
+	documents := []Document{}
+
+	for path := range strings.SplitSeq(strings.TrimSpace(paths), "\n") {
+		if !validPath(path) {
+			continue
+		}
+
+		content, readErr := repository.git(ctx, "show", head+":"+path)
+		if readErr != nil {
+			return nil, readErr
+		}
+
+		if len(content) > maxContent {
+			return nil, ErrInvalid
+		}
+
+		documents = append(documents, Document{Path: path, Content: content, Revision: head})
+	}
+
+	return documents, nil
+}
+
+func (repository *Repository) stageNamespaces(ctx context.Context) error {
+	root, err := os.OpenRoot(repository.directory)
+	if err != nil {
+		return err
+	}
+
+	defer func() { _ = root.Close() }()
+
+	for _, namespace := range []string{"docs", "design"} {
+		_, statErr := root.Stat(namespace)
+		if errors.Is(statErr, os.ErrNotExist) {
+			continue
+		}
+
+		if statErr != nil {
+			return statErr
+		}
+
+		_, err = repository.git(ctx, "add", "--all", "--", namespace)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (repository *Repository) head(ctx context.Context) (string, error) {
@@ -281,10 +342,11 @@ func (repository *Repository) git(ctx context.Context, arguments ...string) (str
 
 	options := make([]string, 0, gitFixedArguments+len(arguments))
 	options = append(options, "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false",
-		"-c", "user.name=Akari Docs", "-c", "user.email=akari@localhost", "-C", repository.directory)
+		"-c", "user.name=Akari Docs", "-c", "user.email=akari@localhost")
 
 	//nolint:gosec // Fixed Git binary, explicit arguments and validated Markdown paths; no shell or remote commands.
 	command := exec.CommandContext(ctx, "git", append(options, arguments...)...)
+	command.Dir = repository.directory
 
 	output, err := command.Output()
 	if err != nil {
