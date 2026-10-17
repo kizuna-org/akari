@@ -9,6 +9,7 @@
     <script defer src="/assets/marked.js"></script>
     <script defer src="/assets/purify.js"></script>
     <script defer src="/assets/mermaid.js"></script>
+    <script defer src="/assets/tasks.js"></script>
     <script defer src="/assets/app.js"></script>
   </head>
   <body data-auth-disabled="false">
@@ -17,7 +18,7 @@
         <div class="brand-mark">a<span>·</span></div>
         <p class="eyebrow">AKARI / MANAGEMENT</p>
         <h1 id="login-title">管理コンソール</h1>
-        <p>設計を読み、いまの状態を見渡す。</p>
+        <p>設計・開発タスク・稼働状況を、ひとつの場所で。</p>
         <label for="code">管理用コード</label>
         <input
           id="code"
@@ -47,6 +48,7 @@
         <nav aria-label="メインメニュー">
           <a href="#map" data-nav="map"><span>◈</span>設計マップ</a>
           <a href="#docs" data-nav="docs"><span>▤</span>ドキュメント</a>
+          <a href="#tasks" data-nav="tasks"><span>☷</span>開発タスク</a>
           <a href="#status" data-nav="status"><span>◉</span>稼働状態</a>
         </nav>
         <div class="sidebar-note">
@@ -55,7 +57,7 @@
         </div>
         <div class="sidebar-bottom">
           <span class="avatar">A</span>
-          <div>ローカル管理<small>閲覧権限</small></div>
+          <div>ローカル管理<small>開発タスク編集可</small></div>
           <button id="logout" title="ログアウト" aria-label="ログアウト">
             ↗
           </button>
@@ -70,7 +72,7 @@
           </div>
           <div class="top-meta">
             <span class="status-dot"></span><span id="connection">接続中</span
-            ><span class="pill">閲覧のみ</span>
+            ><span class="pill">Akariの状態は閲覧のみ</span>
           </div>
         </header>
         <main id="main" tabindex="-1">
@@ -165,8 +167,9 @@
               <div>
                 <p class="eyebrow">DOCUMENT LIBRARY</p>
                 <h1>ドキュメント<span class="accent-dot">.</span></h1>
-                <p class="muted">仕様と技術設計を、原文のまま確認する。</p>
+                <p class="muted">Git管理のMarkdownを、原文のまま確認する。</p>
               </div>
+              <div class="task-actions"><button id="docs-refresh" type="button" class="quiet-button">↻ 資料を更新</button><button id="doc-new" type="button" class="primary">＋ 資料を追加</button></div>
             </div>
             <div class="search-wrap">
               <span>⌕</span
@@ -191,6 +194,7 @@
             <div class="reader-heading">
               <a href="#docs" class="back-link">← ドキュメント一覧</a
               ><span id="doc-path" class="muted"></span>
+              <button id="doc-edit" type="button" class="quiet-button">Markdownを編集</button>
             </div>
             <div class="reader-layout">
               <article id="article" class="prose"></article>
@@ -204,6 +208,61 @@
               </aside>
             </div>
           </section>
+          <dialog id="doc-dialog" class="task-dialog" aria-labelledby="doc-dialog-title">
+            <form id="doc-form">
+              <div class="panel-heading"><h2 id="doc-dialog-title">Markdownを編集</h2><button id="doc-cancel" type="button" class="quiet-button">閉じる ×</button></div>
+              <label for="doc-edit-path">ファイルの場所</label><input id="doc-edit-path" required maxlength="256" placeholder="docs/new-topic.md" />
+              <label for="doc-content">Markdown本文</label><textarea id="doc-content" rows="18" required></textarea>
+              <p class="hint">保存するとMarkdownを更新し、ローカルGitコミットを作成します。外部リポジトリへのpushは行いません。</p>
+              <p id="doc-form-error" role="alert" hidden></p>
+              <div class="task-form-actions"><span id="doc-edit-revision" class="muted"></span><button id="doc-save" type="submit" class="primary">Gitに保存する</button></div>
+            </form>
+          </dialog>
+          <section id="tasks-view" class="view" hidden>
+            <div class="page-heading">
+              <div>
+                <p class="eyebrow">DEVELOPMENT WORKSPACE</p>
+                <h1>開発タスク<span class="accent-dot">.</span></h1>
+                <p class="muted">Akariを育てるために、次に作るもの・決めること。</p>
+              </div>
+              <div class="task-actions">
+                <button id="tasks-refresh" class="quiet-button" type="button">↻ 更新</button>
+                <button id="tasks-export" class="quiet-button" type="button">JSON出力</button>
+                <button id="task-new" class="primary" type="button">＋ タスクを追加</button>
+              </div>
+            </div>
+            <div id="task-summary" class="task-summary" aria-live="polite"></div>
+            <p class="task-context">開発用の作業記録です。Akari自身の目標・記憶・実行中の仕事とは別に管理します。判断待ちの項目は、編集や完了だけで仕様が承認されたことにはなりません。</p>
+            <div class="task-filters">
+              <label>検索<input id="task-search" type="search" placeholder="タイトル・説明・メモ" /></label>
+              <label>状態<select id="task-filter-status"><option value="active">未完了</option><option value="all">すべて</option><option value="todo">未着手</option><option value="in_progress">進行中</option><option value="blocked">保留・ブロック</option><option value="decision">判断待ち</option><option value="done">完了</option></select></label>
+              <label>優先度<select id="task-filter-priority"><option value="all">すべて</option><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
+              <label>分類<select id="task-filter-category"><option value="all">すべて</option></select></label>
+            </div>
+            <p id="task-notice" role="status" aria-live="polite"></p>
+            <p id="task-page-error" role="alert" hidden></p>
+            <div id="task-board" class="task-board"></div>
+            <p id="task-empty" class="empty" hidden>一致するタスクがありません。検索条件を変えるか、新しいタスクを追加してください。</p>
+            <p id="task-updated" class="hint"></p>
+          </section>
+          <dialog id="task-dialog" class="task-dialog" aria-labelledby="task-dialog-title">
+            <form id="task-form">
+              <div class="panel-heading"><h2 id="task-dialog-title">タスクを追加</h2><button id="task-cancel" type="button" class="quiet-button" aria-label="編集を閉じる">閉じる ×</button></div>
+              <p id="task-id" class="muted"></p>
+              <label for="task-title">タイトル</label><input id="task-title" required maxlength="160" />
+              <label for="task-description">説明・達成したいこと</label><textarea id="task-description" rows="4" maxlength="4000"></textarea>
+              <div class="task-form-grid">
+                <label>状態<select id="task-status"></select></label>
+                <label>優先度<select id="task-priority"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
+                <label>分類<select id="task-category"></select></label>
+              </div>
+              <label for="task-notes">進捗・判断待ちの理由・メモ</label><textarea id="task-notes" rows="4" maxlength="8000" placeholder="次にすること、決まった内容、PR番号など"></textarea>
+              <label for="task-references">関連する仕様・設計（複数選択可）</label><select id="task-references" multiple size="5"></select>
+              <p class="hint">初期タスクは確定仕様と未実装項目を整理したものです。仕様の原文は関連資料で確認してください。</p>
+              <p id="task-form-error" role="alert" hidden></p>
+              <div class="task-form-actions"><button id="task-delete" type="button" class="quiet-button">タスクを削除</button><button id="task-save" type="submit" class="primary">保存する</button></div>
+            </form>
+          </dialog>
           <section id="status-view" class="view" hidden>
             <div class="page-heading">
               <div>
@@ -218,7 +277,7 @@
               <div>
                 <strong>Foundation</strong>
                 <p>
-                  状態の保存・復元を稼働中。常設Channel・実LLM・MCPは未接続です。
+                  状態の保存・復元を稼働中。常設Channel・実LLM・外部ツールは未接続です。
                 </p>
               </div>
               <span class="pill">閲覧権限</span>
@@ -253,7 +312,7 @@
           <p id="app-error" role="alert" hidden></p>
         </main>
         <footer class="workspace-footer">
-          <span>Akari · 基礎設計ワークスペース</span
+          <span>Akari · 開発ワークスペース</span
           ><span
             >原文：docs / design<span class="separator">·</span
             >ローカル配信</span

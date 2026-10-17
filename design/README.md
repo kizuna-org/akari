@@ -17,6 +17,7 @@
 保存・復元・outboxの実装契約は [08](./08-durable-state.md) にあります。
 ホストの起動・停止への接続は [09](./09-host-lifecycle.md) にあります。
 管理コンソールとdocsの可視化は [10](./10-console.md) にあります。
+開発タスクのSQLite・Git/Markdown文書・Akari MCPは [11](./11-development-workspace.md) にあります。
 
 ## このブランチの範囲
 
@@ -27,7 +28,8 @@
 ローカル保存・復元・outboxも実装し、思考の採用と保存、クラッシュ後の再送拒否を検証しました。
 ホストは状態とoutboxの復元・最終保存、Supervisorの生命周期を所有します。
 管理コンソールはdocsの可視化と概要の閲覧を実装しました。
-具体的な常設Channel、実LLM、MCP、管理操作と詳しい観察は後続で接続します。
+開発タスクとGit文書をコンソール・REST・Akari MCPから編集できます。
+具体的な常設Channel、実LLM、Akariが外部道具を使うMCP接続、実行管理操作と詳しい観察は後続です。
 health が成功しても人格の稼働を意味しません。
 
 基礎実装と本番用の契約の差は [実装順](./05-delivery.md) に明記します。

@@ -51,6 +51,7 @@ reject_within_deadline "$scratch/invalid.log" "invalid address" env AKARI_DATA_D
 start_host() {
   local auth_disabled=${1:-false}
   host_log="$scratch/host-$auth_disabled.log"
+  : >"$host_log"
   AKARI_DATA_DIR="$scratch/state" AKARI_ADDR=127.0.0.1:0 \
     AKARI_ADMIN_AUTH_DISABLED="$auth_disabled" "$binary" >"$host_log" 2>&1 &
   host_pid=$!

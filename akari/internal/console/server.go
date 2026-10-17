@@ -3,6 +3,7 @@ package console
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -10,6 +11,9 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/kizuna-org/akari/internal/development"
+	"github.com/kizuna-org/akari/internal/docrepo"
 )
 
 type Server struct {
@@ -17,6 +21,7 @@ type Server struct {
 	done    chan struct{}
 	err     error
 	address string
+	tasks   *development.Store
 }
 
 // Start binds the separate management listener and configures its per-process access code.
@@ -43,15 +48,30 @@ func Start(ctx context.Context, address, directory string, reader Reader, authDi
 
 	const timeout = 5 * time.Second
 
+	tasks, err := development.Open(ctx, directory)
+	if err != nil {
+		_ = listener.Close()
+
+		return nil, fmt.Errorf("console: open development tasks: %w", err)
+	}
+
+	library, err := openDocuments(ctx, directory)
+	if err != nil {
+		_ = listener.Close()
+		_ = tasks.Close()
+
+		return nil, err
+	}
+
 	transport := new(http.Server)
-	transport.Handler = NewHandler(token, reader, authDisabled)
+	transport.Handler = newHandler(token, reader, authDisabled, workspace{tasks: tasks, documents: library})
 	transport.ReadHeaderTimeout = timeout
 	transport.ReadTimeout = timeout
 	transport.WriteTimeout = timeout
 	transport.IdleTimeout = timeout
 
 	server := &Server{http: transport, done: make(chan struct{}), err: nil,
-		address: listener.Addr().String()}
+		address: listener.Addr().String(), tasks: tasks}
 
 	go func() {
 		server.err = server.http.Serve(listener)
@@ -84,7 +104,23 @@ func (server *Server) Close(ctx context.Context) error {
 		serveErr = nil
 	}
 
-	return errors.Join(shutdownErr, closeErr, serveErr)
+	return errors.Join(shutdownErr, closeErr, serveErr, server.tasks.Close())
+}
+
+func openDocuments(ctx context.Context, directory string) (*docrepo.Repository, error) {
+	var seed []docrepo.Document
+
+	err := json.Unmarshal(documents, &seed)
+	if err != nil {
+		return nil, err
+	}
+
+	configured := os.Getenv("AKARI_DOCS_REPO")
+	if configured != "" {
+		return docrepo.Open(ctx, configured, false, nil)
+	}
+
+	return docrepo.Open(ctx, filepath.Join(directory, "documentation"), true, seed)
 }
 
 func writeToken(directory, token string) error {
