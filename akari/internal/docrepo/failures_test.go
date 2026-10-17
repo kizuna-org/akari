@@ -8,6 +8,42 @@ import (
 	"testing"
 )
 
+func TestIgnoredDraftIsNotOverwritten(t *testing.T) {
+	t.Parallel()
+
+	for _, name := range []string{"ignored local draft"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			repository, err := Open(t.Context(), t.TempDir(), true, testDocuments())
+			must(t, err)
+			must(t, os.WriteFile(filepath.Join(repository.directory, ".git", "info", "exclude"),
+				[]byte("docs/draft.md\n"), privateFile))
+			must(t, repository.writeFile(Document{Path: "docs/draft.md", Content: "# Local work\n", Revision: ""}))
+			head, err := repository.head(t.Context())
+			must(t, err)
+			_, err = repository.Write(t.Context(), Document{Path: "docs/draft.md", Content: "# Replacement\n", Revision: head})
+
+			if !errors.Is(err, ErrConflict) {
+				t.Fatal("existing ignored draft was treated as a new document")
+			}
+
+			root, err := os.OpenRoot(repository.directory)
+
+			must(t, err)
+
+			defer func() { must(t, root.Close()) }()
+
+			content, err := root.ReadFile("docs/draft.md")
+			must(t, err)
+
+			if string(content) != "# Local work\n" {
+				t.Fatal("local draft was overwritten")
+			}
+		})
+	}
+}
+
 func TestUnsafeSymlinkCannotModifyExternalMarkdown(t *testing.T) {
 	t.Parallel()
 

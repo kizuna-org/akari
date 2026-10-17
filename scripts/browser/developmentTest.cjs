@@ -1,6 +1,6 @@
 "use strict";
 const { chromium } = require("playwright");
-const { spawn } = require("node:child_process");
+const { spawn, execFileSync } = require("node:child_process");
 const { mkdtemp, readFile, rm, mkdir } = require("node:fs/promises");
 const { tmpdir } = require("node:os");
 const { resolve, join } = require("node:path");
@@ -43,6 +43,12 @@ const assert = require("node:assert/strict");
   }
   async function login(page, hash = "tasks") {
     await page.goto(`${address}/#${hash}`);
+    await page.locator("#code").fill(token);
+    await page.locator("#login-form button").click();
+    await page.locator("#app:not([hidden])").waitFor();
+  }
+  async function reauthenticate(page) {
+    await page.locator("#login:not([hidden])").waitFor();
     await page.locator("#code").fill(token);
     await page.locator("#login-form button").click();
     await page.locator("#app:not([hidden])").waitFor();
@@ -105,6 +111,15 @@ const assert = require("node:assert/strict");
     await page.waitForFunction((id) => document.querySelector(`.task-card[data-task-id="${id}"] select`)?.value === "in_progress", task.id);
     assert.equal((await mcp("tasks_get", { id: task.id })).notes, "updated by MCP");
 
+    await page.locator(`.task-card[data-task-id="${task.id}"] .task-title`).click();
+    await page.locator("#task-notes").fill("reauthentication draft");
+    await context.clearCookies();
+    await page.locator("#task-save").click();
+    await reauthenticate(page);
+    await page.locator("#task-dialog[open]").waitFor();
+    assert.equal(await page.locator("#task-notes").inputValue(), "reauthentication draft");
+    await page.locator("#task-cancel").click();
+
     const download = page.waitForEvent("download");
     await page.locator("#tasks-export").click();
     const exported = JSON.parse(await readFile(await (await download).path(), "utf8"));
@@ -127,10 +142,42 @@ const assert = require("node:assert/strict");
     const previous = document.revision;
     await page.locator("#doc-edit").click();
     await page.locator("#doc-content").fill("# Browser note\n\nEdited twice.\n");
+    let releaseWrite, writeStarted;
+    const waitingWrite = new Promise((done) => { writeStarted = done; });
+    const resumeWrite = new Promise((done) => { releaseWrite = done; });
+    const delayedWrite = async (route) => {
+      if (route.request().method() !== "PUT") return route.continue();
+      writeStarted();
+      await resumeWrite;
+      await route.continue();
+    };
+    await page.route("**/api/docs", delayedWrite);
     await page.locator("#doc-save").click();
+    await waitingWrite;
+    assert.equal(await page.locator("#doc-cancel").isDisabled(), true);
+    await page.keyboard.press("Escape");
+    assert.equal(await page.locator("#doc-dialog").isVisible(), true);
+    releaseWrite();
     await page.locator("#doc-dialog").waitFor({ state: "hidden" });
+    await page.unroute("**/api/docs", delayedWrite);
     await page.locator("#article").filter({ hasText: "Edited twice." }).waitFor();
     assert.notEqual((await mcp("documents_read", { path: document.path })).revision, previous);
+
+    await page.locator("#doc-edit").click();
+    const capturedRevision = await page.locator("#doc-edit-revision").textContent();
+    await page.locator("#doc-content").fill("# Reauthentication draft\n");
+    await context.clearCookies();
+    await page.locator("#doc-save").click();
+    const current = await mcp("documents_read", { path: document.path });
+    await mcp("documents_write", { document: { ...current, content: "# Browser note\n\nEdited twice.\n\nMCP changed.\n" } });
+    await reauthenticate(page);
+    await page.locator("#doc-dialog[open]").waitFor();
+    assert.equal(await page.locator("#doc-content").inputValue(), "# Reauthentication draft\n");
+    assert.equal(await page.locator("#doc-edit-revision").textContent(), capturedRevision);
+    await page.locator("#doc-save").click();
+    await page.locator("#doc-form-error:not([hidden])").waitFor();
+    assert.ok((await page.locator("#doc-form-error").textContent()).includes("更新"));
+    await page.locator("#doc-cancel").click();
     await page.screenshot({ path: join(artifacts, "git-document.png"), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "Mobile document actions overflow");
@@ -149,12 +196,29 @@ const assert = require("node:assert/strict");
     await page.locator("#task-delete").click();
     await page.locator("#task-dialog").waitFor({ state: "hidden" });
     assert.equal((await mcp("tasks_list", {})).tasks.some((value) => value.id === task.id), false);
+
+    await stop();
+    const git = (...args) => execFileSync("git", ["-C", join(directory, "documentation"), "-c", "user.name=Browser test", "-c", "user.email=browser@localhost", "-c", "core.hooksPath=/dev/null", ...args], { stdio: "pipe" });
+    git("rm", "-r", "docs", "design");
+    git("commit", "--no-gpg-sign", "-m", "Empty document library");
+    await start();
+    await login(page, "docs");
+    const empty = await mcp("documents_list", {});
+    assert.equal(empty.documents.length, 0);
+    assert.equal(empty.revision.length, 40);
+    await page.locator("#doc-new").click();
+    await page.locator("#doc-edit-path").fill("docs/first.md");
+    await page.locator("#doc-content").fill("# First document\n");
+    await page.locator("#doc-save").click();
+    await page.locator("#doc-dialog").waitFor({ state: "hidden" });
+    await page.locator("#article h1").filter({ hasText: "First document" }).waitFor();
+    assert.equal((await mcp("documents_list", {})).documents.length, 1);
     await page.locator("#logout").click();
     await page.locator("#login:not([hidden])").waitFor();
     assert.equal((await context.request.get(`${address}/api/development/tasks`)).status(), 401);
     assert.deepEqual(errors, [], "Development UI JavaScript errors");
     assert.deepEqual(external, [], "External requests from development UI");
-    console.log("Development browser passed: task CRUD, MCP/API/console sharing, stale-edit draft retention, JSON export, mobile, Git commits, SIGKILL persistence, logout, no external requests");
+    console.log("Development browser passed: task CRUD, MCP/API/console sharing, stale and reauthenticated drafts, save-in-flight guard, JSON export, mobile, Git commits, empty document library, SIGKILL persistence, logout, no external requests");
   } finally {
     if (browser) await browser.close();
     await stop();

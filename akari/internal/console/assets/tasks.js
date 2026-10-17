@@ -161,6 +161,7 @@
   });
   $("task-new").addEventListener("click", () => edit(null));
   $("task-cancel").addEventListener("click", () => $("task-dialog").close());
+  $("task-dialog").addEventListener("cancel", (event) => { if (busy) event.preventDefault(); });
   for (const id of ["task-search", "task-filter-status", "task-filter-priority", "task-filter-category"]) $(id).addEventListener("input", render);
   $("tasks-refresh").addEventListener("click", () => refresh().then(() => announce("一覧を更新しました。")).catch((err) => announce(err.message, true)));
   $("tasks-export").addEventListener("click", async () => {

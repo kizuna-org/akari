@@ -24,6 +24,7 @@ pure-Go SQLiteドライバーを使い、Go 1.26.2 / CGOなし / Dockerの非roo
 DBは0600で作成し、schemaはSQLiteの`user_version`で管理します。
 タスクごとの行と版、一覧の版と更新日時を一つのトランザクションで変更します。
 不正な値、古い版、破損DB、未対応schemaを空の状態へ上書きしません。
+schema番号が未設定でも既存のテーブルがあるDBは初期化を拒否し、編集・削除済みのデータを保持します。
 
 MCP・APIはタスクごとの版を照合します。同じタスクへの同じ版の更新は一つだけ成功し、
 別のタスクの更新は互いの版を無効にしません。更新に失敗した画面は下書きを保持します。
@@ -31,6 +32,8 @@ MCP・APIはタスクごとの版を照合します。同じタスクへの同�
 
 一つのホストが既存のinstallation leaseを持ち、複数クライアントがそのAPIへ接続します。
 DBのトランザクション中にLLMや外部コマンドの仕事を実行しません。
+正常停止時は管理用HTTPの処理を終えてからinstallation leaseを解放します。
+停止が期限切れになった場合もleaseを保持し、処理中の書き込みと別ホストの起動を重ねません。
 現在はタスクの管理までで、状態変更だけでは実行ワーカーを起動しません。
 
 JSON出力は保存済みタスクの確認・持ち出し用です。JSONの一括インポートは未実装です。
@@ -52,9 +55,13 @@ Gitコマンドはシェルを介さず、コミット時のhooksと署名コマ
 
 編集は読み取り時のGit revisionとcleanなworktreeが必要です。
 同時編集や別のコミットを検出したら拒否し、未コミットの作業を取り込みません。
+Gitのignore対象であっても、同名のローカル下書きを新規文書で上書きしません。
 APIによる更新は一つのホスト内で直列化します。
 外部のGitコマンドによる書き込み・branch切り替えは、ホストを止めて行ってください。
 Gitの保存に失敗した場合は最新HEADとworktreeを確認し、成功したと見なして再送しません。
+失敗時は復旧に使える本文やindexを残すため、Gitの自動resetは行いません。
+未コミットの変更が残った場合は以後の保存を拒否します。ホストを停止し、Gitのlog・status・diffを確認して、
+必要な内容を退避・コミットしたうえでcleanなworktreeへ戻してください。
 自動fetch・push・公開設定の変更は行いません。
 
 Dockerの既定構成ではDBと文書Gitの両方が既存の`/data` volumeへ保存されます。
@@ -74,7 +81,7 @@ RESTの更新操作には、管理画面と一致する`Origin`も必要です�
 | タスク追加 | `POST /api/development/tasks` | `If-Match`に一覧の版、JSONにタスク項目 |
 | タスク更新 | `PUT /api/development/tasks/{id}` | `If-Match`にそのタスクの版、JSONのidはURLと一致 |
 | タスク削除 | `DELETE /api/development/tasks/{id}` | `If-Match`にそのタスクの版 |
-| 文書一覧 | `GET /api/docs` | MarkdownとGit revisionを返す |
+| 文書一覧 | `GET /api/docs` | Markdownの配列と、ETagにGit HEADを返す |
 | 文書保存 | `PUT /api/docs` | `path`, `content`, `revision`を指定 |
 
 タスクの更新操作は更新後の一覧を返します。競合は409、不正な入力は400、
@@ -110,13 +117,15 @@ Codexを起動する環境の`AKARI_MCP_TOKEN`へ管理用コードを設定し�
 | `tasks_create` | タイトルを指定して追加。状態todo・優先度medium・分類runtimeが既定 |
 | `tasks_update` | 取得したTaskのversionを残して編集し、taskとして送る |
 | `tasks_delete` | idとexpectedVersionで削除 |
-| `documents_list` | コミットされたMarkdownとGit revisionの一覧 |
+| `documents_list` | `revision`と`documents`を返す。文書が0件でもGit HEADを取得可能 |
 | `documents_read` | pathでMarkdownとrevisionを取得 |
 | `documents_write` | 編集したDocumentを保存し、ローカルGitコミットを作成 |
 
 このMCPは開発者用の入口です。AkariのChannelへ管理用トークンを渡さず、
 外部MCPツールを自動でAkariのGatewayに登録することもしません。
 Akariが道具を使う側のMCP接続は、引き続き[行為の境界](./03-effects.md)に従います。
+文書が空の既存リポジトリでも、一覧から取得したHEADを`documents_write`のrevisionに指定して
+最初のMarkdownを追加できます。コンソールも一覧のETagを使います。
 
 ## 次段階：開発タスクの並列実行
 
@@ -137,4 +146,5 @@ Akariが道具を使う側のMCP接続は、引き続き[行為の境界](./03-e
 SQLiteの保存復元・不正schema・競合・不正入力、Git履歴・競合・パス制限をテストします。
 公式MCPクライアントで初期化・8ツールの発見・CRUD・Git保存を実際のHTTP通信で確認します。
 ブラウザではコンソールとMCPの変更共有、下書き保持、JSON出力、Markdown編集、モバイル、
-SIGKILL後の復元、ログアウトと外部リクエストなしを検証します。
+SIGKILL後の復元、認証切れ後の下書き復帰、保存中の閉じる操作の抑止、空の文書一覧からの追加、
+ログアウトと外部リクエストなしを検証します。

@@ -155,6 +155,11 @@ func (store *Store) initialize(ctx context.Context) error {
 
 	defer func() { _ = transaction.Rollback() }()
 
+	err = requireFreshSchema(ctx, transaction)
+	if err != nil {
+		return err
+	}
+
 	_, err = transaction.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS metadata (
  id INTEGER PRIMARY KEY CHECK(id = 1), revision INTEGER NOT NULL, updated_at TEXT NOT NULL
@@ -168,21 +173,35 @@ PRAGMA user_version = 1;`)
 		return err
 	}
 
-	if version == 0 {
-		board, seedErr := seedBoard()
-		if seedErr != nil {
-			return seedErr
-		}
+	board, seedErr := seedBoard()
+	if seedErr != nil {
+		return seedErr
+	}
 
-		board.UpdatedAt = time.Now().UTC()
+	board.UpdatedAt = time.Now().UTC()
 
-		saveErr := saveBoard(ctx, transaction, board)
-		if saveErr != nil {
-			return saveErr
-		}
+	saveErr := saveBoard(ctx, transaction, board)
+	if saveErr != nil {
+		return saveErr
 	}
 
 	return transaction.Commit()
+}
+
+func requireFreshSchema(ctx context.Context, transaction *sql.Tx) error {
+	var objects int
+
+	err := transaction.QueryRowContext(ctx,
+		"SELECT COUNT(*) FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*'").Scan(&objects)
+	if err != nil {
+		return err
+	}
+
+	if objects != 0 {
+		return ErrInvalid
+	}
+
+	return nil
 }
 
 func readBoard(ctx context.Context, transaction *sql.Tx) (Board, error) {

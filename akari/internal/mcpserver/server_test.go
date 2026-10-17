@@ -69,8 +69,8 @@ func TestMCPClientControlsTheSharedWorkspace(t *testing.T) {
 			must(t, err)
 			check(t, findTitle(t, persisted, task.Title).Version == actual.Version, "MCP and console do not share the same DB")
 
-			library := call[[]docrepo.Document](t, session, "documents_list", map[string]any{})
-			check(t, len(library) == 2, "document listing failed")
+			library := call[docrepo.Snapshot](t, session, "documents_list", map[string]any{})
+			check(t, len(library.Documents) == 2 && library.Revision != "", "document listing failed")
 			document := call[docrepo.Document](t, session, "documents_read", map[string]any{"path": "docs/README.md"})
 			document.Content = "# Edited from MCP\n"
 			updated := call[docrepo.Document](t, session, "documents_write", map[string]any{"document": document})

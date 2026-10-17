@@ -9,6 +9,37 @@ import (
 	"testing"
 )
 
+func TestFirstDocumentInEmptyCommittedRepository(t *testing.T) {
+	t.Parallel()
+
+	for _, name := range []string{"HEAD survives an empty document list"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			repository, err := Open(t.Context(), t.TempDir(), true, testDocuments())
+			must(t, err)
+			_, err = repository.git(t.Context(), "rm", "-r", "docs", "design")
+			must(t, err)
+			_, err = repository.git(t.Context(), "commit", "--message=Remove documents")
+			must(t, err)
+			snapshot, err := repository.Snapshot(t.Context())
+			must(t, err)
+
+			if len(snapshot.Documents) != 0 || snapshot.Revision == "" {
+				t.Fatal("empty document list lost its Git revision")
+			}
+
+			created, err := repository.Write(t.Context(), Document{Path: "docs/first.md",
+				Content: "# First document\n", Revision: snapshot.Revision})
+			must(t, err)
+
+			if created.Revision == snapshot.Revision {
+				t.Fatal("first document did not create a commit")
+			}
+		})
+	}
+}
+
 func TestGitDocumentLifecycle(t *testing.T) {
 	t.Parallel()
 

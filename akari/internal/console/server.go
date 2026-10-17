@@ -96,6 +96,11 @@ func (server *Server) Address() string { return server.address }
 
 func (server *Server) Close(ctx context.Context) error {
 	shutdownErr := server.http.Shutdown(ctx)
+	if shutdownErr != nil {
+		// Keep active handlers and their DB alive; a later Close must still wait for them.
+		return shutdownErr
+	}
+
 	closeErr := server.http.Close()
 	<-server.done
 

@@ -53,14 +53,15 @@ func newHandler(token string, reader Reader, authDisabled bool, work workspace) 
 		writer.Header().Set("Content-Type", "application/json")
 
 		if work.documents != nil {
-			library, err := work.documents.List(request.Context())
+			library, err := work.documents.Snapshot(request.Context())
 			if err != nil {
 				http.Error(writer, "documentation unavailable", http.StatusServiceUnavailable)
 
 				return
 			}
 
-			writeJSON(writer, library)
+			writer.Header().Set("ETag", `"`+library.Revision+`"`)
+			writeJSON(writer, library.Documents)
 
 			return
 		}

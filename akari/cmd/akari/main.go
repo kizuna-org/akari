@@ -76,9 +76,11 @@ func adminAuthDisabled() (bool, error) {
 func (service managed) Close(ctx context.Context) error {
 	// Stop development writes before the session releases this installation's lease.
 	consoleErr := service.console.Close(ctx)
-	stateErr := service.session.Close(ctx)
+	if consoleErr != nil {
+		return consoleErr
+	}
 
-	return errors.Join(stateErr, consoleErr)
+	return service.session.Close(ctx)
 }
 
 func startManaged(ctx context.Context, address, directory string, authDisabled bool,

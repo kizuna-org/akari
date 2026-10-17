@@ -1,9 +1,54 @@
 package development
 
 import (
+	"database/sql"
 	"errors"
+	"path/filepath"
 	"testing"
 )
+
+func TestPopulatedUnversionedDatabaseIsPreserved(t *testing.T) {
+	t.Parallel()
+
+	for _, name := range []string{"do not reseed existing task rows"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			directory := t.TempDir()
+			store, err := Open(t.Context(), directory)
+			must(t, err)
+			_, err = store.database.ExecContext(t.Context(),
+				`UPDATE tasks SET notes='keep this edit', version=9 WHERE id='BASE-01';
+DELETE FROM tasks WHERE id='BASE-02'; PRAGMA user_version=0`)
+			must(t, err)
+			must(t, store.Close())
+			opened, err := Open(t.Context(), directory)
+
+			if err == nil || opened != nil {
+				t.Fatal("existing unversioned database was initialized")
+			}
+
+			raw, err := sql.Open("sqlite", filepath.Join(directory, "development.db"))
+
+			must(t, err)
+
+			defer func() { must(t, raw.Close()) }()
+
+			var (
+				notes            string
+				version, deleted int
+			)
+
+			row := raw.QueryRowContext(t.Context(), "SELECT notes,version FROM tasks WHERE id='BASE-01'")
+			must(t, row.Scan(&notes, &version))
+			must(t, raw.QueryRowContext(t.Context(), "SELECT COUNT(*) FROM tasks WHERE id='BASE-02'").Scan(&deleted))
+
+			if notes != "keep this edit" || version != 9 || deleted != 0 {
+				t.Fatal("rejecting the schema still changed existing task data")
+			}
+		})
+	}
+}
 
 func TestDatabaseRollbackAndCorruption(t *testing.T) {
 	t.Parallel()

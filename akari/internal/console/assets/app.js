@@ -3,6 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const state = {
     documents: [],
+    documentRevision: "",
     links: [],
     group: "docs",
     filter: "all",
@@ -19,6 +20,8 @@
     `#doc=${encodeURIComponent(path)}${section ? `&section=${encodeURIComponent(section)}` : ""}`;
   const lookup = (path) => state.documents.find((doc) => doc.path === path);
   let documentRevision = "";
+  let documentSaving = false;
+  const interruptedDialogs = new Set();
   const shortTitle = (doc) =>
     doc.path.endsWith("/README.md")
       ? "読み方とドキュメント目次"
@@ -47,6 +50,8 @@
       showLogin();
       throw new Error("管理用コードを確認してログインしてください。");
     }
+    if (response.ok && path === "/api/docs" && !options.method)
+      state.documentRevision = (response.headers.get("ETag") || "").replaceAll('"', "");
     if (!response.ok && path.startsWith("/api/development/tasks")) {
       const messages = {
         409: "別の画面で更新されています。下書きは保持しています。一覧を更新して内容を確認し、編集を開き直してください。",
@@ -67,8 +72,12 @@
       );
     return response.status === 204 ? null : response.json();
   }
-  function showLogin() {
-    document.querySelectorAll("dialog[open]").forEach((dialog) => dialog.close());
+  function showLogin(preserveDraft = true) {
+    if (!preserveDraft) interruptedDialogs.clear();
+    document.querySelectorAll("dialog[open]").forEach((dialog) => {
+      if (preserveDraft) interruptedDialogs.add(dialog);
+      dialog.close();
+    });
     $("login").hidden = false;
     $("app").hidden = true;
   }
@@ -124,6 +133,8 @@
     renderMap();
     renderLibrary();
     await route();
+    for (const dialog of interruptedDialogs) dialog.showModal();
+    interruptedDialogs.clear();
   }
   function svg(tag, attrs = {}, value = "") {
     const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
@@ -515,7 +526,7 @@
   $("logout").addEventListener("click", async () => {
     try {
       await api("/api/session", { method: "DELETE" });
-      showLogin();
+      showLogin(false);
     } catch (err) {
       error(err.message);
     }
@@ -523,7 +534,7 @@
   $("search").addEventListener("input", renderLibrary);
   $("docs-refresh").addEventListener("click", () => initialize().catch((err) => error(err.message)));
   function editDocument(doc) {
-    documentRevision = doc?.revision || state.documents[0]?.revision || "";
+    documentRevision = doc?.revision || state.documentRevision || "";
     if (!documentRevision) { error("Gitリポジトリの資料を更新してから編集してください。"); return; }
     $("doc-edit-path").value = doc?.path || "";
     $("doc-edit-path").readOnly = !!doc;
@@ -535,9 +546,13 @@
   }
   $("doc-edit").addEventListener("click", () => editDocument(lookup(new URLSearchParams(location.hash.slice(1)).get("doc"))));
   $("doc-new").addEventListener("click", () => editDocument(null));
-  $("doc-cancel").addEventListener("click", () => $("doc-dialog").close());
+  $("doc-cancel").addEventListener("click", () => { if (!documentSaving) $("doc-dialog").close(); });
+  $("doc-dialog").addEventListener("cancel", (event) => { if (documentSaving) event.preventDefault(); });
   $("doc-form").addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (documentSaving) return;
+    documentSaving = true;
+    $("doc-cancel").disabled = true;
     $("doc-save").disabled = true;
     $("doc-form-error").hidden = true;
     try {
@@ -549,7 +564,11 @@
     } catch (err) {
       $("doc-form-error").textContent = err.message;
       $("doc-form-error").hidden = false;
-    } finally { $("doc-save").disabled = false; }
+    } finally {
+      documentSaving = false;
+      $("doc-cancel").disabled = false;
+      $("doc-save").disabled = false;
+    }
   });
   document.querySelectorAll("[data-group]").forEach((button) =>
     button.addEventListener("click", () => {

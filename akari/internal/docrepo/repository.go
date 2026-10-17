@@ -35,6 +35,11 @@ type Document struct {
 	Revision string `json:"revision"`
 }
 
+type Snapshot struct {
+	Revision  string     `json:"revision"`
+	Documents []Document `json:"documents"`
+}
+
 type Repository struct {
 	mu        sync.Mutex
 	directory string
@@ -71,15 +76,23 @@ func Open(ctx context.Context, directory string, initialize bool, seed []Documen
 }
 
 func (repository *Repository) List(ctx context.Context) ([]Document, error) {
+	snapshot, err := repository.Snapshot(ctx)
+
+	return snapshot.Documents, err
+}
+
+func (repository *Repository) Snapshot(ctx context.Context) (Snapshot, error) {
 	repository.mu.Lock()
 	defer repository.mu.Unlock()
 
 	head, err := repository.head(ctx)
 	if err != nil {
-		return nil, err
+		return Snapshot{}, err
 	}
 
-	return repository.listAtHead(ctx, head)
+	documents, err := repository.listAtHead(ctx, head)
+
+	return Snapshot{Revision: head, Documents: documents}, err
 }
 
 func (repository *Repository) Read(ctx context.Context, path string) (Document, error) {
@@ -190,6 +203,11 @@ func (repository *Repository) commitDocument(ctx context.Context, document Docum
 		return previous, nil
 	}
 
+	err = repository.allowNewPath(previous, document.Path)
+	if err != nil {
+		return Document{}, err
+	}
+
 	writeErr := repository.writeFile(document)
 	if writeErr != nil {
 		return Document{}, writeErr
@@ -217,6 +235,30 @@ func (repository *Repository) commitDocument(ctx context.Context, document Docum
 	document.Revision, err = repository.head(ctx)
 
 	return document, err
+}
+
+func (repository *Repository) allowNewPath(previous Document, path string) error {
+	if previous.Path != "" {
+		return nil
+	}
+
+	root, err := os.OpenRoot(repository.directory)
+	if err != nil {
+		return err
+	}
+
+	defer func() { _ = root.Close() }()
+
+	_, err = root.Lstat(path)
+	if err == nil {
+		return ErrConflict
+	}
+
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+
+	return err
 }
 
 // Resolve existing filenames from Git's own tree. Request paths are used only

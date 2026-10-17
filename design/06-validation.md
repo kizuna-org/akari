@@ -66,12 +66,13 @@ coverageは `-count=1` で全パッケージを同じソース版から再実行
 
 [開発タスク・Git文書・Akari MCP](./11-development-workspace.md)を追加しました。
 
-- lint 0 issues、race付きテスト成功、internal合算のstatement coverageは95.0%。
+- lint 0 issues、race付きテスト成功、internal合算のstatement coverageは94.9%。
 - SQLiteの保存復元、タスクごとの同時編集、失敗したトランザクションの全体ロールバックを検証。
-- 破損・欠損schemaを初期データで上書きせず、Gitのパス制限・symlink・競合・コミット失敗を検証。
+- 破損・欠損・未設定schemaを初期データで上書きせず、Gitのパス制限・symlink・競合・コミット失敗を検証。
+- 停止期限切れでも、処理中のHTTPとDB・installation leaseを保持し、安全に停止を再試行できることを検証。
 - 公式MCPクライアントの初期化・8ツールの発見・タスクCRUD・Git更新をHTTPで検証。
 - ブラウザでMCPとコンソールのDB共有、競合時の下書き保持、JSON出力、Markdown編集とGit履歴、
-  SIGKILL後の復元、モバイル、ログアウト、外部リクエストなしを確認。
+  SIGKILL後の復元、空のGit文書一覧からの新規追加、モバイル、ログアウト、外部リクエストなしを確認。
 - DockerはUID 1000・read-only root・メモリ256MB・PID上限128で起動し、
   認証付きMCPからタスクとGit文書を編集して、同じvolumeから再起動・復元することを確認。
 
