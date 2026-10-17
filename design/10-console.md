@@ -24,8 +24,9 @@ APIのBearer認証も同じコードを使います。ログアウトはcookie�
 TLS終端プロキシからHTTPで転送する場合は、`X-Forwarded-Proto: https`を使って外部のschemeを確認し、
 セッションcookieにもSecure属性を付けます。プロキシから到達可能な管理listenerだけで利用してください。
 
-現在の権限はobserver一種類です。認証後も閲覧だけを許可し、採用・承認・取消・dispatchのHTTP機能を
-追加していません。生のExportをHTTPへ返さず、原文・人格値・記憶・宛先・ツール引数・結果を表示しません。
+Akariの稼働状態はobserverとして閲覧だけを許可し、採用・承認・取消・dispatchのHTTP機能を
+追加していません。開発者用のタスクとGit文書は別の管理対象として編集できます（[11](./11-development-workspace.md)）。
+生のExportをHTTPへ返さず、人格値・記憶の原文・宛先・ツール引数・結果を表示しません。
 管理listenerの起動失敗は全体の起動失敗として状態所有者を閉じます。
 listenerが異常終了した場合も、ホストへ停止を伝えます。
 
@@ -37,7 +38,8 @@ listenerが異常終了した場合も、ホストへ停止を伝えます。
 | 画面 | 表示と操作 |
 |---|---|
 | 設計マップ | docsとdesignを切り替え、本文の相互参照をSVGで表示。関連ノードの強調、拡大縮小、本文への移動 |
-| ドキュメント | タイトルと本文の検索、仕様・技術設計の絞り込み、Markdown原文の表示 |
+| ドキュメント | タイトルと本文の検索、絞り込み、Markdown原文の表示・追加・編集・Git保存 |
+| 開発タスク | 未完了・判断待ち・優先度・分類・検索・メモ・関連資料、追加・編集・状態変更・削除・JSON出力 |
 | 本文 | 見出しの目次、関連資料、文書間・章内リンク、Mermaidの図と拡大縮小・原文確認 |
 | 稼働状態 | 採用版、保存Sequence、Schema、承認待ち、outboxの段階別件数、共有文脈・作業記憶・関心の件数 |
 
@@ -49,10 +51,11 @@ Foundationの状態基盤と、未接続のChannel・LLM・MCPを画面にも明
 
 ## 同梱と更新
 
-docsとdesignのMarkdownを`make generate`でJSONにまとめ、画面と一緒にGoバイナリへ埋め込みます。
-`make build` / `make run`でも生成します。Dockerは生成済みの同じ内容を使います。
-実行時にリポジトリや任意のファイルをHTTPから読むことはできません。
-CIは再生成による差分を確認し、原文と同梱データのずれを拒否します。
+docsとdesignのMarkdownを`make generate`でJSONへまとめ、初回Gitリポジトリの雛形として同梱します。
+以降はGitにコミットされたMarkdownを読み、コンソール・API・MCPから更新できます。
+許可する場所はリポジトリのdocs/design直下のMarkdownだけです。任意ファイルをHTTPから読みません。
+`AKARI_DOCS_REPO`で既存worktreeも指定できます。自動pushは行いません。
+CIは雛形の再生成による差分を確認し、コード側の原文と同梱データのずれを拒否します。
 
 画面はHTML / CSS / JavaScriptです。Nodeはブラウザ検証だけに使い、GoLandやDockerの実行には不要です。
 Markdown・SVGをサニタイズし、scriptの同一origin制限、外部画像の制限、frame禁止、no-storeを設定します。

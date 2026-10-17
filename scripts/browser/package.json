@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "node consoleTest.cjs ../../akari/bin/akari"
+    "test": "node consoleTest.cjs ../../akari/bin/akari && node developmentTest.cjs ../../akari/bin/akari"
   },
   "devDependencies": {
     "playwright": "1.62.1"

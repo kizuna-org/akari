@@ -1,0 +1,401 @@
+{
+  "schema": 1,
+  "revision": 1,
+  "updatedAt": "2026-10-17T00:00:00Z",
+  "tasks": [
+    {
+      "id": "BASE-01",
+      "title": "Go / Dockerの基礎設計",
+      "description": "確定仕様をdocsへ整理し、基礎ホスト・GoLand・Docker・CIを整備。",
+      "status": "done",
+      "priority": "high",
+      "category": "runtime",
+      "notes": "PR #263をmainへマージ済み。",
+      "references": [
+        "design/01-foundation.md",
+        "design/06-validation.md"
+      ]
+    },
+    {
+      "id": "BASE-02",
+      "title": "並列思考と共通の行為境界",
+      "description": "共有状態、系列ごとの取消と採用、共通Gatewayの基礎を実装。",
+      "status": "done",
+      "priority": "high",
+      "category": "runtime",
+      "notes": "PR #264をmainへマージ済み。具体的な常設Channelと判断は後続。",
+      "references": [
+        "design/02-concurrency.md",
+        "design/03-effects.md"
+      ]
+    },
+    {
+      "id": "BASE-03",
+      "title": "内面状態と共有状態の接続",
+      "description": "人格・感情・記憶・関心・目標の状態と採用・取消を接続。",
+      "status": "done",
+      "priority": "high",
+      "category": "inner",
+      "notes": "PR #265をmainへマージ済み。実LLMでの自然な振る舞いは未検証。",
+      "references": [
+        "design/07-inner-state.md"
+      ]
+    },
+    {
+      "id": "BASE-04",
+      "title": "保存・復元・outboxとホスト接続",
+      "description": "採用の保存、結果不明の再送防止、正常停止とクラッシュ後の復元。",
+      "status": "done",
+      "priority": "high",
+      "category": "operations",
+      "notes": "PR #266・#267をmainへマージ済み。実サービスとの照合は後続。",
+      "references": [
+        "design/08-durable-state.md",
+        "design/09-host-lifecycle.md"
+      ]
+    },
+    {
+      "id": "BASE-05",
+      "title": "管理画面とdocsの可視化",
+      "description": "文書検索・関係図・Mermaid・概要の閲覧と認証。",
+      "status": "done",
+      "priority": "medium",
+      "category": "console",
+      "notes": "PR #268、proxy・認証設定の改善はPR #277でマージ済み。",
+      "references": [
+        "design/10-console.md"
+      ]
+    },
+    {
+      "id": "RT-01",
+      "title": "常設Channelの実行ループ",
+      "description": "入力・思考・採用・応答をつなぎ、取消・保留・再開を扱う。まず疑似モデルで一連の流れを検証。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "runtime",
+      "notes": "",
+      "references": [
+        "design/01-foundation.md",
+        "design/05-delivery.md"
+      ]
+    },
+    {
+      "id": "RT-02",
+      "title": "意識による候補の選択と採用",
+      "description": "関心・意図・緊急性・会話責務を踏まえ、矛盾しない候補を採用する。専用の台詞ルールで代用しない。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "runtime",
+      "notes": "",
+      "references": [
+        "design/02-concurrency.md",
+        "docs/04-interest.md",
+        "docs/05-goal.md"
+      ]
+    },
+    {
+      "id": "RT-03",
+      "title": "呼びかけの予約容量と最低応答",
+      "description": "作業や着想が多い間も呼びかけを扱い、最低応答と本返答の二重送信を防ぐ。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "runtime",
+      "notes": "",
+      "references": [
+        "docs/07-autonomy.md",
+        "design/05-delivery.md"
+      ]
+    },
+    {
+      "id": "RT-04",
+      "title": "外部向けの応答状態表示",
+      "description": "考え中・待機中など、応答がない理由を伝える。Channelなどの詳細は管理画面へ。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "runtime",
+      "notes": "",
+      "references": [
+        "design/04-continuity.md"
+      ]
+    },
+    {
+      "id": "LLM-01",
+      "title": "実LLMと最初の会話媒体を接続",
+      "description": "内面と記憶を踏まえて対話し、会話の経験が次の判断へ残る一連の動作を検証。媒体・モデル選定後に接続。",
+      "status": "blocked",
+      "priority": "high",
+      "category": "model",
+      "notes": "",
+      "references": [
+        "design/05-delivery.md",
+        "design/07-inner-state.md"
+      ]
+    },
+    {
+      "id": "MCP-01",
+      "title": "Akariが使う外部MCP・CLI・媒体を接続",
+      "description": "選定した外部の道具をAkariの共通Gatewayへ登録する。開発用Akari MCPの公開とは別の接続。実サービス・資格情報の利用は選定後。",
+      "status": "blocked",
+      "priority": "medium",
+      "category": "tools",
+      "notes": "",
+      "references": [
+        "design/03-effects.md"
+      ]
+    },
+    {
+      "id": "SAFE-01",
+      "title": "生成・要約・検索語の出所追跡",
+      "description": "機密範囲の由来を生成・要約へ引き継ぎ、外部への送信前に出力確認を行う。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "tools",
+      "notes": "",
+      "references": [
+        "design/03-effects.md",
+        "design/05-delivery.md"
+      ]
+    },
+    {
+      "id": "SAFE-02",
+      "title": "行為の実行直前の対象版再検証",
+      "description": "準備後の対象変更を検知し、古い判断で実行しない。体験を絞った場合の依存追跡も整える。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "tools",
+      "notes": "",
+      "references": [
+        "design/03-effects.md",
+        "design/05-delivery.md"
+      ]
+    },
+    {
+      "id": "SAFE-03",
+      "title": "実サービスの冪等性・照合",
+      "description": "結果不明の外部行為をサービス側のキーや照合APIで確認する。無条件の再送をしない。",
+      "status": "blocked",
+      "priority": "high",
+      "category": "tools",
+      "notes": "",
+      "references": [
+        "design/08-durable-state.md"
+      ]
+    },
+    {
+      "id": "MEM-01",
+      "title": "記憶の整理・忘却・想起を深める",
+      "description": "経験や関係の蓄積が次の反応へ現れることを観察する。状態保存だけで達成としない。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "inner",
+      "notes": "",
+      "references": [
+        "docs/03-memory.md",
+        "design/07-inner-state.md"
+      ]
+    },
+    {
+      "id": "MEM-02",
+      "title": "Sleepと休息の系列",
+      "description": "記憶整理・内省と休息を通常の対話・作業の流れに接続する。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "inner",
+      "notes": "",
+      "references": [
+        "docs/06-architecture.md",
+        "docs/07-autonomy.md"
+      ]
+    },
+    {
+      "id": "INNER-01",
+      "title": "感情・共感・人格に応じた表出",
+      "description": "状態基盤に加えて、感情の持続・関心・速い行動準備・共感・表出が自然な判断と行為に効くことを検証。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "inner",
+      "notes": "",
+      "references": [
+        "docs/02-emotion.md",
+        "docs/12-persona.md",
+        "docs/10-roadmap.md"
+      ]
+    },
+    {
+      "id": "CONV-01",
+      "title": "予測と会話・作業の自然さ",
+      "description": "先読み、言い直し、会話の間、グループ会話、慣れによる自動化を段階的に深める。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "runtime",
+      "notes": "",
+      "references": [
+        "docs/08-conversation.md",
+        "docs/09-capabilities.md"
+      ]
+    },
+    {
+      "id": "CONSOLE-01",
+      "title": "Channelと内面の詳しい観察",
+      "description": "Channelの状態・開始時刻、錠への到達、モデルの遅延・コストなどを実接続後に表示。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "console",
+      "notes": "",
+      "references": [
+        "design/10-console.md"
+      ]
+    },
+    {
+      "id": "CONSOLE-02",
+      "title": "人格設定と実行管理の操作",
+      "description": "権限を定義し、人格設定・承認・取消・結果照合の画面を作る。開発タスク編集とは別の実行権限として扱う。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "console",
+      "notes": "",
+      "references": [
+        "design/10-console.md",
+        "design/04-continuity.md"
+      ]
+    },
+    {
+      "id": "OPS-01",
+      "title": "バックアップ・保管期限・保存形式移行",
+      "description": "復旧手順、記録の圧縮・削除、形式移行と承認の時間失効を整備。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "operations",
+      "notes": "",
+      "references": [
+        "design/08-durable-state.md"
+      ]
+    },
+    {
+      "id": "OPS-02",
+      "title": "依存先を含めた稼働判定",
+      "description": "LLM・MCPなどの実接続後にreadinessを実装する。healthと人格の稼働を区別する。",
+      "status": "todo",
+      "priority": "medium",
+      "category": "operations",
+      "notes": "",
+      "references": [
+        "design/04-continuity.md"
+      ]
+    },
+    {
+      "id": "DEC-01",
+      "title": "初期の会話媒体を決める",
+      "description": "最初に使う会話媒体を選定する。未選定を理由に音声・アバターを必須条件にしない。",
+      "status": "decision",
+      "priority": "high",
+      "category": "decision",
+      "notes": "",
+      "references": [
+        "docs/10-roadmap.md",
+        "design/05-delivery.md"
+      ]
+    },
+    {
+      "id": "DEC-02",
+      "title": "利用するLLMを決める",
+      "description": "プロバイダー・モデルと接続方法を選定する。コスト、遅延、扱う情報の条件を確認する。",
+      "status": "decision",
+      "priority": "high",
+      "category": "decision",
+      "notes": "",
+      "references": [
+        "design/05-delivery.md"
+      ]
+    },
+    {
+      "id": "DEC-03",
+      "title": "最初に接続する道具・アクセス先を決める",
+      "description": "MCPやCLIの初期対象と許可範囲を選定する。未知の道具を自動で有効化しない。",
+      "status": "decision",
+      "priority": "medium",
+      "category": "decision",
+      "notes": "",
+      "references": [
+        "design/03-effects.md"
+      ]
+    },
+    {
+      "id": "DEC-04",
+      "title": "感情の独立マイルストーンの配置",
+      "description": "独立して達成を確認する方針は確定。どの段階と並行して達成するかを具体化する。",
+      "status": "decision",
+      "priority": "high",
+      "category": "decision",
+      "notes": "",
+      "references": [
+        "docs/10-roadmap.md"
+      ]
+    },
+    {
+      "id": "DEC-05",
+      "title": "各段階の合格条件と観察例",
+      "description": "固定の台詞を正解にせず、内面が筋の通った形で判断と行為に効く観察条件を決める。",
+      "status": "decision",
+      "priority": "high",
+      "category": "decision",
+      "notes": "",
+      "references": [
+        "docs/10-roadmap.md",
+        "design/05-delivery.md"
+      ]
+    },
+    {
+      "id": "DEC-06",
+      "title": "透明性に関する未決の範囲を具体化",
+      "description": "外部には応答状況、詳細は管理画面という確定方針を維持し、残る透明性の扱いを整理する。",
+      "status": "decision",
+      "priority": "medium",
+      "category": "decision",
+      "notes": "",
+      "references": [
+        "design/README.md",
+        "design/04-continuity.md"
+      ]
+    },
+    {
+      "version": 1,
+      "priority": "high",
+      "category": "console",
+      "notes": "コンソール・MCP/APIの共有と、保存・競合を検証。",
+      "references": [
+        "design/11-development-workspace.md"
+      ],
+      "id": "DEV-DB",
+      "title": "開発タスクをSQLiteで管理",
+      "description": "タスクの保存・復元・版照合をDBに集約し、コンソールとAPIで共有する。",
+      "status": "done"
+    },
+    {
+      "version": 1,
+      "priority": "high",
+      "category": "console",
+      "notes": "コンソール・MCP/APIの共有と、保存・競合を検証。",
+      "references": [
+        "design/11-development-workspace.md"
+      ],
+      "id": "DEV-GIT",
+      "title": "MarkdownのGitリポジトリ管理",
+      "description": "文書の追加・編集・履歴をGitへ集約し、コンソールとMCPで読み書きする。",
+      "status": "done"
+    },
+    {
+      "version": 1,
+      "priority": "high",
+      "category": "console",
+      "notes": "コンソール・MCP/APIの共有と、保存・競合を検証。",
+      "references": [
+        "design/11-development-workspace.md"
+      ],
+      "id": "DEV-MCP",
+      "title": "Akari MCPとREST API",
+      "description": "タスクCRUDとGit文書の8ツールをStreamable HTTPで公開し、実クライアントで検証する。",
+      "status": "done"
+    }
+  ]
+}

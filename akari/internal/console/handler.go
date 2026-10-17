@@ -1,4 +1,4 @@
-// Package console provides an authenticated, read-only administrative console.
+// Package console provides runtime observation and developer-owned task management.
 package console
 
 import (
@@ -10,6 +10,9 @@ import (
 	"strings"
 
 	"github.com/kizuna-org/akari/internal/continuity"
+	"github.com/kizuna-org/akari/internal/development"
+	"github.com/kizuna-org/akari/internal/docrepo"
+	"github.com/kizuna-org/akari/internal/mcpserver"
 )
 
 //go:generate go run ../../tools/docBundle
@@ -29,6 +32,15 @@ type Reader interface {
 }
 
 func NewHandler(token string, reader Reader, authDisabled bool) http.Handler {
+	return newHandler(token, reader, authDisabled, workspace{tasks: nil, documents: nil})
+}
+
+type workspace struct {
+	tasks     *development.Store
+	documents *docrepo.Repository
+}
+
+func newHandler(token string, reader Reader, authDisabled bool, work workspace) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", asset("index.html", authDisabled))
 	mux.HandleFunc("GET /assets/{name}", func(writer http.ResponseWriter, request *http.Request) {
@@ -37,13 +49,35 @@ func NewHandler(token string, reader Reader, authDisabled bool) http.Handler {
 	mux.HandleFunc("POST /api/session", login(token, authDisabled))
 	mux.HandleFunc("DELETE /api/session", logout(authDisabled))
 
-	docsHandler := http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+	docsHandler := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Content-Type", "application/json")
+
+		if work.documents != nil {
+			library, err := work.documents.Snapshot(request.Context())
+			if err != nil {
+				http.Error(writer, "documentation unavailable", http.StatusServiceUnavailable)
+
+				return
+			}
+
+			writer.Header().Set("ETag", `"`+library.Revision+`"`)
+			writeJSON(writer, library.Documents)
+
+			return
+		}
+
 		_, _ = writer.Write(documents)
 	})
 	mux.Handle("GET /api/docs", authorize(token, authDisabled, docsHandler))
 
 	mux.Handle("GET /api/status", authorize(token, authDisabled, statusHandler(reader)))
+	taskRoutes(mux, token, authDisabled, work.tasks)
+
+	if work.tasks != nil && work.documents != nil {
+		mux.Handle("PUT /api/docs", authorize(token, authDisabled, documentWriter(work.documents)))
+		mux.Handle("/mcp", authorize(token, authDisabled, mcpBoundary(authDisabled,
+			mcpserver.New(work.tasks, work.documents))))
+	}
 
 	return headers(mux)
 }

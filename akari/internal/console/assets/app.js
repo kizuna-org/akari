@@ -3,6 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const state = {
     documents: [],
+    documentRevision: "",
     links: [],
     group: "docs",
     filter: "all",
@@ -18,6 +19,9 @@
   const go = (path, section = "") =>
     `#doc=${encodeURIComponent(path)}${section ? `&section=${encodeURIComponent(section)}` : ""}`;
   const lookup = (path) => state.documents.find((doc) => doc.path === path);
+  let documentRevision = "";
+  let documentSaving = false;
+  const interruptedDialogs = new Set();
   const shortTitle = (doc) =>
     doc.path.endsWith("/README.md")
       ? "読み方とドキュメント目次"
@@ -46,13 +50,34 @@
       showLogin();
       throw new Error("管理用コードを確認してログインしてください。");
     }
+    if (response.ok && path === "/api/docs" && !options.method)
+      state.documentRevision = (response.headers.get("ETag") || "").replaceAll('"', "");
+    if (!response.ok && path.startsWith("/api/development/tasks")) {
+      const messages = {
+        409: "別の画面で更新されています。下書きは保持しています。一覧を更新して内容を確認し、編集を開き直してください。",
+        400: "入力を確認してください。タイトル・状態・分類と、資料参照は8件以内で指定してください。",
+        404: "タスクが見つかりません。一覧を更新してください。",
+        403: "同じコンソールから操作してください。",
+      };
+      throw new Error(messages[response.status] || "保存状態を確認できません。一覧を更新して確認してください。");
+    }
+    if (!response.ok && path === "/api/docs" && options.method === "PUT") {
+      if (response.status === 409) throw new Error("資料が更新されたか、Gitに未コミットの変更があります。下書きを控え、資料を更新してから編集を開き直してください。");
+      if (response.status === 400) throw new Error("ファイル名はdocs/またはdesign/直下の英数字・ハイフン・下線と.mdで指定し、本文は1MB以内にしてください。");
+      throw new Error("Gitへの保存を確認できません。資料を更新して、コミットと本文を確認してください。");
+    }
     if (!response.ok)
       throw new Error(
         "情報を取得できませんでした。ホストの接続を確認してください。",
       );
     return response.status === 204 ? null : response.json();
   }
-  function showLogin() {
+  function showLogin(preserveDraft = true) {
+    if (!preserveDraft) interruptedDialogs.clear();
+    document.querySelectorAll("dialog[open]").forEach((dialog) => {
+      if (preserveDraft) interruptedDialogs.add(dialog);
+      dialog.close();
+    });
     $("login").hidden = false;
     $("app").hidden = true;
   }
@@ -108,6 +133,8 @@
     renderMap();
     renderLibrary();
     await route();
+    for (const dialog of interruptedDialogs) dialog.showModal();
+    interruptedDialogs.clear();
   }
   function svg(tag, attrs = {}, value = "") {
     const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
@@ -285,16 +312,16 @@
     }
   }
   async function route() {
-    if (!state.documents.length || $("app").hidden) return;
+    if ($("app").hidden) return;
     $("app-error").hidden = true;
     const hash = location.hash.slice(1) || "map";
     const isDoc = hash.startsWith("doc=");
     const view = isDoc
       ? "reader"
-      : ["map", "docs", "status"].includes(hash)
+      : ["map", "docs", "status", "tasks"].includes(hash)
         ? hash
         : "map";
-    for (const name of ["map", "docs", "reader", "status"])
+    for (const name of ["map", "docs", "reader", "status", "tasks"])
       $(`${name}-view`).hidden = name !== view;
     document
       .querySelectorAll("[data-nav]")
@@ -309,6 +336,7 @@
       docs: "ドキュメント",
       reader: "ドキュメント",
       status: "稼働状態",
+      tasks: "開発タスク",
     }[view];
     state.render++;
     window.scrollTo(0, 0);
@@ -318,6 +346,7 @@
         await readDoc(params.get("doc"), params.get("section"));
       }
       if (view === "status") await refreshStatus();
+      if (view === "tasks") await window.akariTasks.open(state.documents, api, go);
     } catch (err) {
       error(err.message);
     }
@@ -338,6 +367,7 @@
       return;
     }
     $("doc-path").textContent = doc.path;
+    $("doc-edit").disabled = !doc.revision;
     document.title = `${shortTitle(doc)} — Akari`;
     $("article").innerHTML = DOMPurify.sanitize(marked.parse(doc.content), {
       USE_PROFILES: { html: true },
@@ -496,12 +526,54 @@
   $("logout").addEventListener("click", async () => {
     try {
       await api("/api/session", { method: "DELETE" });
-      showLogin();
+      showLogin(false);
     } catch (err) {
       error(err.message);
     }
   });
   $("search").addEventListener("input", renderLibrary);
+  $("docs-refresh").addEventListener("click", () => initialize().catch((err) => error(err.message)));
+  function editDocument(doc) {
+    documentRevision = doc?.revision || state.documentRevision || "";
+    if (!documentRevision) { error("Gitリポジトリの資料を更新してから編集してください。"); return; }
+    $("doc-edit-path").value = doc?.path || "";
+    $("doc-edit-path").readOnly = !!doc;
+    $("doc-content").value = doc?.content || "# 新しい資料\n\n";
+    $("doc-dialog-title").textContent = doc ? "Markdownを編集" : "資料を追加";
+    $("doc-edit-revision").textContent = `Git ${documentRevision.slice(0, 12)}`;
+    $("doc-form-error").hidden = true;
+    $("doc-dialog").showModal();
+  }
+  $("doc-edit").addEventListener("click", () => editDocument(lookup(new URLSearchParams(location.hash.slice(1)).get("doc"))));
+  $("doc-new").addEventListener("click", () => editDocument(null));
+  $("doc-cancel").addEventListener("click", () => { if (!documentSaving) $("doc-dialog").close(); });
+  $("doc-dialog").addEventListener("cancel", (event) => { if (documentSaving) event.preventDefault(); });
+  $("doc-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (documentSaving) return;
+    documentSaving = true;
+    $("doc-cancel").disabled = true;
+    $("doc-save").disabled = true;
+    $("doc-content").disabled = true;
+    $("doc-edit-path").disabled = true;
+    $("doc-form-error").hidden = true;
+    try {
+      const updated = await api("/api/docs", { method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: $("doc-edit-path").value.trim(), content: $("doc-content").value, revision: documentRevision }) });
+      $("doc-dialog").close();
+      await initialize();
+      location.hash = go(updated.path);
+    } catch (err) {
+      $("doc-form-error").textContent = err.message;
+      $("doc-form-error").hidden = false;
+    } finally {
+      documentSaving = false;
+      $("doc-cancel").disabled = false;
+      $("doc-save").disabled = false;
+      $("doc-content").disabled = false;
+      $("doc-edit-path").disabled = false;
+    }
+  });
   document.querySelectorAll("[data-group]").forEach((button) =>
     button.addEventListener("click", () => {
       state.group = button.dataset.group;

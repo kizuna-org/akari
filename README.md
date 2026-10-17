@@ -12,14 +12,18 @@
 プロセスの強制終了後も結果不明の行為を再送しない基盤を実装しています。
 [ホスト起動・停止](./design/09-host-lifecycle.md)にも保存復元を接続しました。
 [管理コンソール](./design/10-console.md)にはdocsの関係図・検索・図の表示と、稼働状態の概要を用意しました。
-**常設Channel、実LLM・実MCPはまだ接続していません。**
+[開発ワークスペース](./design/11-development-workspace.md)では、SQLiteのタスク管理、GitのMarkdown編集、
+Akari MCPとREST APIを同じコンソールへ接続しています。
+**常設Channel、実LLM、Akariが外部の道具を使うMCP接続は未接続です。**
+開発タスクの実行・並列化は外部のコーディングエージェントが担い、Akariはタスク・文書とMCP/APIを提供します。
 `/healthz` はホストの生存だけを示し、Akariが思考できることは示しません。
 
 ## Go / GoLand
 
 Go 1.26.2を使います。リポジトリをGoLandで開き、共有Run構成の `Akari` を選びます。
 Go SDKには1.26.2を設定します。
-ルートの `go.work` で一つのGoモジュールを参照します。クラウド認証・DBは不要です。
+ルートの `go.work` で一つのGoモジュールを参照します。Gitコマンドが必要です。
+クラウド認証やDBサーバーは不要で、タスク用SQLiteをローカルに作成します。
 
 ```sh
 cd akari
@@ -45,10 +49,11 @@ curl http://127.0.0.1:8080/healthz
 起動後、[http://127.0.0.1:8082](http://127.0.0.1:8082)を開きます。
 GoLand / `make run`では、`akari/data/admin.token`にある管理用コードでログインします。
 `AKARI_DATA_DIR`を変更している場合は、そのディレクトリの`admin.token`を確認してください。
-コードは起動ごとに更新します。画面は閲覧専用です。
+コードは起動ごとに更新します。開発タスクとMarkdownは編集でき、Akariの稼働状態は閲覧専用です。
 
 - 設計マップ：docs / designの参照関係から本文へ移動。
-- ドキュメント：全文検索、章の目次、関連資料、Mermaid図の拡大縮小。
+- ドキュメント：全文検索、章の目次、関連資料、Mermaid図、Markdownの追加・編集とGit保存。
+- 開発タスク：残作業・判断待ち・進捗・優先度・メモの管理。MCP/APIと同じDBを利用。
 - 稼働状態：採用版・保存版・outboxの概要。
 
 管理アドレスは`AKARI_ADMIN_ADDR`で変更します。通常のhealthポートとは分離しています。
@@ -56,7 +61,10 @@ GoLand / `make run`では、`akari/data/admin.token`にある管理用コード�
 この設定では`admin.token`を作成せず、管理画面のデータAPIをトークンなしで利用できます。
 管理アドレスを信頼できるネットワークや認証付きプロキシの内側に限定してください。
 TLS終端プロキシを使う場合、同一オリジン検証とSecure Cookieには`X-Forwarded-Proto: https`を使います。
-ドキュメントはビルド時に同梱し、画面の利用にNodeや外部CDNは不要です。
+文書は初回だけ同梱データからGitリポジトリを作成し、以降はGitのHEADから読みます。
+`AKARI_DOCS_REPO`で既存のworktreeも指定できます。画面の利用にNodeや外部CDNは不要です。
+MCPの接続先は`http://127.0.0.1:8082/mcp`です。
+認証・ツール一覧・REST APIは[接続手順](./design/11-development-workspace.md)を参照してください。
 
 ## Docker
 
@@ -75,6 +83,7 @@ docker compose down
 公開先は既定でlocalhostです。ポートは `AKARI_PORT=8081 docker compose up --build -d --wait`
 で変えられます。非rootで実行し、root filesystemは読み取り専用です。
 `akari-data` volumeの`/data`に人格・内面・記憶・outboxを保存し、再起動時に復元します。
+開発タスクの`development.db`と、Markdownの`documentation/.git`も同じvolumeへ保持します。
 破損や人格不一致では起動を拒否し、空の状態に上書きしません。
 既存DB volumeの削除・変換は行いません。旧環境からの移行は別途扱います。
 
