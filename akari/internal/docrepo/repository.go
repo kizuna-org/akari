@@ -66,7 +66,12 @@ func Open(ctx context.Context, directory string, initialize bool, seed []Documen
 		return nil, err
 	}
 
-	if strings.TrimSpace(root) != absolute {
+	physical, err := filepath.EvalSymlinks(absolute)
+	if err != nil {
+		return nil, err
+	}
+
+	if strings.TrimSpace(root) != physical {
 		return nil, ErrInvalid
 	}
 
@@ -127,7 +132,7 @@ func (repository *Repository) Write(ctx context.Context, document Document) (Doc
 		return Document{}, err
 	}
 
-	status, err := repository.git(ctx, "status", "--porcelain")
+	status, err := repository.git(ctx, "status", "--porcelain", "--untracked-files=all")
 	if err != nil {
 		return Document{}, err
 	}

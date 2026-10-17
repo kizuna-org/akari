@@ -72,7 +72,7 @@
     }
     $("task-empty").hidden = matching.length > 0;
     $("task-updated").textContent = `保存済み ${new Date(board.updatedAt).toLocaleString("ja-JP")} · ${matching.length}件を表示`;
-    document.querySelectorAll("#tasks-view button, #task-form button").forEach((button) => { button.disabled = busy; });
+    document.querySelectorAll("#tasks-view button, #task-form button, #task-form input, #task-form textarea, #task-form select").forEach((control) => { control.disabled = busy; });
   }
   function card(task) {
     const node = text("article", "", "task-card");

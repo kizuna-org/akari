@@ -554,6 +554,8 @@
     documentSaving = true;
     $("doc-cancel").disabled = true;
     $("doc-save").disabled = true;
+    $("doc-content").disabled = true;
+    $("doc-edit-path").disabled = true;
     $("doc-form-error").hidden = true;
     try {
       const updated = await api("/api/docs", { method: "PUT", headers: { "Content-Type": "application/json" },
@@ -568,6 +570,8 @@
       documentSaving = false;
       $("doc-cancel").disabled = false;
       $("doc-save").disabled = false;
+      $("doc-content").disabled = false;
+      $("doc-edit-path").disabled = false;
     }
   });
   document.querySelectorAll("[data-group]").forEach((button) =>

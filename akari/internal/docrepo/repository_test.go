@@ -9,6 +9,27 @@ import (
 	"testing"
 )
 
+func TestRepositoryUnderSymlinkedParent(t *testing.T) {
+	t.Parallel()
+
+	for _, name := range []string{"physical worktree matches its symlinked parent"} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			parent := t.TempDir()
+			directory := filepath.Join(parent, "repository")
+			_, err := Open(t.Context(), directory, true, testDocuments())
+			must(t, err)
+			alias := filepath.Join(t.TempDir(), "alias")
+			must(t, os.Symlink(parent, alias))
+			repository, err := Open(t.Context(), filepath.Join(alias, "repository"), false, nil)
+			must(t, err)
+			_, err = repository.Read(t.Context(), "docs/README.md")
+			must(t, err)
+		})
+	}
+}
+
 func TestFirstDocumentInEmptyCommittedRepository(t *testing.T) {
 	t.Parallel()
 
@@ -124,9 +145,11 @@ func TestGitDocumentRejectsConflictsAndPaths(t *testing.T) {
 		{name: "Git metadata", path: ".git/config", prep: nil, want: ErrInvalid},
 		{name: "absolute", path: "/tmp/file.md", prep: nil, want: ErrInvalid},
 		{name: "non Markdown", path: "docs/script.sh", prep: nil, want: ErrInvalid},
-		{name: "dirty worktree", path: "docs/README.md", want: ErrConflict,
+		{name: "dirty worktree with hidden untracked files", path: "docs/README.md", want: ErrConflict,
 			prep: func(t *testing.T, r *Repository) {
 				t.Helper()
+				_, err := r.git(t.Context(), "config", "status.showUntrackedFiles", "no")
+				must(t, err)
 				must(t, os.WriteFile(filepath.Join(r.directory, "unrelated"), []byte("local work"), privateFile))
 			}},
 	} {

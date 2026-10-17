@@ -87,9 +87,9 @@ func TestManagedCloseRetainsLeaseAfterFailedConsoleDrain(t *testing.T) {
 			deadline, cancel := context.WithCancel(t.Context())
 			cancel()
 
-			if service.Close(deadline) == nil {
-				t.Fatal("console drain failure was not reported")
-			}
+			closeDone := make(chan error, 1)
+
+			go func() { closeDone <- service.Close(deadline) }()
 
 			const leaseWait = 20 * time.Millisecond
 
@@ -105,7 +105,11 @@ func TestManagedCloseRetainsLeaseAfterFailedConsoleDrain(t *testing.T) {
 			resume()
 			<-reader.finished
 			<-requestDone
-			must(t, service.Close(t.Context()))
+
+			if <-closeDone == nil {
+				t.Fatal("console drain deadline was not reported")
+			}
+
 			release, err = store.Acquire(t.Context())
 			must(t, err)
 			release()

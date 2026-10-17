@@ -1,7 +1,8 @@
 "use strict";
 const { chromium } = require("playwright");
 const { spawn, execFileSync } = require("node:child_process");
-const { mkdtemp, readFile, rm, mkdir } = require("node:fs/promises");
+const { watch } = require("node:fs");
+const { mkdtemp, readFile, rm, mkdir, writeFile } = require("node:fs/promises");
 const { tmpdir } = require("node:os");
 const { resolve, join } = require("node:path");
 const assert = require("node:assert/strict");
@@ -11,9 +12,9 @@ const assert = require("node:assert/strict");
   const artifacts = join(__dirname, "artifacts");
   await mkdir(artifacts, { recursive: true });
   let host, exited, address, token, browser;
-  async function start() {
+  async function start(extra = {}) {
     host = spawn(resolve(process.argv[2]), [], {
-      env: { ...process.env, AKARI_DATA_DIR: directory, AKARI_ADDR: "127.0.0.1:0", AKARI_ADMIN_ADDR: "127.0.0.1:0", AKARI_ADMIN_AUTH_DISABLED: "false", AKARI_DOCS_REPO: "" },
+      env: { ...process.env, AKARI_DATA_DIR: directory, AKARI_ADDR: "127.0.0.1:0", AKARI_ADMIN_ADDR: "127.0.0.1:0", AKARI_ADMIN_AUTH_DISABLED: "false", AKARI_DOCS_REPO: "", ...extra },
       stdio: ["ignore", "pipe", "pipe"],
     });
     exited = new Promise((done) => host.once("exit", (code) => done(code)));
@@ -90,8 +91,26 @@ const assert = require("node:assert/strict");
     await page.locator("#task-notes").fill("created in console");
     await page.locator("#task-priority").selectOption("high");
     await page.locator("#task-references").selectOption("design/05-delivery.md");
+    let releaseTask, taskStarted;
+    const savingTask = new Promise((done) => { taskStarted = done; });
+    const resumeTask = new Promise((done) => { releaseTask = done; });
+    const delayedTask = async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      taskStarted();
+      await resumeTask;
+      await route.continue();
+    };
+    await page.route("**/api/development/tasks", delayedTask);
     await page.locator("#task-save").click();
+    await savingTask;
+    assert.equal(await page.locator("#task-title").isDisabled(), true);
+    assert.equal(await page.locator("#task-notes").isDisabled(), true);
+    assert.equal(await page.locator("#task-status").isDisabled(), true);
+    await page.keyboard.press("Escape");
+    assert.equal(await page.locator("#task-dialog").isVisible(), true);
+    releaseTask();
     await page.locator("#task-dialog").waitFor({ state: "hidden" });
+    await page.unroute("**/api/development/tasks", delayedTask);
     const board = await mcp("tasks_list", {});
     const task = board.tasks.find((value) => value.title === title);
     assert.ok(task);
@@ -155,6 +174,8 @@ const assert = require("node:assert/strict");
     await page.locator("#doc-save").click();
     await waitingWrite;
     assert.equal(await page.locator("#doc-cancel").isDisabled(), true);
+    assert.equal(await page.locator("#doc-content").isDisabled(), true);
+    assert.equal(await page.locator("#doc-edit-path").isDisabled(), true);
     await page.keyboard.press("Escape");
     assert.equal(await page.locator("#doc-dialog").isVisible(), true);
     releaseWrite();
@@ -218,6 +239,43 @@ const assert = require("node:assert/strict");
     assert.equal((await context.request.get(`${address}/api/development/tasks`)).status(), 401);
     assert.deepEqual(errors, [], "Development UI JavaScript errors");
     assert.deepEqual(external, [], "External requests from development UI");
+
+    await stop();
+    const wrapper = join(directory, "git-wrapper");
+    await mkdir(wrapper);
+    const armed = join(wrapper, "armed"), marker = join(wrapper, "started");
+    const realGit = execFileSync("which", ["git"], { encoding: "utf8" }).trim();
+    await writeFile(join(wrapper, "git"), `#!/usr/bin/python3
+import os, sys, time
+if os.path.exists(${JSON.stringify(armed)}) and ("status" in sys.argv or "add" in sys.argv):
+    with open(${JSON.stringify(marker)}, "w") as signal:
+        signal.write(str(os.getpid()))
+    time.sleep(3.5)
+os.execv(${JSON.stringify(realGit)}, [${JSON.stringify(realGit)}, *sys.argv[1:]])
+`, { mode: 0o700 });
+    await start({ PATH: `${wrapper}:${process.env.PATH}` });
+    const initial = await mcp("documents_list", {});
+    await writeFile(armed, "delay status and staging past the host shutdown deadline");
+    const started = new Promise((done, fail) => {
+      const timeout = setTimeout(() => { watcher.close(); fail(new Error("Git write did not start")); }, 10000);
+      const watcher = watch(wrapper, (_, name) => {
+        if (name === "started") { clearTimeout(timeout); watcher.close(); done(); }
+      });
+    });
+    const pendingWrite = mcp("documents_write", { document: { path: "docs/shutdown.md", content: "# Drained before exit\n", revision: initial.revision } }).catch(() => null);
+    await started;
+    host.kill("SIGTERM");
+    const deadline = setTimeout(() => host.kill("SIGKILL"), 15000);
+    const exitCode = await exited;
+    clearTimeout(deadline);
+    host = null;
+    await pendingWrite;
+    assert.equal(exitCode, 1, "Shutdown deadline should be reported after draining");
+    const committed = execFileSync(realGit, ["-C", join(directory, "documentation"), "show", "HEAD:docs/shutdown.md"], { encoding: "utf8" });
+    assert.equal(committed, "# Drained before exit\n", "Host exited before its Git subprocess completed");
+    await rm(armed);
+    await start();
+    assert.equal((await mcp("documents_read", { path: "docs/shutdown.md" })).content, committed);
     console.log("Development browser passed: task CRUD, MCP/API/console sharing, stale and reauthenticated drafts, save-in-flight guard, JSON export, mobile, Git commits, empty document library, SIGKILL persistence, logout, no external requests");
   } finally {
     if (browser) await browser.close();
