@@ -96,10 +96,29 @@ Streamable HTTPのエンドポイントは既定で`http://127.0.0.1:8082/mcp`�
 公式Go MCP SDKを使い、JSON-RPC、初期化、ツール一覧、型付きの入出力を扱います。
 stateless・JSON応答で、サーバーからクライアントへのsamplingや実行要求は行いません。
 
+本番の接続先は`https://akari-mcp.shiron.dev/mcp`です。このホストはCloudflare Tunnelから
+管理listenerへ接続し、Cloudflare Access Managed OAuthと`akari:admin`ロールで保護します。
+Cloudflare Accessの不透明なOAuthトークンはエッジで認証され、originへ渡る署名付き
+`Cf-Access-Jwt-Assertion`はAkariがissuer・audience・有効期限・RS256署名を検証します。
+`AKARI_ACCESS_JWT_ISSUER`と`AKARI_ACCESS_JWT_AUD`は対で設定してください。前者はAccess team issuer URL、
+後者はこのAccessアプリのAUD tagです。鍵はissuerの`/cdn-cgi/access/certs`から取得し、5分間キャッシュします。
+本番では`AKARI_ADMIN_AUTH_DISABLED=true`を使いますが、Access JWT設定の片方だけが欠ける場合は起動に失敗します。
+AkariのlistenerはDocker内部だけで待ち受け、ホストポートを公開せず、Tunnel以外から直接到達できない構成です。
+リポジトリには次のCodexプロジェクト設定を置いています。リポジトリを信頼すると読み込まれ、
+`codex mcp login akari`を実行するとCloudflare Accessの認証画面が開きます。
+
+```toml
+[mcp_servers.akari]
+url = "https://akari-mcp.shiron.dev/mcp"
+```
+
+接続設定にはURLだけを保存します。CloudflareやAkariのトークンはGitへ保存せず、MCPのOAuth認証情報は
+Codexのユーザー設定に保存されます。プロジェクト設定は信頼済みリポジトリでのみ読み込まれます。
+
 認証ありでは管理用コードをBearerで送ります。コードは起動ごとに更新されるため、
 再起動後はクライアントの環境変数を更新して再接続します。
-`AKARI_ADMIN_AUTH_DISABLED=true`は既存の信頼されたローカル環境・認証付きプロキシ向け設定です。
-この設定をMCPのために自動で有効にすることはありません。
+`AKARI_ADMIN_AUTH_DISABLED=true`は既定では無効です。本番ではCloudflare Accessのエッジ認証、AkariのJWT検証、
+Tunnel内の到達制限を併用するため、運用側で明示的に設定しています。
 
 CodexのMCP設定例：
 

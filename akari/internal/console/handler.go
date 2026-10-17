@@ -41,6 +41,11 @@ type workspace struct {
 }
 
 func newHandler(token string, reader Reader, authDisabled bool, work workspace) http.Handler {
+	return newHandlerWithAccess(token, reader, authDisabled, work, nil)
+}
+
+func newHandlerWithAccess(token string, reader Reader, authDisabled bool, work workspace,
+	accessVerifier *accessJWTVerifier) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", asset("index.html", authDisabled))
 	mux.HandleFunc("GET /assets/{name}", func(writer http.ResponseWriter, request *http.Request) {
@@ -75,8 +80,16 @@ func newHandler(token string, reader Reader, authDisabled bool, work workspace) 
 
 	if work.tasks != nil && work.documents != nil {
 		mux.Handle("PUT /api/docs", authorize(token, authDisabled, documentWriter(work.documents)))
-		mux.Handle("/mcp", authorize(token, authDisabled, mcpBoundary(authDisabled,
-			mcpserver.New(work.tasks, work.documents))))
+
+		mcpHandler := mcpBoundary(authDisabled, accessVerifier != nil,
+			mcpserver.New(work.tasks, work.documents))
+		if accessVerifier != nil {
+			mcpHandler = accessVerifier.middleware(mcpHandler)
+		} else {
+			mcpHandler = authorize(token, authDisabled, mcpHandler)
+		}
+
+		mux.Handle("/mcp", mcpHandler)
 	}
 
 	return headers(mux)

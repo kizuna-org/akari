@@ -26,6 +26,11 @@ type Server struct {
 
 // Start binds the separate management listener and configures its per-process access code.
 func Start(ctx context.Context, address, directory string, reader Reader, authDisabled bool) (*Server, error) {
+	accessVerifier, _, err := newAccessJWTVerifierFromEnvironment()
+	if err != nil {
+		return nil, err
+	}
+
 	listener, err := new(net.ListenConfig).Listen(ctx, "tcp", address)
 	if err != nil {
 		return nil, err
@@ -64,7 +69,8 @@ func Start(ctx context.Context, address, directory string, reader Reader, authDi
 	}
 
 	transport := new(http.Server)
-	transport.Handler = newHandler(token, reader, authDisabled, workspace{tasks: tasks, documents: library})
+	transport.Handler = newHandlerWithAccess(token, reader, authDisabled,
+		workspace{tasks: tasks, documents: library}, accessVerifier)
 	transport.ReadHeaderTimeout = timeout
 	transport.ReadTimeout = timeout
 	transport.WriteTimeout = timeout

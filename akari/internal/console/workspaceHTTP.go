@@ -47,11 +47,12 @@ func documentWriter(repository *docrepo.Repository) http.HandlerFunc {
 	}
 }
 
-func mcpBoundary(authDisabled bool, next http.Handler) http.Handler {
+func mcpBoundary(authDisabled, accessAuthenticated bool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		origin := request.Header.Get("Origin")
 		if (origin != "" && !sameOrigin(request)) ||
-			(origin == "" && !authDisabled && request.Header.Get("Authorization") == "") {
+			(origin == "" && !authDisabled && !accessAuthenticated &&
+				request.Header.Get("Authorization") == "") {
 			http.Error(writer, "MCP requires bearer authentication or same-origin console access", http.StatusForbidden)
 
 			return
