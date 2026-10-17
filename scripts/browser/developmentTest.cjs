@@ -132,6 +132,12 @@ const assert = require("node:assert/strict");
     await page.locator("#article").filter({ hasText: "Edited twice." }).waitFor();
     assert.notEqual((await mcp("documents_read", { path: document.path })).revision, previous);
     await page.screenshot({ path: join(artifacts, "git-document.png"), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "Mobile document actions overflow");
+    await page.locator("#doc-edit").click();
+    assert.ok(await page.locator("#doc-dialog").evaluate((node) => node.getBoundingClientRect().width <= innerWidth), "Mobile document editor overflow");
+    await page.locator("#doc-cancel").click();
+    await page.setViewportSize({ width: 1500, height: 1050 });
 
     await stop("SIGKILL");
     await start();
