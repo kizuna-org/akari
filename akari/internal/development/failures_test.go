@@ -55,6 +55,7 @@ func TestCorruptDatabaseIsNotRepairedByReseeding(t *testing.T) {
 	t.Parallel()
 
 	for _, sql := range []string{
+		"PRAGMA user_version = -1",
 		"DROP TABLE tasks",
 		"DELETE FROM metadata",
 		"UPDATE metadata SET updated_at = 'invalid'",

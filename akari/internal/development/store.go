@@ -140,7 +140,7 @@ func (store *Store) initialize(ctx context.Context) error {
 		return err
 	}
 
-	if version > 1 {
+	if version < 0 || version > 1 {
 		return ErrInvalid
 	}
 
