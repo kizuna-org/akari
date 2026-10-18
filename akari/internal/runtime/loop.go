@@ -109,9 +109,13 @@ func (loop *Loop) Run(ctx context.Context, inputs <-chan Input) error {
 
 			return err
 		}
-		loop.mu.Lock()
-		changed := loop.changed
-		loop.mu.Unlock()
+		changed, closed, paused := loop.runState()
+		if closed {
+			return nil
+		}
+		if paused {
+			continue
+		}
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -136,6 +140,15 @@ func (loop *Loop) Run(ctx context.Context, inputs <-chan Input) error {
 			}
 		}
 	}
+}
+
+// runState captures the notification channel with its lifecycle state so Run
+// cannot miss a Close or Pause between awaitOpen and its select.
+func (loop *Loop) runState() (<-chan struct{}, bool, bool) {
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+
+	return loop.changed, loop.closed, loop.paused
 }
 
 // Handle runs one input through adoption, thought, response adoption, and delivery.
