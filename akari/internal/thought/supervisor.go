@@ -52,6 +52,7 @@ type task struct { //nolint:containedctx // Lifecycle ownership, not request con
 	proposal  mind.Proposal
 	err       error
 	delivered bool
+	reserved  bool
 	adopting  bool
 	completed chan struct{}
 	retired   chan struct{}
@@ -88,30 +89,12 @@ func New(ctx context.Context, workspace Workspace, capacity int) (*Supervisor, e
 
 // Start creates a new generation. Resource capacity is not persona's consciousness width.
 func (supervisor *Supervisor) Start(identity string, runner Runner) (Token, error) {
-	supervisor.mu.Lock()
-	defer supervisor.mu.Unlock()
+	return supervisor.start(identity, runner, false)
+}
 
-	err := supervisor.canStart(identity, runner)
-	if err != nil {
-		return Token{}, err
-	}
-
-	supervisor.generation++
-	ctx, cancel := context.WithCancel(supervisor.ctx)
-	token := Token{Channel: identity, Generation: supervisor.generation}
-	work := &task{
-		ctx: ctx, cancel: cancel, token: token,
-		proposal: mind.Proposal{ID: "", Reads: nil, Writes: nil}, err: nil, delivered: false, adopting: false,
-		completed: make(chan struct{}),
-		retired:   make(chan struct{}),
-	}
-	supervisor.tasks[identity] = work
-	snapshot := supervisor.workspace.Snapshot()
-	supervisor.workers.Add(1)
-
-	go supervisor.run(work, snapshot, runner)
-
-	return token, nil
+// StartReserved gives the exact-generation waiter exclusive ownership of the completion.
+func (supervisor *Supervisor) StartReserved(identity string, runner Runner) (Token, error) {
+	return supervisor.start(identity, runner, true)
 }
 
 // Named results let recovery return a failure instead of terminating the process.
@@ -142,7 +125,12 @@ func (supervisor *Supervisor) Next(ctx context.Context) (Result, error) {
 
 		select {
 		case token := <-supervisor.ready:
+			if supervisor.reserved(token) {
+				continue
+			}
+
 			result, err := supervisor.take(token)
+
 			if errors.Is(err, ErrToken) {
 				continue
 			}
@@ -267,6 +255,43 @@ func (supervisor *Supervisor) Close(ctx context.Context) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func (supervisor *Supervisor) start(identity string, runner Runner, reserved bool) (Token, error) {
+	supervisor.mu.Lock()
+	defer supervisor.mu.Unlock()
+
+	err := supervisor.canStart(identity, runner)
+	if err != nil {
+		return Token{}, err
+	}
+
+	supervisor.generation++
+	ctx, cancel := context.WithCancel(supervisor.ctx)
+	token := Token{Channel: identity, Generation: supervisor.generation}
+	work := &task{
+		ctx: ctx, cancel: cancel, token: token,
+		proposal: mind.Proposal{ID: "", Reads: nil, Writes: nil}, err: nil, delivered: false,
+		reserved: reserved, adopting: false,
+		completed: make(chan struct{}),
+		retired:   make(chan struct{}),
+	}
+	supervisor.tasks[identity] = work
+	snapshot := supervisor.workspace.Snapshot()
+	supervisor.workers.Add(1)
+
+	go supervisor.run(work, snapshot, runner)
+
+	return token, nil
+}
+
+func (supervisor *Supervisor) reserved(token Token) bool {
+	supervisor.mu.Lock()
+	defer supervisor.mu.Unlock()
+
+	work, exists := supervisor.tasks[token.Channel]
+
+	return exists && work.token == token && work.reserved
 }
 
 //nolint:wsl,wsl_v5 // Marking delivery follows the guarded token lookup.

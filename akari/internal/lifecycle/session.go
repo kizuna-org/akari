@@ -107,6 +107,18 @@ func (session *Session) Start(identity string, runner thought.Runner) (thought.T
 	return session.supervisor.Start(identity, runner)
 }
 
+// StartReserved binds completion ownership to the generation-specific runtime waiter.
+func (session *Session) StartReserved(identity string, runner thought.Runner) (thought.Token, error) {
+	session.mu.Lock()
+	defer session.mu.Unlock()
+
+	if session.closing || session.ctx.Err() != nil {
+		return thought.Token{}, ErrClosed
+	}
+
+	return session.supervisor.StartReserved(identity, runner)
+}
+
 func (session *Session) Next(ctx context.Context) (thought.Result, error) {
 	return session.supervisor.Next(ctx)
 }
