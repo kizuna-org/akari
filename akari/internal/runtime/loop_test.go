@@ -506,6 +506,49 @@ func TestRunCloseCancelsActiveThought(t *testing.T) {
 	}
 }
 
+func TestCloseUnblocksWaitWhenRunnerIgnoresCancellation(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name      string
+		runnerErr error
+	}{
+		{name: "late result", runnerErr: nil},
+		{name: "late failure", runnerErr: io.ErrClosedPipe},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			started := make(chan struct{})
+			releaseRunner := make(chan struct{})
+			loop, err := New(newSession(t), func(Input) thought.Runner {
+				return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
+					close(started)
+					<-releaseRunner
+					return mind.Proposal{ID: fakeProposalID, Reads: map[string]uint64{
+						inputKey: snapshot.Items[inputKey].Version, responseKey: snapshot.Items[responseKey].Version,
+					}, Writes: map[string]string{responseKey: "late response"}}, test.runnerErr
+				}
+			}, func(context.Context, Input, string) error { return nil })
+			if err != nil {
+				t.Fatal(err)
+			}
+			done := make(chan error, 1)
+			go func() { done <- loop.Handle(t.Context(), Input{ID: "blocked", Content: "x"}) }()
+			<-started
+			loop.Close()
+			select {
+			case err := <-done:
+				if !errors.Is(err, lifecycle.ErrClosed) {
+					t.Fatalf("Handle error = %v, want closed", err)
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatal("Handle remained blocked after Close while runner ignored cancellation")
+			}
+			close(releaseRunner)
+		})
+	}
+}
+
 func TestLoopWaitsForItsOwnCompletionAndBoundsWorkspace(t *testing.T) {
 	t.Parallel()
 	session := newSession(t)
