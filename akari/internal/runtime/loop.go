@@ -15,10 +15,10 @@ import (
 )
 
 const (
-	ErrConfig   fault = "runtime requires a session, runner and response sink"
-	ErrInput    fault = "input ID is required"
-	ErrResponse fault = "thought proposal has no response"
-	errPaused   fault = "interaction canceled by pause"
+	ErrConfig   fault = "runtime: session, runner, and response sink are required"
+	ErrInput    fault = "runtime: input ID is required"
+	ErrResponse fault = "runtime: thought proposal has no response"
+	errPaused   fault = "runtime: interaction canceled by pause"
 )
 
 type fault string
@@ -44,17 +44,18 @@ const (
 
 // Loop owns one always-on interaction Channel and serializes its inputs.
 type Loop struct {
-	session  *lifecycle.Session
-	runner   RunnerFactory
-	sink     Sink
-	mu       sync.Mutex
-	paused   bool
-	pauseSeq uint64
-	closed   bool
-	changed  chan struct{}
-	closedCh chan struct{}
-	gate     chan struct{}
-	cleanup  <-chan struct{}
+	session           *lifecycle.Session
+	runner            RunnerFactory
+	sink              Sink
+	mu                sync.Mutex
+	paused            bool
+	pauseSeq          uint64
+	closed            bool
+	changed           chan struct{}
+	closedCh          chan struct{}
+	gate              chan struct{}
+	cleanup           <-chan struct{}
+	cancelInteraction func()
 }
 
 func New(session *lifecycle.Session, runner RunnerFactory, sink Sink) (*Loop, error) {
@@ -65,7 +66,8 @@ func New(session *lifecycle.Session, runner RunnerFactory, sink Sink) (*Loop, er
 	gate <- struct{}{}
 
 	return &Loop{session: session, runner: runner, sink: sink, mu: sync.Mutex{}, paused: false, pauseSeq: 0, closed: false,
-		changed: make(chan struct{}), closedCh: make(chan struct{}), gate: gate, cleanup: nil}, nil
+		changed: make(chan struct{}), closedCh: make(chan struct{}), gate: gate, cleanup: nil,
+		cancelInteraction: func() { session.Cancel("interaction") }}, nil
 }
 
 // Pause stops admitting new inputs and cancels the current thought. Resume reopens admission.
@@ -75,9 +77,9 @@ func (loop *Loop) Pause() {
 		loop.paused = true
 		loop.pauseSeq++
 		loop.signalLocked()
+		loop.cancelInteraction()
 	}
 	loop.mu.Unlock()
-	loop.session.Cancel("interaction")
 }
 
 func (loop *Loop) Resume() {
@@ -96,12 +98,13 @@ func (loop *Loop) Close() {
 		loop.closed = true
 		close(loop.closedCh)
 		loop.signalLocked()
+		loop.cancelInteraction()
 	}
 	loop.mu.Unlock()
-	loop.session.Cancel("interaction")
 }
 
 // Run consumes inputs until the source closes, the caller cancels, or Close is called.
+// It returns the first error from handling an input so a host supervisor can restart the loop.
 func (loop *Loop) Run(ctx context.Context, inputs <-chan Input) error {
 	for {
 		if err := loop.awaitOpen(ctx); err != nil {

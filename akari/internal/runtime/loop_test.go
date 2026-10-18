@@ -148,6 +148,103 @@ func TestPauseResumeAndClose(t *testing.T) {
 	}
 }
 
+//nolint:cyclop // The gated lifecycle transitions are asserted in one deterministic interleaving.
+func TestPauseCancelsBeforeResumeAdmitsNewInteraction(t *testing.T) {
+	t.Parallel()
+
+	session := newSession(t)
+	firstStarted := make(chan struct{})
+	secondStarted := make(chan struct{})
+	resumeEntered := make(chan struct{})
+	cancelEntered := make(chan struct{})
+	releaseCancel := make(chan struct{})
+	delivered := make(chan struct{})
+	var cancelGate sync.Once
+	var releaseGate sync.Once
+	var calls atomic.Int32
+	loop, err := New(session, func(Input) thought.Runner {
+		if calls.Add(1) == 1 {
+			return func(ctx context.Context, _ mind.Snapshot) (mind.Proposal, error) {
+				close(firstStarted)
+				<-ctx.Done()
+
+				return mind.Proposal{}, ctx.Err()
+			}
+		}
+
+		return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
+			close(secondStarted)
+			return mind.Proposal{ID: fakeProposalID,
+				Reads: map[string]uint64{inputKey: snapshot.Items[inputKey].Version,
+					responseKey: snapshot.Items[responseKey].Version},
+				Writes: map[string]string{responseKey: "resumed"}}, nil
+		}
+	}, func(context.Context, Input, string) error {
+		close(delivered)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	loop.cancelInteraction = func() {
+		cancelGate.Do(func() {
+			close(cancelEntered)
+			<-releaseCancel
+		})
+		session.Cancel("interaction")
+	}
+	t.Cleanup(func() { releaseGate.Do(func() { close(releaseCancel) }) })
+
+	firstDone := make(chan error, 1)
+	go func() { firstDone <- loop.Handle(t.Context(), Input{ID: "first", Content: "pause"}) }()
+	<-firstStarted
+	pauseDone := make(chan struct{})
+	go func() {
+		loop.Pause()
+		close(pauseDone)
+	}()
+	<-cancelEntered
+	resumeDone := make(chan struct{})
+	go func() {
+		loop.Resume()
+		close(resumeEntered)
+		close(resumeDone)
+	}()
+	secondDone := make(chan error, 1)
+	go func() { secondDone <- loop.Handle(t.Context(), Input{ID: "second", Content: "resume"}) }()
+
+	select {
+	case <-resumeEntered:
+		t.Fatal("Resume passed the admission lock before Pause canceled the active thought")
+	default:
+	}
+	select {
+	case <-secondStarted:
+		t.Fatal("new interaction started before Pause canceled the active thought")
+	default:
+	}
+
+	releaseGate.Do(func() { close(releaseCancel) })
+	<-pauseDone
+	<-resumeDone
+	if err := <-firstDone; !errors.Is(err, context.Canceled) {
+		t.Fatalf("paused interaction error = %v", err)
+	}
+	select {
+	case err := <-secondDone:
+		if err != nil {
+			t.Fatalf("resumed interaction error = %v", err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("resumed interaction did not finish")
+	}
+	select {
+	case <-delivered:
+	case <-time.After(3 * time.Second):
+		t.Fatal("resumed response was not delivered")
+	}
+}
+
 //nolint:noinlineerr // The two request outcomes are the test assertions.
 func TestCallerCancellationReleasesInteractionSlot(t *testing.T) {
 	t.Parallel()
