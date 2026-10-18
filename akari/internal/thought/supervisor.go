@@ -45,7 +45,9 @@ type Result struct {
 }
 
 // The task owns its cancellation lifetime across Start, Cancel and completion.
-type task struct { //nolint:containedctx // Lifecycle ownership, not request context propagation.
+//
+//nolint:containedctx // Lifecycle ownership, not request context propagation.
+type task struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	token     Token
@@ -97,17 +99,24 @@ func (supervisor *Supervisor) StartReserved(identity string, runner Runner) (Tok
 	return supervisor.start(identity, runner, true)
 }
 
-// Named results let recovery return a failure instead of terminating the process.
-//
-//nolint:nonamedreturns // Panic recovery writes the returned error.
-func evaluate(ctx context.Context, snapshot mind.Snapshot, runner Runner) (proposal mind.Proposal, err error) {
-	defer func() {
-		if recover() != nil {
-			err = ErrPanic
-		}
+// Recovery converts runner panics into a failure result instead of terminating the process.
+func evaluate(ctx context.Context, snapshot mind.Snapshot, runner Runner) (mind.Proposal, error) {
+	var proposal mind.Proposal
+
+	var runErr error
+
+	func() {
+		defer func() {
+			if recover() != nil {
+				proposal = mind.Proposal{ID: "", Reads: nil, Writes: nil}
+				runErr = ErrPanic
+			}
+		}()
+
+		proposal, runErr = runner(ctx, snapshot)
 	}()
 
-	return runner(ctx, snapshot)
+	return proposal, runErr
 }
 
 // Next returns a frozen proposal; Accept uses the private stored copy, not this preview.
