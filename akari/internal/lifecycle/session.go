@@ -111,6 +111,10 @@ func (session *Session) Next(ctx context.Context) (thought.Result, error) {
 	return session.supervisor.Next(ctx)
 }
 
+func (session *Session) Wait(ctx context.Context, token thought.Token) (thought.Result, error) {
+	return session.supervisor.Wait(ctx, token)
+}
+
 func (session *Session) Discard(ctx context.Context, token thought.Token) error {
 	_, end, err := session.begin(ctx)
 	if err != nil {
