@@ -45,18 +45,25 @@ func Validate(foci []Focus) error {
 	return nil
 }
 
+// EmotionalState is the affective input applied while scoring interests.
+type EmotionalState struct {
+	Mood     emotion.Mood
+	Feelings []emotion.Feeling
+	Fatigue  float64
+}
+
 // Salience is one input to selection, never a replacement for goals, duties or safety.
 func Salience(foci []Focus, cue meaning.Point, pleasure, fatigue float64) (float64, error) {
-	return SalienceWithEmotion(foci, cue, emotion.Mood{pleasure}, nil, fatigue)
+	return SalienceWithEmotion(foci, cue, EmotionalState{
+		Mood: emotion.Mood{pleasure}, Feelings: nil, Fatigue: fatigue,
+	})
 }
 
 // SalienceWithEmotion applies mood broadly and current feelings to semantically
 // related interests. It remains one deliberation input alongside duties, goals
 // and safety.
-func SalienceWithEmotion(
-	foci []Focus, cue meaning.Point, mood emotion.Mood, feelings []emotion.Feeling, fatigue float64,
-) (float64, error) {
-	value := 0.0
+func SalienceWithEmotion(foci []Focus, cue meaning.Point, state EmotionalState) (float64, error) {
+	var value float64
 
 	for _, focus := range foci {
 		similarity, err := meaning.Similarity(focus.Target, cue)
@@ -65,9 +72,10 @@ func SalienceWithEmotion(
 		}
 
 		focusValue := math.Max(0, similarity) * focus.Affinity
-		emotionalValue := 0.0
 
-		for _, feeling := range feelings {
+		var emotionalValue float64
+
+		for _, feeling := range state.Feelings {
 			emotionalSimilarity, err := meaning.Similarity(feeling.Meaning, focus.Target)
 			if err != nil {
 				return 0, err
@@ -81,5 +89,5 @@ func SalienceWithEmotion(
 		value += focusValue
 	}
 
-	return value * math.Max(0, 1+mood[0]) / (1 + fatigue), nil
+	return value * math.Max(0, 1+state.Mood[0]) / (1 + state.Fatigue), nil
 }

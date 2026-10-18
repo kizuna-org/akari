@@ -129,8 +129,8 @@ func Respond(state State, appraisal Appraisal, reactivity, empathy float64) (Sta
 	}
 
 	result := state.Clone()
-	result.Feelings = merge(nil, result.Feelings)
-	result.Readiness = merge(nil, result.Readiness)
+	result.Feelings = normalizeDuplicates(result.Feelings)
+	result.Readiness = normalizeDuplicates(result.Readiness)
 	result.Feelings = merge(result.Feelings, scaled(appraisal.Feelings, reactivity))
 	result.Feelings = merge(result.Feelings, scaled(appraisal.Others, reactivity*empathy))
 	result.Readiness = merge(result.Readiness, scaled(appraisal.Readiness, reactivity))
@@ -145,7 +145,7 @@ func Respond(state State, appraisal Appraisal, reactivity, empathy float64) (Sta
 // Preparation measures how strongly current action readiness matches a possible
 // action cue. It is a deliberation input and never grants Gateway authority.
 func Preparation(readiness []Feeling, cue meaning.Point) (float64, error) {
-	value := 0.0
+	var value float64
 
 	for _, feeling := range readiness {
 		similarity, err := meaning.Similarity(feeling.Meaning, cue)
@@ -179,6 +179,10 @@ func merge(current, incoming []Feeling) []Feeling {
 	result := CloneFeelings(current)
 
 	for _, next := range incoming {
+		if next.Strength <= minimumRetainedStrength {
+			continue
+		}
+
 		merged := false
 
 		for index := range result {
@@ -196,6 +200,29 @@ func merge(current, incoming []Feeling) []Feeling {
 	}
 
 	return result
+}
+
+func normalizeDuplicates(feelings []Feeling) []Feeling {
+	result := make([]Feeling, 0, len(feelings))
+
+	for _, next := range feelings {
+		merged := false
+
+		for index := range result {
+			if sameMeaning(result[index].Meaning, next.Meaning) {
+				result[index].Strength = math.Min(1, result[index].Strength+next.Strength)
+				merged = true
+
+				break
+			}
+		}
+
+		if !merged {
+			result = append(result, next)
+		}
+	}
+
+	return CloneFeelings(result)
 }
 
 func sameMeaning(left, right meaning.Point) bool {

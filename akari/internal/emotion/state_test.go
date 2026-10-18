@@ -36,6 +36,45 @@ func TestRespondNormalizesRestoredDuplicates(t *testing.T) {
 	}
 }
 
+//nolint:wsl,wsl_v5 // The cases share one validated appraisal fixture shape.
+func TestRespondDropsFeelingsBelowRetentionThreshold(t *testing.T) {
+	t.Parallel()
+
+	point := meaning.Point{Text: "rest", Space: testSpace, Vector: []float64{1}}
+
+	tests := []struct {
+		name       string
+		appraisal  Appraisal
+		reactivity float64
+		empathy    float64
+	}{
+		{name: "zero reactivity", appraisal: Appraisal{
+			Feelings: []Feeling{{Meaning: point, Strength: 1}}, Others: nil,
+			Readiness: []Feeling{{Meaning: point, Strength: 1}}, MoodDelta: Mood{},
+		}, reactivity: 0, empathy: 1},
+		{name: "zero empathy", appraisal: Appraisal{
+			Feelings: nil, Others: []Feeling{{Meaning: point, Strength: 1}},
+			Readiness: nil, MoodDelta: Mood{},
+		}, reactivity: 1, empathy: 0},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			initial := State{Feelings: nil, Readiness: nil, Mood: Mood{}, At: time.Time{}}
+			state, err := Respond(initial,
+				test.appraisal, test.reactivity, test.empathy)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(state.Feelings) != 0 || len(state.Readiness) != 0 {
+				t.Fatalf("zero-strength feelings retained: %+v", state)
+			}
+		})
+	}
+}
+
 func TestMixedEmotionsAndContinuity(t *testing.T) {
 	t.Parallel()
 
@@ -190,7 +229,13 @@ func TestEmpathyAndMoodAccumulation(t *testing.T) {
 				t.Fatalf("response error = %v", err)
 			}
 
-			if len(next.Feelings) != 1 || math.Abs(next.Feelings[0].Strength-test.want) > 1e-9 ||
+			wantCount := 1
+			if test.want <= minimumRetainedStrength {
+				wantCount = 0
+			}
+
+			if len(next.Feelings) != wantCount || (wantCount == 1 &&
+				math.Abs(next.Feelings[0].Strength-test.want) > 1e-9) ||
 				math.Abs(next.Mood[0]-(0.1+0.4*test.reactivity)) > 1e-9 ||
 				math.Abs(next.Mood[1]-0.2*test.reactivity) > 1e-9 ||
 				math.Abs(next.Mood[2]+0.2*test.reactivity) > 1e-9 {

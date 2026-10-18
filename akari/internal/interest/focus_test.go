@@ -68,7 +68,9 @@ func TestEmotionChangesRelatedInterestSalience(t *testing.T) {
 			t.Parallel()
 
 			foci := []Focus{{ID: "near", Target: near, Affinity: 1}, {ID: "far", Target: far, Affinity: 1}}
-			got, err := SalienceWithEmotion(foci, near, test.mood, []emotion.Feeling{test.feeling}, 0)
+			got, err := SalienceWithEmotion(foci, near, EmotionalState{
+				Mood: test.mood, Feelings: []emotion.Feeling{test.feeling}, Fatigue: 0,
+			})
 			assertSalience(t, got, err, test.wantNear)
 		})
 	}
@@ -94,7 +96,7 @@ func TestSalienceRejectsIncompatibleEmotionSpace(t *testing.T) {
 		Text: "feeling", Space: "other", Vector: []float64{1},
 	}, Strength: 0.5}
 	_, err := SalienceWithEmotion([]Focus{{ID: "topic", Target: topic, Affinity: 1}}, topic,
-		emotion.Mood{}, []emotion.Feeling{feeling}, 0)
+		EmotionalState{Mood: emotion.Mood{}, Feelings: []emotion.Feeling{feeling}, Fatigue: 0})
 
 	if !errors.Is(err, meaning.ErrPoint) {
 		t.Fatalf("incompatible emotional salience error = %v", err)
@@ -109,6 +111,6 @@ func TestEmotionDoesNotBoostOrthogonalCue(t *testing.T) {
 	feeling := emotion.Feeling{Meaning: focus, Strength: 0.5}
 
 	got, err := SalienceWithEmotion([]Focus{{ID: "focus", Target: focus, Affinity: 1}}, cue,
-		emotion.Mood{}, []emotion.Feeling{feeling}, 0)
+		EmotionalState{Mood: emotion.Mood{}, Feelings: []emotion.Feeling{feeling}, Fatigue: 0})
 	assertSalience(t, got, err, 0)
 }
