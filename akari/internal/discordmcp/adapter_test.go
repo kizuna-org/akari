@@ -355,6 +355,66 @@ func TestClientClearsOnlyMatchingSession(t *testing.T) {
 	}
 }
 
+//nolint:wsl,wsl_v5 // Keep the response-ordering race scenario together.
+func TestClientDelayedSuccessDoesNotOverwriteRecoveredSession(t *testing.T) {
+	t.Parallel()
+
+	firstStarted := make(chan struct{})
+	releaseFirst := make(chan struct{})
+	var toolRequests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch request.Header.Get("Mcp-Method") {
+		case testToolCallMethod:
+			if toolRequests.Add(1) == 1 {
+				close(firstStarted)
+				<-releaseFirst
+				writer.Header().Set("Mcp-Session-Id", oldTestSession)
+				_, _ = writer.Write([]byte(`{"result":{}}`))
+
+				return
+			}
+
+			writer.WriteHeader(http.StatusNotFound)
+		case testDiscoverMethod:
+			writer.Header().Set("Mcp-Session-Id", newTestSession)
+			_, _ = writer.Write([]byte(`{"result":{}}`))
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client := newClient(server.URL)
+	client.session = oldTestSession
+	firstDone := make(chan error, 1)
+
+	go func() {
+		_, err := client.CallTool(context.Background(), replyToolName, nil)
+		firstDone <- err
+	}()
+	<-firstStarted
+	_, err := client.CallTool(context.Background(), replyToolName, nil)
+	if !errors.Is(err, errHTTPStatus) {
+		t.Fatalf("failed call error %v", err)
+	}
+	err = client.Discover(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if client.session != newTestSession {
+		t.Fatalf("recovered session %q, want %q", client.session, newTestSession)
+	}
+	close(releaseFirst)
+	err = <-firstDone
+	if err != nil {
+		t.Fatal(err)
+	}
+	if client.session != newTestSession {
+		t.Fatalf("delayed response overwrote recovered session: %q", client.session)
+	}
+	if got := toolRequests.Load(); got != 2 {
+		t.Fatalf("tool calls %d, want failed call not replayed (2 explicit requests)", got)
+	}
+}
+
 func TestDiscoveryAndSubscriptionRequestsHaveDeadlines(t *testing.T) {
 	t.Parallel()
 

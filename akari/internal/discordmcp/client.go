@@ -88,7 +88,7 @@ func call(ctx context.Context, client *Client, method string, params any, tool s
 		client.clearSessionIfCurrent(request.Header.Get("Mcp-Session-Id"))
 	}
 
-	return decode(client, response, tool != "")
+	return decode(client, response, request.Header.Get("Mcp-Session-Id"), tool != "")
 }
 
 func newRequest(ctx context.Context, client *Client, method string, params any, tool string) (*http.Request, error) {
@@ -132,14 +132,16 @@ func newRequest(ctx context.Context, client *Client, method string, params any, 
 	return req, nil
 }
 
-func decode(client *Client, response *http.Response, isToolCall bool) (json.RawMessage, error) {
+func decode(client *Client, response *http.Response, requestSession string, isToolCall bool) (json.RawMessage, error) {
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return nil, fmt.Errorf("%w: %d", errHTTPStatus, response.StatusCode)
 	}
 
 	if value := response.Header.Get("Mcp-Session-Id"); value != "" {
 		client.mu.Lock()
-		client.session = value
+		if client.session == requestSession {
+			client.session = value
+		}
 		client.mu.Unlock()
 	}
 
