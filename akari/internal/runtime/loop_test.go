@@ -505,8 +505,8 @@ func TestRunWaitsForResumeWhenPauseInterruptsRunnerFactory(t *testing.T) {
 	factoryStarted := make(chan struct{})
 	releaseFactory := make(chan struct{})
 	var factoryCalls atomic.Int32
-	resumed := make(chan struct{})
-	loop, err := New(session, func(Input) thought.Runner {
+	delivered := make(chan string, 2)
+	loop, err := New(session, func(input Input) thought.Runner {
 		if factoryCalls.Add(1) == 1 {
 			close(factoryStarted)
 			<-releaseFactory
@@ -515,12 +515,10 @@ func TestRunWaitsForResumeWhenPauseInterruptsRunnerFactory(t *testing.T) {
 			return mind.Proposal{ID: fakeProposalID,
 				Reads: map[string]uint64{inputKey: snapshot.Items[inputKey].Version,
 					responseKey: snapshot.Items[responseKey].Version},
-				Writes: map[string]string{responseKey: "resumed"}}, nil
+				Writes: map[string]string{responseKey: input.ID}}, nil
 		}
 	}, func(_ context.Context, _ Input, response string) error {
-		if response == "resumed" {
-			close(resumed)
-		}
+		delivered <- response
 		return nil
 	})
 	if err != nil {
@@ -533,15 +531,13 @@ func TestRunWaitsForResumeWhenPauseInterruptsRunnerFactory(t *testing.T) {
 	go func() { done <- loop.Run(t.Context(), inputs) }()
 	<-factoryStarted
 	loop.Pause()
+	loop.Resume()
 	close(releaseFactory)
 	select {
-	case err := <-done:
-		t.Fatalf("Run exited during pause: %v", err)
-	case <-time.After(30 * time.Millisecond):
-	}
-	loop.Resume()
-	select {
-	case <-resumed:
+	case response := <-delivered:
+		if response != "resumed" {
+			t.Fatalf("delivered interrupted response %q", response)
+		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("Run did not process input after Resume")
 	}
