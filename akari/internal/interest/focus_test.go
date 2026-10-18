@@ -100,3 +100,15 @@ func TestSalienceRejectsIncompatibleEmotionSpace(t *testing.T) {
 		t.Fatalf("incompatible emotional salience error = %v", err)
 	}
 }
+
+func TestEmotionDoesNotBoostOrthogonalCue(t *testing.T) {
+	t.Parallel()
+
+	focus := meaning.Point{Text: "focus", Space: testSpace, Vector: []float64{1, 0}}
+	cue := meaning.Point{Text: "orthogonal cue", Space: testSpace, Vector: []float64{0, 1}}
+	feeling := emotion.Feeling{Meaning: focus, Strength: 0.5}
+
+	got, err := SalienceWithEmotion([]Focus{{ID: "focus", Target: focus, Affinity: 1}}, cue,
+		emotion.Mood{}, []emotion.Feeling{feeling}, 0)
+	assertSalience(t, got, err, 0)
+}

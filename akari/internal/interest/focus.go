@@ -65,6 +65,7 @@ func SalienceWithEmotion(
 		}
 
 		focusValue := math.Max(0, similarity) * focus.Affinity
+		emotionalValue := 0.0
 
 		for _, feeling := range feelings {
 			emotionalSimilarity, err := meaning.Similarity(feeling.Meaning, focus.Target)
@@ -72,8 +73,10 @@ func SalienceWithEmotion(
 				return 0, err
 			}
 
-			focusValue += math.Max(0, emotionalSimilarity) * feeling.Strength * focus.Affinity
+			emotionalValue += math.Max(0, emotionalSimilarity) * feeling.Strength * focus.Affinity
 		}
+
+		focusValue += math.Max(0, similarity) * emotionalValue
 
 		value += focusValue
 	}

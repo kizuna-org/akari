@@ -80,12 +80,20 @@ func TestInnerContinuity(t *testing.T) {
 			commitInner(t, workspace, update, nil)
 
 			latest = workspace.Snapshot().Experience
-			if latest.Fatigue != 0 || latest.Emotion.Feelings[0].Strength != reactivity/2 ||
+			if latest.Fatigue != 0 || !hasExpectedDecay(latest.Emotion.Feelings, reactivity) ||
 				len(latest.Goals.Intentions) != 1 {
 				t.Fatal("rest, decay or persistent intention failed")
 			}
 		})
 	}
+}
+
+func hasExpectedDecay(feelings []emotion.Feeling, reactivity float64) bool {
+	if reactivity == 0 {
+		return len(feelings) == 0
+	}
+
+	return len(feelings) == 1 && feelings[0].Strength == reactivity/2
 }
 
 func TestEmotionShapesMultiTurnJudgmentPreparationAndExpression(t *testing.T) {
@@ -130,6 +138,35 @@ func TestEmotionShapesMultiTurnJudgmentPreparationAndExpression(t *testing.T) {
 			laterSalience, laterPreparation := emotionMeasures(t, later, topic)
 			assertLaterEmotionExperience(t, first, later, test.expression, firstSalience, laterSalience, laterPreparation)
 		})
+	}
+}
+
+func TestExpiredAffectReleasesContentCapacity(t *testing.T) {
+	t.Parallel()
+
+	instant := time.Unix(100, 0)
+	workspace := innerWorkspace(t, persona.Default(), 2, func() time.Time { return instant })
+	update := freshUpdate(workspace)
+	update.Appraisal = &emotion.Appraisal{
+		Feelings: []emotion.Feeling{{Meaning: semantic("old feeling"), Strength: 1}},
+		Others:   nil, MoodDelta: emotion.Mood{},
+		Readiness: []emotion.Feeling{{Meaning: semantic("old readiness"), Strength: 1}},
+	}
+	commitInner(t, workspace, update, nil)
+
+	instant = instant.Add(64 * time.Hour)
+	update = freshUpdate(workspace)
+	update.Appraisal = &emotion.Appraisal{
+		Feelings: []emotion.Feeling{{Meaning: semantic("new feeling"), Strength: 1}},
+		Others:   nil, MoodDelta: emotion.Mood{},
+		Readiness: []emotion.Feeling{{Meaning: semantic("new readiness"), Strength: 1}},
+	}
+	commitInner(t, workspace, update, nil)
+
+	got := workspace.Snapshot().Experience.Emotion
+	if len(got.Feelings) != 1 || got.Feelings[0].Meaning.Text != "new feeling" ||
+		len(got.Readiness) != 1 || got.Readiness[0].Meaning.Text != "new readiness" {
+		t.Fatalf("expired entries were not reclaimed before capacity check: %+v", got)
 	}
 }
 

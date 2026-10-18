@@ -15,6 +15,8 @@ func (err fault) Error() string { return string(err) }
 
 const ErrAppraisal fault = "invalid emotional appraisal or time dynamics"
 
+const minimumRetainedStrength = 1e-6
+
 // Mood is pleasure, arousal and approach; fatigue is deliberately separate.
 type Mood [3]float64
 
@@ -95,11 +97,8 @@ func Advance(state State, instant time.Time, baseline Mood, lingering float64, d
 	feelingScale := math.Exp2(-elapsed / float64(dynamics.EmotionHalfLife))
 	moodScale := math.Exp2(-elapsed / (float64(dynamics.MoodHalfLife) * (1 + lingering)))
 
-	for _, group := range [][]Feeling{result.Feelings, result.Readiness} {
-		for index := range group {
-			group[index].Strength *= feelingScale
-		}
-	}
+	result.Feelings = decay(result.Feelings, feelingScale)
+	result.Readiness = decay(result.Readiness, feelingScale)
 
 	for index := range result.Mood {
 		result.Mood[index] = baseline[index] + (result.Mood[index]-baseline[index])*moodScale
@@ -108,6 +107,19 @@ func Advance(state State, instant time.Time, baseline Mood, lingering float64, d
 	result.At = instant
 
 	return result, nil
+}
+
+func decay(feelings []Feeling, scale float64) []Feeling {
+	retained := feelings[:0]
+
+	for _, feeling := range feelings {
+		feeling.Strength *= scale
+		if feeling.Strength > minimumRetainedStrength {
+			retained = append(retained, feeling)
+		}
+	}
+
+	return retained
 }
 
 func Respond(state State, appraisal Appraisal, reactivity, empathy float64) (State, error) {
