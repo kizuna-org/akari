@@ -226,6 +226,33 @@ func TestRunSourceLifecycle(t *testing.T) {
 	}
 }
 
+func TestRunRechecksCloseAfterAwaitOpen(t *testing.T) {
+	t.Parallel()
+	loop, err := New(newSession(t), func(Input) thought.Runner {
+		return func(context.Context, mind.Snapshot) (mind.Proposal, error) {
+			return mind.Proposal{}, nil
+		}
+	}, func(context.Context, Input, string) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := loop.awaitOpen(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	// Force Close into the gap after awaitOpen and before Run captures changed.
+	loop.Close()
+	changed, closed, paused := loop.runState()
+	if !closed || paused {
+		t.Fatalf("captured lifecycle state = closed %t, paused %t", closed, paused)
+	}
+	select {
+	case <-changed:
+		t.Fatal("runState captured a notification channel that Close had already signaled")
+	default:
+	}
+}
+
 func TestLoopFailureOutcomes(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
