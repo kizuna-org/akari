@@ -124,6 +124,9 @@ func New(config Config, client *http.Client) (*Model, error) {
 		defaultClient.Timeout = requestTimeout
 		client = &defaultClient
 	}
+	clientCopy := *client
+	clientCopy.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	client = &clientCopy
 
 	return &Model{model: model, key: key, url: baseURL + "/responses", client: client,
 		disclosure: config.Disclosure, encoder: config.Encoder}, nil
@@ -188,6 +191,8 @@ type responseEnvelope struct {
 
 type modelInput struct {
 	Message    string          `json:"message"`
+	Context    []pointInput    `json:"context"`
+	Working    []pointInput    `json:"working"`
 	Emotion    emotionInput    `json:"emotion"`
 	Interests  []focusInput    `json:"interests"`
 	Goals      goalInput       `json:"goals"`
@@ -328,13 +333,15 @@ func projectGoals(state goal.State) goalInput {
 // experience and recalled fragments. The API key is carried only in the
 // Authorization header and is never included in model input or errors.
 //
-//nolint:cyclop,funlen // Request construction keeps policy, credential, transport, and response checks in sequence.
+//nolint:cyclop,funlen,gocognit // Keep request and security checks ordered.
 func (model *Model) Interpret(ctx context.Context, request thought.Request) (thought.Interpretation, error) {
 	if request.Experience == nil {
 		return thought.Interpretation{}, ErrResponse
 	}
 	recalled := make([]recalledInput, 0, len(request.Recalled))
 	allowedIDs := make(map[string]struct{}, len(request.Recalled))
+	context, allowedContext := projectShortTerm(request.Experience.Context, model.disclosure)
+	working, allowedWorking := projectShortTerm(request.Experience.Working, model.disclosure)
 	for _, fragment := range request.Recalled {
 		if len(fragment.Sources) > 0 &&
 			(model.disclosure == nil || !model.disclosure.AllowsDisclosure(slices.Clone(fragment.Sources), "openai")) {
@@ -347,6 +354,7 @@ func (model *Model) Interpret(ctx context.Context, request thought.Request) (tho
 	}
 	input, err := json.Marshal(modelInput{
 		Message: request.Query.Cue.Text, Emotion: projectEmotion(request.Experience.Emotion),
+		Context: context, Working: working,
 		Interests: projectFocus(request.Experience.Interests), Goals: projectGoals(request.Experience.Goals),
 		Fatigue: request.Experience.Fatigue, Recalled: recalled, Prediction: request.Prediction,
 	})
@@ -358,6 +366,18 @@ func (model *Model) Interpret(ctx context.Context, request thought.Request) (tho
 	}
 	// Recheck immediately before transmission because sharing policy can change
 	// while the local request is being prepared.
+	for groupIndex, fragments := range [][]memory.Fragment{request.Experience.Context, request.Experience.Working} {
+		allowed := allowedContext
+		if groupIndex == 1 {
+			allowed = allowedWorking
+		}
+		for _, fragment := range fragments {
+			if slices.Contains(allowed, fragment.ID) && len(fragment.Sources) > 0 &&
+				(model.disclosure == nil || !model.disclosure.AllowsDisclosure(slices.Clone(fragment.Sources), "openai")) {
+				return thought.Interpretation{}, ErrResponse
+			}
+		}
+	}
 	for _, fragment := range request.Recalled {
 		if _, included := allowedIDs[fragment.ID]; included && len(fragment.Sources) > 0 &&
 			(model.disclosure == nil || !model.disclosure.AllowsDisclosure(slices.Clone(fragment.Sources), "openai")) {
@@ -404,6 +424,21 @@ func (model *Model) Interpret(ctx context.Context, request thought.Request) (tho
 	}
 
 	return interpretation, nil
+}
+
+func projectShortTerm(fragments []memory.Fragment, disclosure DisclosurePolicy) ([]pointInput, []string) {
+	projected := make([]pointInput, 0, len(fragments))
+	allowed := make([]string, 0, len(fragments))
+	for _, fragment := range fragments {
+		if len(fragment.Sources) > 0 &&
+			(disclosure == nil || !disclosure.AllowsDisclosure(slices.Clone(fragment.Sources), "openai")) {
+			continue
+		}
+		projected = append(projected, pointInput{Text: fragment.Meaning.Text})
+		allowed = append(allowed, fragment.ID)
+	}
+
+	return projected, allowed
 }
 
 func decodeResponse(reader io.Reader) (thought.Interpretation, error) {
@@ -601,7 +636,10 @@ func scanCredentialValue(value any) bool {
 			return true
 		}
 	case map[string]any:
-		for _, nested := range item {
+		for key, nested := range item {
+			if credentialMarker.MatchString(key) {
+				return true
+			}
 			if scanCredentialValue(nested) {
 				return true
 			}

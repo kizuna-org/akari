@@ -8,6 +8,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 
@@ -27,6 +28,7 @@ const trustedSpace = "trusted-v1"
 const semanticText = "meaning"
 const testGoalID = "goal"
 const unrelatedLocalData = "unrelated-local-data"
+const tabBearer = "Bearer\tabcdefghijklmnop"
 const validInterpretation = `{"appraisal":null,"interests":[],"memory":null,"goals":null}`
 
 func TestNewConfiguration(t *testing.T) {
@@ -328,6 +330,7 @@ func TestCredentialScanner(t *testing.T) {
 		{name: "malformed JSON", json: []byte("{"), want: true},
 		{name: "safe nested values", json: []byte(`{"items":[1,true,{"note":"ordinary text"}]}`)},
 		{name: "credential assignment", json: []byte(`{"note":"password\n= private"}`), want: true},
+		{name: "credential marker in decoded map key", json: []byte("{\"Bearer\\tabcdefghijklmnop\":\"value\"}"), want: true},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -337,12 +340,113 @@ func TestCredentialScanner(t *testing.T) {
 			}
 		})
 	}
-	if !scanCredentialValue([]any{"ordinary text", map[string]any{"token": "Bearer\tabcdefghijklmnop"}}) {
+	if !scanCredentialValue([]any{"ordinary text", map[string]any{"token": tabBearer}}) {
 		t.Fatal("scanCredentialValue() missed nested credential")
 	}
 	if scanCredentialValue(float64(42)) {
 		t.Fatal("scanCredentialValue() treated a number as a credential")
 	}
+}
+
+func TestInterpretShortTermContextAndRedirectProtection(t *testing.T) {
+	t.Parallel()
+	t.Run("short term context is text only and disclosure filtered", func(t *testing.T) {
+		t.Parallel()
+		var captured string
+		server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			var body responseRequest
+			decodeErr := json.NewDecoder(request.Body).Decode(&body)
+			if decodeErr != nil {
+				t.Error(decodeErr)
+			}
+			captured = body.Input
+			_, _ = writer.Write([]byte(responseWithStatus("completed", validInterpretation)))
+		}))
+		defer server.Close()
+		policy := disclosureFunc(func(sources []string, recipient string) bool {
+			return recipient == "openai" && slices.Contains(sources, "approved")
+		})
+		model, err := New(Config{APIKey: testKey, BaseURL: server.URL, Disclosure: policy}, server.Client())
+		if err != nil {
+			t.Fatal(err)
+		}
+		experience := &mind.Experience{
+			Context: []memory.Fragment{{ID: "ctx", Meaning: meaning.Point{Text: "project is a garden"},
+				Sources: []string{"approved"}}},
+			Working: []memory.Fragment{{ID: "work", Meaning: meaning.Point{Text: "continue planting"},
+				Sources: []string{"denied"}}},
+		}
+		_, err = model.Interpret(context.Background(), thought.Request{Experience: experience,
+			Query: memory.Query{Cue: meaning.Point{Text: "continue"}}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(captured, "project is a garden") || strings.Contains(captured, "continue planting") ||
+			strings.Contains(captured, `"id":"ctx"`) || strings.Contains(captured, `"sources"`) {
+			t.Fatalf("unexpected short-term projection: %s", captured)
+		}
+	})
+	t.Run("rejects redirects without mutating caller client", func(t *testing.T) {
+		t.Parallel()
+		for _, status := range []int{http.StatusTemporaryRedirect, http.StatusPermanentRedirect} {
+			t.Run(http.StatusText(status), func(t *testing.T) {
+				t.Parallel()
+				targetCalled := false
+				target := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { targetCalled = true }))
+				defer target.Close()
+				redirect := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+					http.Redirect(writer, request, target.URL, status)
+				}))
+				defer redirect.Close()
+				client := redirect.Client()
+				model, err := New(Config{APIKey: testKey, BaseURL: redirect.URL}, client)
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, err = model.Interpret(context.Background(), thought.Request{Experience: &mind.Experience{}})
+				if err == nil || targetCalled {
+					t.Fatalf("Interpret error=%v targetCalled=%t", err, targetCalled)
+				}
+				if model.client == client || client.CheckRedirect != nil {
+					t.Fatal("New did not keep redirect policy on a private client copy")
+				}
+			})
+		}
+	})
+	t.Run("rejects HTTPS to HTTP redirect", func(t *testing.T) {
+		t.Parallel()
+		targetCalled := false
+		target := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { targetCalled = true }))
+		defer target.Close()
+		secure := httptest.NewTLSServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			http.Redirect(writer, request, target.URL, http.StatusTemporaryRedirect)
+		}))
+		defer secure.Close()
+		model, err := New(Config{APIKey: testKey, BaseURL: secure.URL}, secure.Client())
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = model.Interpret(context.Background(), thought.Request{Experience: &mind.Experience{}})
+		if err == nil || targetCalled {
+			t.Fatalf("Interpret error=%v targetCalled=%t", err, targetCalled)
+		}
+	})
+	t.Run("rejects credential in short term context", func(t *testing.T) {
+		t.Parallel()
+		called := false
+		server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
+		defer server.Close()
+		model, err := New(Config{APIKey: testKey, BaseURL: server.URL}, server.Client())
+		if err != nil {
+			t.Fatal(err)
+		}
+		experience := &mind.Experience{Context: []memory.Fragment{{ID: "ctx",
+			Meaning: meaning.Point{Text: tabBearer}}}}
+		_, err = model.Interpret(context.Background(), thought.Request{Experience: experience})
+		if !errors.Is(err, ErrResponse) || called {
+			t.Fatalf("Interpret error=%v called=%t", err, called)
+		}
+	})
 }
 
 func TestInterpretResponses(t *testing.T) {
