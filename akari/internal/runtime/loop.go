@@ -190,7 +190,7 @@ func (loop *Loop) Handle(ctx context.Context, input Input) error {
 		return errors.Join(context.Canceled, errPaused)
 	}
 	pauseSeq := loop.pauseSeq
-	token, err := loop.session.Start("interaction", runner)
+	token, err := loop.session.StartReserved("interaction", runner)
 	loop.mu.Unlock()
 	if err != nil {
 		return err

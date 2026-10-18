@@ -165,9 +165,36 @@ func TestCompletionOutcomes(t *testing.T) {
 	}
 }
 
+//nolint:noinlineerr,wsl,wsl_v5 // Keep the exact-token result assertions in one focused regression.
+func TestReservedCompletionCannotBeClaimedByNext(t *testing.T) {
+	t.Parallel()
+
+	supervisor, _ := newSupervisor(t, 1)
+	token, err := supervisor.StartReserved("reserved", func(_ context.Context, _ mind.Snapshot) (mind.Proposal, error) {
+		return proposal("reserved"), nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Millisecond)
+	defer cancel()
+	if _, err = supervisor.Next(ctx); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Next claimed reserved completion: %v", err)
+	}
+
+	result, err := supervisor.Wait(t.Context(), token)
+	if err != nil || result.Token != token {
+		t.Fatalf("Wait result = %+v, %v", result, err)
+	}
+	if _, err = supervisor.Accept(token); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // Exercise each token-routing outcome in a shared fixture.
 //
-//nolint:cyclop,exhaustruct,gocognit,nlreturn,noinlineerr,wsl,wsl_v5
+//nolint:cyclop,exhaustruct,gocognit,nlreturn,noinlineerr,wsl,wsl_v5 // Table shares a token-routing fixture.
 func TestWaitRoutesExactCompletionToken(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
