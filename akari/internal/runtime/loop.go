@@ -175,7 +175,7 @@ func (loop *Loop) Handle(ctx context.Context, input Input) error {
 	if loop.paused {
 		loop.mu.Unlock()
 
-		return context.Canceled
+		return errors.Join(context.Canceled, errPaused)
 	}
 	pauseSeq := loop.pauseSeq
 	token, err := loop.session.Start("interaction", runner)

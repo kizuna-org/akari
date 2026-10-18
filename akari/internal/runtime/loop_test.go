@@ -374,6 +374,59 @@ func TestRunContinuesAfterPauseAndResume(t *testing.T) {
 	}
 }
 
+func TestRunWaitsForResumeWhenPauseInterruptsRunnerFactory(t *testing.T) {
+	t.Parallel()
+
+	session := newSession(t)
+	factoryStarted := make(chan struct{})
+	releaseFactory := make(chan struct{})
+	var factoryCalls atomic.Int32
+	resumed := make(chan struct{})
+	loop, err := New(session, func(Input) thought.Runner {
+		if factoryCalls.Add(1) == 1 {
+			close(factoryStarted)
+			<-releaseFactory
+		}
+		return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
+			return mind.Proposal{ID: fakeProposalID,
+				Reads: map[string]uint64{inputKey: snapshot.Items[inputKey].Version,
+					responseKey: snapshot.Items[responseKey].Version},
+				Writes: map[string]string{responseKey: "resumed"}}, nil
+		}
+	}, func(_ context.Context, _ Input, response string) error {
+		if response == "resumed" {
+			close(resumed)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputs := make(chan Input, 2)
+	inputs <- Input{ID: "interrupted", Content: "first"}
+	inputs <- Input{ID: "resumed", Content: "second"}
+	done := make(chan error, 1)
+	go func() { done <- loop.Run(t.Context(), inputs) }()
+	<-factoryStarted
+	loop.Pause()
+	close(releaseFactory)
+	select {
+	case err := <-done:
+		t.Fatalf("Run exited during pause: %v", err)
+	case <-time.After(30 * time.Millisecond):
+	}
+	loop.Resume()
+	select {
+	case <-resumed:
+	case <-time.After(3 * time.Second):
+		t.Fatal("Run did not process input after Resume")
+	}
+	close(inputs)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRunCloseWakesIdleInputSource(t *testing.T) {
 	t.Parallel()
 	loop, err := New(newSession(t), func(Input) thought.Runner {
@@ -502,8 +555,12 @@ func TestLoopLifecycleTransitionDuringRunnerFactoryPreventsAdmission(t *testing.
 			<-factoryStarted
 			test.transition(loop)
 			close(releaseFactory)
-			if err := <-done; !errors.Is(err, test.want) {
-				t.Fatalf("Handle error = %v, want %v", err, test.want)
+			handleErr := <-done
+			if !errors.Is(handleErr, test.want) {
+				t.Fatalf("Handle error = %v, want %v", handleErr, test.want)
+			}
+			if test.name == "pause" && !errors.Is(handleErr, errPaused) {
+				t.Fatalf("pause interruption = %v, want Run-recognized pause sentinel", handleErr)
 			}
 			if runnerCalls.Load() != 0 {
 				t.Fatal("runner started after lifecycle transition")
