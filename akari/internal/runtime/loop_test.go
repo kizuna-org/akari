@@ -1,9 +1,10 @@
-//nolint:wsl,wsl_v5 // Tests keep each fake flow readable as a table case.
+//nolint:wsl,wsl_v5,noinlineerr,exhaustruct,goconst,nlreturn // Tests keep each fake flow readable as a table case.
 package runtime
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -40,16 +41,16 @@ func TestLoopHandleAndLifecycle(t *testing.T) {
 			var delivered []string
 			loop, err := New(session, func(input Input) thought.Runner {
 				return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
-					key := "interaction/" + input.ID + "/input"
+					key := inputKey
 					if snapshot.Items[key].Content != input.Content {
 						t.Error("input missing from model snapshot")
 					}
-					responseKey := "interaction/" + input.ID + "/response"
+					responseStateKey := responseKey
 					reads := map[string]uint64{key: snapshot.Items[key].Version,
-						responseKey: snapshot.Items[responseKey].Version}
+						responseStateKey: snapshot.Items[responseStateKey].Version}
 
 					return mind.Proposal{ID: fakeProposalID, Reads: reads,
-						Writes: map[string]string{responseKey: "echo: " + input.Content}}, nil
+						Writes: map[string]string{responseStateKey: "echo: " + input.Content}}, nil
 				}
 			}, func(_ context.Context, input Input, response string) error {
 				deliveredMu.Lock()
@@ -82,7 +83,7 @@ func TestLoopHandleAndLifecycle(t *testing.T) {
 			if len(delivered) != 1 || delivered[0] != "one:echo: hello" {
 				t.Fatalf("delivered = %v", delivered)
 			}
-			if session.Snapshot().Items["interaction/one/response"].Content != "echo: hello" {
+			if session.Snapshot().Items[responseKey].Content != "echo: hello" {
 				t.Fatal("response was sent without adoption")
 			}
 		})
@@ -104,12 +105,12 @@ func TestPauseResumeAndClose(t *testing.T) {
 				return mind.Proposal{}, ctx.Err()
 			}
 			reads := map[string]uint64{
-				"interaction/resume/input":    snapshot.Items["interaction/resume/input"].Version,
-				"interaction/resume/response": snapshot.Items["interaction/resume/response"].Version,
+				inputKey:    snapshot.Items[inputKey].Version,
+				responseKey: snapshot.Items[responseKey].Version,
 			}
 
 			return mind.Proposal{ID: fakeProposalID, Reads: reads,
-				Writes: map[string]string{"interaction/resume/response": "resumed"}}, nil
+				Writes: map[string]string{responseKey: "resumed"}}, nil
 		}
 	}, func(_ context.Context, _ Input, response string) error {
 		if response != "resumed" {
@@ -161,8 +162,6 @@ func TestCallerCancellationReleasesInteractionSlot(t *testing.T) {
 
 				return mind.Proposal{}, ctx.Err()
 			}
-			inputKey := "interaction/after/input"
-			responseKey := "interaction/after/response"
 
 			return mind.Proposal{ID: fakeProposalID, Reads: map[string]uint64{
 				inputKey: snapshot.Items[inputKey].Version, responseKey: snapshot.Items[responseKey].Version,
@@ -251,8 +250,6 @@ func TestLoopFailureOutcomes(t *testing.T) {
 					if input.Content == "missing-response" {
 						return mind.Proposal{ID: fakeProposalID, Reads: nil, Writes: nil, Inner: nil, Prediction: false}, nil
 					}
-					inputKey := "interaction/" + input.ID + "/input"
-					responseKey := "interaction/" + input.ID + "/response"
 
 					return mind.Proposal{ID: fakeProposalID, Reads: map[string]uint64{
 						inputKey:    snapshot.Items[inputKey].Version,
@@ -268,7 +265,7 @@ func TestLoopFailureOutcomes(t *testing.T) {
 				t.Fatalf("Handle error = %v, want %v", err, test.want)
 			}
 			if test.name == "sink failure follows adoption" &&
-				session.Snapshot().Items["interaction/"+test.name+"/response"].Content != "answer" {
+				session.Snapshot().Items[responseKey].Content != "answer" {
 				t.Fatal("sink failure reverted adopted response")
 			}
 		})
@@ -327,6 +324,247 @@ func TestLoopConfigurationAndPausedCancellation(t *testing.T) {
 	err = loop.Handle(ctx, Input{ID: "waiting", Content: "x"})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("Handle error = %v", err)
+	}
+}
+
+func TestRunContinuesAfterPauseAndResume(t *testing.T) {
+	t.Parallel()
+	session := newSession(t)
+	started := make(chan struct{})
+	secondDelivered := make(chan struct{})
+	var calls atomic.Int32
+	loop, err := New(session, func(Input) thought.Runner {
+		return func(ctx context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
+			if calls.Add(1) == 1 {
+				close(started)
+				<-ctx.Done()
+
+				return mind.Proposal{}, ctx.Err()
+			}
+
+			return mind.Proposal{ID: fakeProposalID,
+				Reads: map[string]uint64{inputKey: snapshot.Items[inputKey].Version,
+					responseKey: snapshot.Items[responseKey].Version},
+				Writes: map[string]string{responseKey: "after resume"}}, nil
+		}
+	}, func(context.Context, Input, string) error {
+		close(secondDelivered)
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputs := make(chan Input, 2)
+	inputs <- Input{ID: "paused", Content: "first"}
+	inputs <- Input{ID: "resumed", Content: "second"}
+	done := make(chan error, 1)
+	go func() { done <- loop.Run(t.Context(), inputs) }()
+	<-started
+	loop.Pause()
+	loop.Resume()
+	select {
+	case <-secondDelivered:
+	case <-time.After(3 * time.Second):
+		t.Fatal("Run did not consume the next input after resume")
+	}
+	close(inputs)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRunCloseWakesIdleInputSource(t *testing.T) {
+	t.Parallel()
+	loop, err := New(newSession(t), func(Input) thought.Runner {
+		return func(context.Context, mind.Snapshot) (mind.Proposal, error) {
+			return mind.Proposal{}, nil
+		}
+	}, func(context.Context, Input, string) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- loop.Run(t.Context(), make(chan Input)) }()
+	loop.Close()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("Run did not wake after Close")
+	}
+}
+
+func TestRunCloseCancelsActiveThought(t *testing.T) {
+	t.Parallel()
+	started := make(chan struct{})
+	loop, err := New(newSession(t), func(Input) thought.Runner {
+		return func(ctx context.Context, _ mind.Snapshot) (mind.Proposal, error) {
+			close(started)
+			<-ctx.Done()
+			return mind.Proposal{}, ctx.Err()
+		}
+	}, func(context.Context, Input, string) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	inputs := make(chan Input, 1)
+	inputs <- Input{ID: "active", Content: "x"}
+	done := make(chan error, 1)
+	go func() { done <- loop.Run(t.Context(), inputs) }()
+	<-started
+	loop.Close()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("Run did not stop after closing active thought")
+	}
+}
+
+func TestLoopWaitsForItsOwnCompletionAndBoundsWorkspace(t *testing.T) {
+	t.Parallel()
+	session := newSession(t)
+	otherReady := make(chan struct{})
+	other, err := session.Start("other", func(context.Context, mind.Snapshot) (mind.Proposal, error) {
+		close(otherReady)
+		return mind.Proposal{ID: fakeProposalID}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	<-otherReady
+	loop, err := New(session, func(Input) thought.Runner {
+		return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
+			return mind.Proposal{ID: fakeProposalID,
+				Reads: map[string]uint64{inputKey: snapshot.Items[inputKey].Version,
+					responseKey: snapshot.Items[responseKey].Version},
+				Writes: map[string]string{responseKey: "answer"}}, nil
+		}
+	}, func(context.Context, Input, string) error { return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range 8 {
+		if err := loop.Handle(t.Context(), Input{ID: fmt.Sprintf("event-%d", i), Content: "x"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	result, err := session.Next(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Token != other {
+		t.Fatalf("unrelated completion token = %+v, want %+v", result.Token, other)
+	}
+	if err := session.Discard(t.Context(), other); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(session.Snapshot().Items); got != 2 {
+		t.Fatalf("workspace items = %d, want fixed input and response keys only", got)
+	}
+}
+
+func TestLoopLifecycleTransitionDuringRunnerFactoryPreventsAdmission(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		transition func(*Loop)
+		want       error
+	}{
+		{name: "pause", transition: (*Loop).Pause, want: context.Canceled},
+		{name: "close", transition: (*Loop).Close, want: lifecycle.ErrClosed},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			session := newSession(t)
+			factoryStarted := make(chan struct{})
+			releaseFactory := make(chan struct{})
+			var runnerCalls atomic.Int32
+			loop, err := New(session, func(Input) thought.Runner {
+				close(factoryStarted)
+				<-releaseFactory
+				return func(context.Context, mind.Snapshot) (mind.Proposal, error) {
+					runnerCalls.Add(1)
+					return mind.Proposal{}, nil
+				}
+			}, func(context.Context, Input, string) error { return nil })
+			if err != nil {
+				t.Fatal(err)
+			}
+			done := make(chan error, 1)
+			go func() { done <- loop.Handle(t.Context(), Input{ID: "race", Content: "x"}) }()
+			<-factoryStarted
+			test.transition(loop)
+			close(releaseFactory)
+			if err := <-done; !errors.Is(err, test.want) {
+				t.Fatalf("Handle error = %v, want %v", err, test.want)
+			}
+			if runnerCalls.Load() != 0 {
+				t.Fatal("runner started after lifecycle transition")
+			}
+		})
+	}
+}
+
+func TestLoopSerializationWaitObservesCancellationAndClose(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name   string
+		cancel bool
+		want   error
+	}{
+		{name: "caller cancellation", cancel: true, want: context.Canceled},
+		{name: "loop close", cancel: false, want: lifecycle.ErrClosed},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			sinkStarted := make(chan struct{})
+			releaseSink := make(chan struct{})
+			loop, err := New(newSession(t), func(Input) thought.Runner {
+				return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
+					return mind.Proposal{ID: fakeProposalID,
+						Reads: map[string]uint64{inputKey: snapshot.Items[inputKey].Version,
+							responseKey: snapshot.Items[responseKey].Version},
+						Writes: map[string]string{responseKey: "answer"}}, nil
+				}
+			}, func(context.Context, Input, string) error {
+				close(sinkStarted)
+				<-releaseSink
+				return nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			first := make(chan error, 1)
+			go func() { first <- loop.Handle(t.Context(), Input{ID: "first", Content: "x"}) }()
+			<-sinkStarted
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			if !test.cancel {
+				ctx = t.Context()
+			}
+			second := make(chan error, 1)
+			go func() { second <- loop.Handle(ctx, Input{ID: "second", Content: "x"}) }()
+			if test.cancel {
+				cancel()
+			} else {
+				loop.Close()
+			}
+			if err := <-second; !errors.Is(err, test.want) {
+				t.Fatalf("waiting Handle error = %v, want %v", err, test.want)
+			}
+			close(releaseSink)
+			if err := <-first; err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }
 

@@ -165,6 +165,72 @@ func TestCompletionOutcomes(t *testing.T) {
 	}
 }
 
+//nolint:cyclop,exhaustruct,nlreturn,noinlineerr,wsl,wsl_v5 // Exercise each token-routing outcome in a shared fixture.
+func TestWaitRoutesExactCompletionToken(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		cancelWait bool
+		stale      bool
+	}{
+		{name: "exact token preserves other completion"},
+		{name: "canceled wait", cancelWait: true},
+		{name: "stale token", stale: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			supervisor, _ := newSupervisor(t, 2)
+			if test.stale {
+				_, err := supervisor.Wait(t.Context(), Token{Channel: "missing", Generation: 1})
+				assertError(t, err, ErrToken)
+				return
+			}
+			started := make(chan struct{})
+			blocked := make(chan struct{})
+			other, err := supervisor.Start("other", func(context.Context, mind.Snapshot) (mind.Proposal, error) {
+				return proposal("other"), nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			own, err := supervisor.Start("own", func(_ context.Context, _ mind.Snapshot) (mind.Proposal, error) {
+				close(started)
+				<-blocked
+				return proposal("own"), nil
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			<-started
+			if test.cancelWait {
+				ctx, cancel := context.WithCancel(t.Context())
+				cancel()
+				_, err := supervisor.Wait(ctx, own)
+				assertError(t, err, context.Canceled)
+				supervisor.Cancel("own")
+				close(blocked)
+				return
+			}
+			close(blocked)
+			result, err := supervisor.Wait(t.Context(), own)
+			if err != nil || result.Token != own {
+				t.Fatalf("Wait own token = %+v, %v", result.Token, err)
+			}
+			if err := supervisor.Discard(own); err != nil {
+				t.Fatal(err)
+			}
+			result = next(t, supervisor)
+			if result.Token != other {
+				t.Fatalf("next token = %+v, want unrelated %+v", result.Token, other)
+			}
+			if err := supervisor.Discard(other); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func TestWaitingCancellation(t *testing.T) {
 	t.Parallel()
 
