@@ -52,6 +52,7 @@ type Loop struct {
 	pauseSeq uint64
 	closed   bool
 	changed  chan struct{}
+	closedCh chan struct{}
 	gate     chan struct{}
 	cleanup  <-chan struct{}
 }
@@ -64,7 +65,7 @@ func New(session *lifecycle.Session, runner RunnerFactory, sink Sink) (*Loop, er
 	gate <- struct{}{}
 
 	return &Loop{session: session, runner: runner, sink: sink, mu: sync.Mutex{}, paused: false, pauseSeq: 0, closed: false,
-		changed: make(chan struct{}), gate: gate, cleanup: nil}, nil
+		changed: make(chan struct{}), closedCh: make(chan struct{}), gate: gate, cleanup: nil}, nil
 }
 
 // Pause stops admitting new inputs and cancels the current thought. Resume reopens admission.
@@ -93,6 +94,7 @@ func (loop *Loop) Close() {
 	loop.mu.Lock()
 	if !loop.closed {
 		loop.closed = true
+		close(loop.closedCh)
 		loop.signalLocked()
 	}
 	loop.mu.Unlock()
@@ -142,15 +144,6 @@ func (loop *Loop) Run(ctx context.Context, inputs <-chan Input) error {
 	}
 }
 
-// runState captures the notification channel with its lifecycle state so Run
-// cannot miss a Close or Pause between awaitOpen and its select.
-func (loop *Loop) runState() (<-chan struct{}, bool, bool) {
-	loop.mu.Lock()
-	defer loop.mu.Unlock()
-
-	return loop.changed, loop.closed, loop.paused
-}
-
 // Handle runs one input through adoption, thought, response adoption, and delivery.
 //
 //nolint:funlen // One serialized input transaction keeps the admission and cleanup boundary explicit.
@@ -197,10 +190,10 @@ func (loop *Loop) Handle(ctx context.Context, input Input) error {
 		return err
 	}
 
-	result, err := loop.session.Wait(ctx, token)
+	result, err := loop.wait(ctx, token)
 	if err != nil {
 		loop.session.Cancel("interaction")
-		if ctx.Err() != nil {
+		if ctx.Err() != nil || errors.Is(err, context.Canceled) {
 			loop.reapCanceled(ctx, token)
 		}
 
@@ -219,6 +212,53 @@ func (loop *Loop) Handle(ctx context.Context, input Input) error {
 	}
 
 	return loop.sink(ctx, input, response)
+}
+
+// wait observes Close even when the runner ignores the cancellation it receives.
+func (loop *Loop) wait(ctx context.Context, token thought.Token) (thought.Result, error) {
+	type outcome struct {
+		result thought.Result
+		err    error
+	}
+	waitCtx, cancel := context.WithCancel(ctx)
+	done := make(chan outcome, 1)
+	go func() {
+		result, err := loop.session.Wait(waitCtx, token)
+		done <- outcome{result: result, err: err}
+	}()
+	loop.mu.Lock()
+	closedCh := loop.closedCh
+	loop.mu.Unlock()
+	select {
+	case completed := <-done:
+		cancel()
+
+		return completed.result, completed.err
+	case <-ctx.Done():
+		cancel()
+		completed := <-done
+
+		return completed.result, completed.err
+	case <-closedCh:
+		cancel()
+		completed := <-done
+		if completed.err == nil {
+			_ = loop.session.Discard(context.WithoutCancel(ctx), token)
+		} else {
+			loop.reapCanceled(ctx, token)
+		}
+
+		return thought.Result{}, lifecycle.ErrClosed
+	}
+}
+
+// runState captures the notification channel with its lifecycle state so Run
+// cannot miss a Close or Pause between awaitOpen and its select.
+func (loop *Loop) runState() (<-chan struct{}, bool, bool) {
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+
+	return loop.changed, loop.closed, loop.paused
 }
 
 func (loop *Loop) acquire(ctx context.Context) error {
