@@ -86,12 +86,13 @@ const assert = require("node:assert/strict");
 
     await page.locator("#decision-new").click();
     assert.equal(await page.locator("#task-status").inputValue(), "decision");
+    assert.equal(await page.locator("#task-category").inputValue(), "decision");
     await page.locator("#task-title").fill("Console judgment pending");
     await page.locator("#task-description").fill("A decision can be recorded directly from the console.");
     await page.locator("#task-save").click();
     await page.locator("#task-dialog").waitFor({ state: "hidden" });
     const decisionBoard = await mcp("tasks_list", { status: "decision" });
-    assert.ok(decisionBoard.tasks.some((task) => task.title === "Console judgment pending"));
+    assert.ok(decisionBoard.tasks.some((task) => task.title === "Console judgment pending" && task.category === "decision"));
     await page.locator("#task-filter-status").selectOption("decision");
     assert.ok(await page.locator(".task-column-decision .task-card").filter({ hasText: "Console judgment pending" }).count());
     await page.locator("#task-filter-status").selectOption("active");

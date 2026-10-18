@@ -39,6 +39,21 @@ type decisionCreateInput struct {
 	References  []string `json:"references,omitempty"`
 }
 
+type taskCreateData struct {
+	title       string
+	description string
+	status      string
+	priority    string
+	category    string
+	notes       string
+	references  []string
+}
+
+type taskCreateDefaults struct {
+	status   string
+	category string
+}
+
 type updateInput struct {
 	Task development.Task `json:"task" jsonschema:"Complete edited task including the version read from the API"`
 }
@@ -137,8 +152,9 @@ func registerTaskWriters(server *mcp.Server, store *development.Store) {
 		"Create a developer-owned task. This records work; it does not start a worker or "+
 			"approve a specification. Set status to decision to record a judgment-waiting item.", false),
 		func(ctx context.Context, _ *mcp.CallToolRequest, input createInput) (*mcp.CallToolResult, development.Board, error) {
-			board, err := createTask(ctx, store, input.Title, input.Description, input.Status, input.Priority,
-				input.Category, input.Notes, input.References, "todo", "runtime")
+			board, err := createTask(ctx, store, taskCreateData{title: input.Title, description: input.Description,
+				status: input.Status, priority: input.Priority, category: input.Category,
+				notes: input.Notes, references: input.References}, taskCreateDefaults{status: "todo", category: "runtime"})
 
 			return nil, board, err
 		})
@@ -148,8 +164,9 @@ func registerTaskWriters(server *mcp.Server, store *development.Store) {
 		func(ctx context.Context, _ *mcp.CallToolRequest, input decisionCreateInput) (
 			*mcp.CallToolResult, development.Board, error,
 		) {
-			board, err := createTask(ctx, store, input.Title, input.Description, decisionStatus, input.Priority,
-				input.Category, input.Notes, input.References, "decision", "decision")
+			board, err := createTask(ctx, store, taskCreateData{title: input.Title, description: input.Description,
+				status: decisionStatus, priority: input.Priority, category: input.Category,
+				notes: input.Notes, references: input.References}, taskCreateDefaults{status: "decision", category: "decision"})
 
 			return nil, board, err
 		})
@@ -175,23 +192,26 @@ func registerTaskWriters(server *mcp.Server, store *development.Store) {
 		})
 }
 
-func createTask(ctx context.Context, store *development.Store, title, description, status, priority, category,
-	notes string, references []string, defaultStatus, defaultCategory string,
+func createTask(
+	ctx context.Context,
+	store *development.Store,
+	input taskCreateData,
+	defaults taskCreateDefaults,
 ) (development.Board, error) {
-	if status == "" {
-		status = defaultStatus
+	if input.status == "" {
+		input.status = defaults.status
 	}
 
-	if priority == "" {
-		priority = "medium"
+	if input.priority == "" {
+		input.priority = "medium"
 	}
 
-	if category == "" {
-		category = defaultCategory
+	if input.category == "" {
+		input.category = defaults.category
 	}
 
-	task := development.Task{ID: "", Version: 0, Title: title, Description: description, Status: status,
-		Priority: priority, Category: category, Notes: notes, References: references}
+	task := development.Task{ID: "", Version: 0, Title: input.title, Description: input.description, Status: input.status,
+		Priority: input.priority, Category: input.category, Notes: input.notes, References: input.references}
 
 	return store.Change(ctx, development.Mutation{Operation: development.Create, ID: "", Task: task,
 		ExpectedRevision: 0, ExpectedVersion: 0})
