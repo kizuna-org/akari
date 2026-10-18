@@ -33,7 +33,8 @@ const (
 	maxResponse    = 1 << 20
 	requestTimeout = 45 * time.Second
 	inputGuide     = "Interpret the selected Akari experience. Return JSON with appraisal, interests, memory, goals. " +
-		"Do not infer execution permissions. Semantic points must contain text only; use exact recalled IDs from input. " +
+		"Do not infer execution permissions. Semantic points must contain text only; " +
+		"preserve IDs when copying supplied memory fragments. " +
 		"Return all four top-level properties. Input: "
 	interpretationSchema = `{"type":"object","properties":{"appraisal":{"anyOf":[{"type":"null"},{"type":"ob` +
 		`ject","properties":{"feelings":{"type":"array","items":{"$ref":"#/$defs/feeling"}},"othe` +
@@ -190,15 +191,22 @@ type responseEnvelope struct {
 }
 
 type modelInput struct {
-	Message    string          `json:"message"`
-	Context    []pointInput    `json:"context"`
-	Working    []pointInput    `json:"working"`
-	Emotion    emotionInput    `json:"emotion"`
-	Interests  []focusInput    `json:"interests"`
-	Goals      goalInput       `json:"goals"`
-	Fatigue    float64         `json:"fatigue"`
-	Recalled   []recalledInput `json:"recalled"`
-	Prediction bool            `json:"prediction"`
+	Message    string           `json:"message"`
+	At         time.Time        `json:"at"`
+	Context    []shortTermInput `json:"context"`
+	Working    []shortTermInput `json:"working"`
+	Emotion    emotionInput     `json:"emotion"`
+	Interests  []focusInput     `json:"interests"`
+	Goals      goalInput        `json:"goals"`
+	Fatigue    float64          `json:"fatigue"`
+	Recalled   []recalledInput  `json:"recalled"`
+	Prediction bool             `json:"prediction"`
+}
+
+type shortTermInput struct {
+	ID         string     `json:"id"`
+	Meaning    pointInput `json:"meaning"`
+	OccurredAt time.Time  `json:"occurredAt"`
 }
 
 type pointInput struct {
@@ -236,11 +244,12 @@ type goalInput struct {
 }
 
 type recalledInput struct {
-	ID       string     `json:"id"`
-	Meaning  pointInput `json:"meaning"`
-	Emotion  float64    `json:"emotion"`
-	Will     float64    `json:"will"`
-	Strength float64    `json:"strength"`
+	ID         string     `json:"id"`
+	Meaning    pointInput `json:"meaning"`
+	OccurredAt time.Time  `json:"occurredAt"`
+	Emotion    float64    `json:"emotion"`
+	Will       float64    `json:"will"`
+	Strength   float64    `json:"strength"`
 }
 
 type interpretationJSON struct {
@@ -348,12 +357,12 @@ func (model *Model) Interpret(ctx context.Context, request thought.Request) (tho
 			continue
 		}
 		recalled = append(recalled, recalledInput{ID: fragment.ID,
-			Meaning: pointInput{Text: fragment.Meaning.Text}, Emotion: fragment.Emotion,
+			Meaning: pointInput{Text: fragment.Meaning.Text}, OccurredAt: fragment.OccurredAt, Emotion: fragment.Emotion,
 			Will: fragment.Will, Strength: fragment.Strength})
 		allowedIDs[fragment.ID] = struct{}{}
 	}
 	input, err := json.Marshal(modelInput{
-		Message: request.Query.Cue.Text, Emotion: projectEmotion(request.Experience.Emotion),
+		Message: request.Query.Cue.Text, At: request.Query.At, Emotion: projectEmotion(request.Experience.Emotion),
 		Context: context, Working: working,
 		Interests: projectFocus(request.Experience.Interests), Goals: projectGoals(request.Experience.Goals),
 		Fatigue: request.Experience.Fatigue, Recalled: recalled, Prediction: request.Prediction,
@@ -422,20 +431,21 @@ func (model *Model) Interpret(ctx context.Context, request thought.Request) (tho
 	if !validRecalledIDs(interpretation.Memory, allowedIDs) || model.encodeInterpretation(ctx, &interpretation) != nil {
 		return thought.Interpretation{}, ErrResponse
 	}
-	restoreSources(interpretation.Memory, request.Experience.Context, request.Experience.Working, request.Recalled)
+	restoreMemoryMetadata(interpretation.Memory, request, allowedContext, allowedWorking, allowedIDs)
 
 	return interpretation, nil
 }
 
-func projectShortTerm(fragments []memory.Fragment, disclosure DisclosurePolicy) ([]pointInput, []string) {
-	projected := make([]pointInput, 0, len(fragments))
+func projectShortTerm(fragments []memory.Fragment, disclosure DisclosurePolicy) ([]shortTermInput, []string) {
+	projected := make([]shortTermInput, 0, len(fragments))
 	allowed := make([]string, 0, len(fragments))
 	for _, fragment := range fragments {
 		if len(fragment.Sources) > 0 &&
 			(disclosure == nil || !disclosure.AllowsDisclosure(slices.Clone(fragment.Sources), "openai")) {
 			continue
 		}
-		projected = append(projected, pointInput{Text: fragment.Meaning.Text})
+		projected = append(projected, shortTermInput{ID: fragment.ID,
+			Meaning: pointInput{Text: fragment.Meaning.Text}, OccurredAt: fragment.OccurredAt})
 		allowed = append(allowed, fragment.ID)
 	}
 
@@ -533,25 +543,128 @@ func validRecalledIDs(change *memory.Change, allowed map[string]struct{}) bool {
 	return true
 }
 
-func restoreSources(change *memory.Change, groups ...[]memory.Fragment) {
+func restoreMemoryMetadata(change *memory.Change, request thought.Request, allowedContext, allowedWorking []string,
+	allowedRecalled map[string]struct{}) {
 	if change == nil {
 		return
 	}
-	sourcesByID := make(map[string][]string)
-	for _, group := range groups {
-		for _, fragment := range group {
-			if len(fragment.Sources) > 0 {
-				sourcesByID[fragment.ID] = slices.Clone(fragment.Sources)
+	change.Context = preserveWithheldFragments(change.Context, request.Experience.Context, allowedContext)
+	change.Working = preserveWithheldFragments(change.Working, request.Experience.Working, allowedWorking)
+	capacity := len(request.Experience.Context) + len(request.Experience.Working) + len(request.Recalled)
+	trusted := make([]memory.Fragment, 0, capacity)
+	trusted = appendAllowedFragments(trusted, request.Experience.Context, allowedContext)
+	trusted = appendAllowedFragments(trusted, request.Experience.Working, allowedWorking)
+	for _, fragment := range request.Recalled {
+		if _, allowed := allowedRecalled[fragment.ID]; allowed {
+			trusted = append(trusted, fragment)
+		}
+	}
+	metadataByID := make(map[string]memory.Fragment, len(trusted))
+	metadataByText := make(map[string][]memory.Fragment, len(trusted))
+	for _, fragment := range trusted {
+		metadataByID[fragment.ID] = fragment
+		metadataByText[fragment.Meaning.Text] = append(metadataByText[fragment.Meaning.Text], fragment)
+	}
+	instant := trustedTime(request)
+	restoreMemoryGroup(change.Context, metadataByID, metadataByText, instant)
+	restoreMemoryGroup(change.Working, metadataByID, metadataByText, instant)
+	restoreMemoryGroup(change.Remember, metadataByID, metadataByText, instant)
+}
+
+func trustedTime(request thought.Request) time.Time {
+	if !request.Query.At.IsZero() {
+		return request.Query.At
+	}
+	if !request.Experience.Emotion.At.IsZero() {
+		return request.Experience.Emotion.At
+	}
+
+	return time.Now().UTC()
+}
+
+func restoreMemoryGroup(output []memory.Fragment, metadataByID map[string]memory.Fragment,
+	metadataByText map[string][]memory.Fragment, instant time.Time) {
+	for index := range output {
+		restoreFragmentMetadata(&output[index], metadataByID, metadataByText, instant)
+	}
+}
+
+func restoreFragmentMetadata(fragment *memory.Fragment, metadataByID map[string]memory.Fragment,
+	metadataByText map[string][]memory.Fragment, instant time.Time) {
+	if original, exists := metadataByID[fragment.ID]; exists {
+		fragment.OccurredAt = original.OccurredAt
+		fragment.Sources = slices.Clone(original.Sources)
+		fragment.Accesses = original.Accesses
+
+		return
+	}
+	matches := metadataByText[fragment.Meaning.Text]
+	if len(matches) == 0 {
+		fragment.OccurredAt = instant
+
+		return
+	}
+	fragment.OccurredAt = matches[0].OccurredAt
+	for _, original := range matches[1:] {
+		if original.OccurredAt.Before(fragment.OccurredAt) {
+			fragment.OccurredAt = original.OccurredAt
+		}
+	}
+	fragment.Sources = mergeSources(matches)
+}
+
+func appendAllowedFragments(destination, fragments []memory.Fragment, allowedIDs []string) []memory.Fragment {
+	for _, fragment := range fragments {
+		if slices.Contains(allowedIDs, fragment.ID) {
+			destination = append(destination, fragment)
+		}
+	}
+
+	return destination
+}
+
+func preserveWithheldFragments(output, original []memory.Fragment, allowedIDs []string) []memory.Fragment {
+	if output == nil {
+		return nil
+	}
+	allowed := make(map[string]struct{}, len(allowedIDs))
+	for _, id := range allowedIDs {
+		allowed[id] = struct{}{}
+	}
+	withheld := make(map[string]memory.Fragment)
+	for _, fragment := range original {
+		if _, sent := allowed[fragment.ID]; !sent {
+			withheld[fragment.ID] = fragment
+		}
+	}
+	result := memory.CloneFragments(output)
+	seen := make(map[string]struct{}, len(output)+len(withheld))
+	for index := range result {
+		if fragment, exists := withheld[result[index].ID]; exists {
+			result[index] = memory.CloneFragments([]memory.Fragment{fragment})[0]
+			seen[fragment.ID] = struct{}{}
+		}
+	}
+	for id, fragment := range withheld {
+		if _, exists := seen[id]; !exists {
+			result = append(result, memory.CloneFragments([]memory.Fragment{fragment})[0])
+		}
+	}
+
+	return result
+}
+
+func mergeSources(matches []memory.Fragment) []string {
+	sources := make([]string, 0)
+	for _, fragment := range matches {
+		for _, source := range fragment.Sources {
+			if !slices.Contains(sources, source) {
+				sources = append(sources, source)
 			}
 		}
 	}
-	for _, output := range [][]memory.Fragment{change.Context, change.Working, change.Remember} {
-		for index := range output {
-			if sources, exists := sourcesByID[output[index].ID]; exists {
-				output[index].Sources = slices.Clone(sources)
-			}
-		}
-	}
+
+	return sources
 }
 
 //nolint:cyclop,gocognit // It visits each semantic point-bearing field once by domain group.
