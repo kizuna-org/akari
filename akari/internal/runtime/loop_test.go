@@ -90,6 +90,52 @@ func TestLoopHandleAndLifecycle(t *testing.T) {
 	}
 }
 
+func TestSessionCloseDrainsBlockedResponseDelivery(t *testing.T) {
+	t.Parallel()
+
+	session := newSession(t)
+	deliveryStarted := make(chan struct{})
+	deliveryCanceled := make(chan struct{})
+	releaseDelivery := make(chan struct{})
+	loop, err := New(session, func(input Input) thought.Runner {
+		return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
+			return mind.Proposal{ID: fakeProposalID, Reads: map[string]uint64{
+				inputKey: snapshot.Items[inputKey].Version, responseKey: snapshot.Items[responseKey].Version,
+			}, Writes: map[string]string{responseKey: input.ID}}, nil
+		}
+	}, func(ctx context.Context, _ Input, _ string) error {
+		close(deliveryStarted)
+		<-ctx.Done()
+		close(deliveryCanceled)
+		<-releaseDelivery
+
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handleDone := make(chan error, 1)
+	go func() { handleDone <- loop.Handle(t.Context(), Input{ID: "blocked", Content: "hello"}) }()
+	<-deliveryStarted
+	closeDone := make(chan error, 1)
+	go func() { closeDone <- session.Close(context.Background()) }()
+	<-deliveryCanceled
+	select {
+	case err := <-closeDone:
+		t.Fatalf("Session.Close returned before delivery drained: %v", err)
+	case <-time.After(30 * time.Millisecond):
+	}
+
+	close(releaseDelivery)
+	if err := <-handleDone; err != nil {
+		t.Fatal(err)
+	}
+	if err := <-closeDone; err != nil {
+		t.Fatal(err)
+	}
+}
+
 //nolint:noinlineerr // Each operation's error is asserted inline for clarity.
 func TestPauseResumeAndClose(t *testing.T) {
 	t.Parallel()

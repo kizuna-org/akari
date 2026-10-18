@@ -217,7 +217,9 @@ func (loop *Loop) Handle(ctx context.Context, input Input) error {
 		return loop.resolveInterruption(ctx, pauseSeq, err)
 	}
 
-	return loop.sink(ctx, input, response)
+	return loop.session.Operate(ctx, func(deliveryCtx context.Context) error {
+		return loop.sink(deliveryCtx, input, response)
+	})
 }
 
 // wait observes Close even when the runner ignores the cancellation it receives.

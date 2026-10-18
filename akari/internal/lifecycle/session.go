@@ -167,6 +167,21 @@ func (session *Session) Dispatch(ctx context.Context, identity string) (action.O
 	return session.owner.Dispatch(operation, identity)
 }
 
+// Operate runs a synchronous external operation under Session shutdown tracking.
+func (session *Session) Operate(ctx context.Context, operation func(context.Context) error) error {
+	if operation == nil {
+		return ErrConfig
+	}
+
+	operationCtx, end, err := session.begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer end()
+
+	return operation(operationCtx)
+}
+
 // Approve is an administrative runtime capability, never supplied to a thinking Channel.
 func (session *Session) Approve(ctx context.Context, identity string) error {
 	operation, end, err := session.begin(ctx)
