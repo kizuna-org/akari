@@ -151,8 +151,8 @@ func TestInterpretRejectsUntrustedRecalledIDs(t *testing.T) {
 	t.Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 		payload, marshalErr := json.Marshal(map[string]any{
-			jsonAppraisal: nil, "interests": []any{}, "memory": map[string]any{
-				jsonContext: nil, "working": nil, jsonRemember: []any{}, jsonRecalled: []string{"not-recalled"},
+			jsonAppraisal: nil, jsonInterests: []any{}, jsonMemory: map[string]any{
+				jsonContext: nil, jsonWorking: nil, jsonRemember: []any{}, jsonRecalled: []string{"not-recalled"},
 			}, jsonGoals: nil,
 		})
 		if marshalErr != nil {
@@ -273,8 +273,9 @@ func TestInterpretRestoresSourcesForKnownMemoryCopies(t *testing.T) {
 					t.Errorf("decode request: %v", decodeErr)
 				}
 				sentInput = body.Input
-				fragments := []any{map[string]any{"id": fragment.ID, "meaning": map[string]any{"text": fragment.Meaning.Text},
-					"occurredAt": fragment.OccurredAt.Format(time.RFC3339), "emotion": 0, "will": 0, "strength": fragment.Strength}}
+				fragments := []any{map[string]any{"id": "provider-copy", "meaning": map[string]any{"text": fragment.Meaning.Text},
+					"occurredAt": time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339),
+					"emotion":    0, "will": 0, "strength": fragment.Strength}}
 				memoryOutput := map[string]any{jsonContext: nil, jsonWorking: nil, jsonRemember: []any{}, jsonRecalled: []string{}}
 				memoryOutput[test.group] = fragments
 				payload, marshalErr := json.Marshal(map[string]any{
@@ -295,9 +296,16 @@ func TestInterpretRestoresSourcesForKnownMemoryCopies(t *testing.T) {
 			}
 			experience := &mind.Experience{}
 			experience.Working = []memory.Fragment{fragment}
-			result, err := model.Interpret(context.Background(), thought.Request{Experience: experience})
+			queryAt := time.Date(2026, 10, 18, 1, 0, 0, 0, time.UTC)
+			result, err := model.Interpret(context.Background(), thought.Request{Experience: experience,
+				Query: memory.Query{At: queryAt}})
 			if err != nil {
 				t.Fatal(err)
+			}
+			if !strings.Contains(sentInput, fragment.ID) ||
+				!strings.Contains(sentInput, fragment.OccurredAt.Format(time.RFC3339)) ||
+				!strings.Contains(sentInput, queryAt.Format(time.RFC3339)) {
+				t.Fatalf("trusted memory identity or time missing from input: %s", sentInput)
 			}
 			var copies []memory.Fragment
 			switch test.group {
@@ -308,7 +316,8 @@ func TestInterpretRestoresSourcesForKnownMemoryCopies(t *testing.T) {
 			case "remember":
 				copies = result.Memory.Remember
 			}
-			if len(copies) != 1 || !slices.Equal(copies[0].Sources, fragment.Sources) {
+			if len(copies) != 1 || copies[0].ID != "provider-copy" ||
+				!slices.Equal(copies[0].Sources, fragment.Sources) || !copies[0].OccurredAt.Equal(fragment.OccurredAt) {
 				t.Fatalf("copied sources = %#v", copies)
 			}
 			state, err := memory.Apply(memory.State{}, *result.Memory)
@@ -316,7 +325,9 @@ func TestInterpretRestoresSourcesForKnownMemoryCopies(t *testing.T) {
 				t.Fatal(err)
 			}
 			policyAllows = false
-			_, err = model.Interpret(context.Background(), thought.Request{Experience: &mind.Experience{Working: state.Working}})
+			_, err = model.Interpret(context.Background(), thought.Request{Experience: &mind.Experience{
+				Context: state.Context, Working: state.Working,
+			}})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -324,6 +335,87 @@ func TestInterpretRestoresSourcesForKnownMemoryCopies(t *testing.T) {
 				t.Fatal("revoked memory was sent")
 			}
 		})
+	}
+}
+
+func TestInterpretPreservesWithheldShortTermFragments(t *testing.T) {
+	t.Parallel()
+
+	instant := time.Date(2026, 10, 18, 2, 0, 0, 0, time.UTC)
+	private := memory.Fragment{ID: "private-id", Meaning: meaning.Point{Text: "private note"},
+		OccurredAt: instant.Add(-time.Hour), Strength: 1, Sources: []string{"private-conversation"}}
+	public := memory.Fragment{ID: "public-id", Meaning: meaning.Point{Text: "public note"},
+		OccurredAt: instant.Add(-time.Minute), Strength: 1, Sources: []string{"public-conversation"}}
+	var requestInput string
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var body responseRequest
+		decodeErr := json.NewDecoder(request.Body).Decode(&body)
+		if decodeErr != nil {
+			t.Errorf("decode request: %v", decodeErr)
+		}
+		requestInput = body.Input
+		output := map[string]any{"appraisal": nil, "interests": []any{}, "goals": nil,
+			"memory": map[string]any{"context": nil, "working": []any{
+				map[string]any{"id": "copy-id", "meaning": map[string]string{"text": public.Meaning.Text},
+					"occurredAt": instant.Add(time.Hour).Format(time.RFC3339), "emotion": 0, "will": 0, "strength": 1},
+			}, "remember": []any{}, "recalled": []string{}}}
+		encoded, err := json.Marshal(output)
+		if err != nil {
+			t.Errorf("marshal response: %v", err)
+		}
+		_, _ = writer.Write([]byte(responseWithStatus("completed", string(encoded))))
+	}))
+	defer server.Close()
+	model, err := New(Config{APIKey: testKey, BaseURL: server.URL,
+		Disclosure: disclosureFunc(func(sources []string, recipient string) bool {
+			return recipient == openaiRecipient && slices.Equal(sources, []string{"public-conversation"})
+		}), Encoder: encoderFunc(func(_ context.Context, text string) (meaning.Point, error) {
+			return meaning.Point{Text: text, Space: trustedSpace, Vector: []float64{1}}, nil
+		})}, server.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := model.Interpret(context.Background(), thought.Request{Experience: &mind.Experience{
+		Working: []memory.Fragment{private, public},
+	}, Query: memory.Query{At: instant}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(requestInput, private.Meaning.Text) || !strings.Contains(requestInput, public.Meaning.Text) {
+		t.Fatalf("projected input = %q", requestInput)
+	}
+	if len(result.Memory.Working) != 2 || result.Memory.Working[1].ID != private.ID ||
+		result.Memory.Working[1].Meaning.Text != private.Meaning.Text ||
+		!slices.Equal(result.Memory.Working[1].Sources, private.Sources) {
+		t.Fatalf("withheld fragment was not preserved: %#v", result.Memory.Working)
+	}
+}
+
+func TestInterpretAssignsTrustedTimeToNewMemory(t *testing.T) {
+	t.Parallel()
+
+	instant := time.Date(2026, 10, 18, 3, 0, 0, 0, time.UTC)
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		output := `{"appraisal":null,"interests":[],"goals":null,"memory":{"context":null,"working":null,"remember":[` +
+			`{"id":"new","meaning":{"text":"new fact"},"occurredAt":"2099-01-01T00:00:00Z",` +
+			`"emotion":0,"will":0,"strength":1}],"recalled":[]}}`
+		_, _ = writer.Write([]byte(responseWithStatus("completed", output)))
+	}))
+	defer server.Close()
+	encoder := encoderFunc(func(_ context.Context, text string) (meaning.Point, error) {
+		return meaning.Point{Text: text, Space: trustedSpace, Vector: []float64{1}}, nil
+	})
+	model, err := New(Config{APIKey: testKey, BaseURL: server.URL, Encoder: encoder}, server.Client())
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := model.Interpret(context.Background(), thought.Request{Experience: &mind.Experience{},
+		Query: memory.Query{At: instant}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Memory.Remember) != 1 || !result.Memory.Remember[0].OccurredAt.Equal(instant) {
+		t.Fatalf("new memory timestamp = %#v, want %s", result.Memory.Remember, instant)
 	}
 }
 
@@ -509,7 +601,8 @@ func TestInterpretShortTermContextAndRedirectProtection(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !strings.Contains(captured, "project is a garden") || strings.Contains(captured, "continue planting") ||
-			strings.Contains(captured, `"id":"ctx"`) || strings.Contains(captured, `"sources"`) {
+			!strings.Contains(captured, `"id":"ctx"`) || !strings.Contains(captured, `"occurredAt"`) ||
+			strings.Contains(captured, `"sources"`) || strings.Contains(captured, `"vector"`) {
 			t.Fatalf("unexpected short-term projection: %s", captured)
 		}
 	})
