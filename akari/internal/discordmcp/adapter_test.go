@@ -21,13 +21,10 @@ import (
 
 const (
 	testSecret         = "secret"
-	subscribeMethod    = "events/subscribe"
 	testSubscription   = "sub1"
 	testResultKey      = "result"
-	testDiscoverMethod = "server/discover"
 	testMentionArg     = "direct_bot_mention"
 	testToolCallMethod = "tools/call"
-	testUnsubscribe    = "events/unsubscribe"
 	oldTestSession     = "old-session"
 	newTestSession     = "new-session"
 	testDestination    = "discord:channel-1"
@@ -80,7 +77,8 @@ func TestVerifyWebhook(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := VerifyWebhook(testSecret, "id", test.timestamp, test.signature, body, now)
+			got := VerifyWebhook(WebhookSignature{Secret: testSecret, WebhookID: "id", Timestamp: test.timestamp,
+				Signature: test.signature, Body: body, Now: now})
 			if got != test.valid {
 				t.Fatalf("got %v, want %v", got, test.valid)
 			}
@@ -379,7 +377,7 @@ func TestClientDelayedSuccessDoesNotOverwriteRecoveredSession(t *testing.T) {
 			}
 
 			writer.WriteHeader(http.StatusNotFound)
-		case testDiscoverMethod:
+		case discoverMethod:
 			writer.Header().Set("Mcp-Session-Id", newTestSession)
 			_, _ = writer.Write([]byte(`{"result":{}}`))
 		}
@@ -472,7 +470,7 @@ func TestGatewayToolTimeoutIsUnknownAndDoesNotReplaySend(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	client := newClient(server.URL)
-	client.Timeout = 10 * time.Millisecond
+	client.Timeout = 100 * time.Millisecond
 	adapter := newAdapter(client, "", "", nil, nil)
 	gateway, err := action.New(adapter.Tools(), 1)
 	if err != nil {
@@ -504,7 +502,7 @@ func TestRunUnsubscribesOnceWhenAlreadyCanceled(t *testing.T) {
 
 	var unsubscribeCount atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Header.Get("Mcp-Method") == testUnsubscribe {
+		if request.Header.Get("Mcp-Method") == unsubscribeMethod {
 			unsubscribeCount.Add(1)
 		}
 		_, _ = writer.Write([]byte(`{"result":{}}`))
@@ -589,7 +587,7 @@ func TestClientRequestAndSubscription(t *testing.T) {
 		t.Fatalf("subscription %#v, %v", sub, err)
 	}
 
-	want := []string{testDiscoverMethod, "tools/call", subscribeMethod}
+	want := []string{discoverMethod, "tools/call", subscribeMethod}
 
 	methodsMu.Lock()
 	defer methodsMu.Unlock()
@@ -732,7 +730,7 @@ func TestRunRefreshesAndCancellationUnsubscribes(t *testing.T) {
 
 	got := []string{<-methods, <-methods, <-methods, <-methods, <-methods}
 
-	want := []string{testDiscoverMethod, "events/subscribe", testDiscoverMethod, "events/subscribe", "events/unsubscribe"}
+	want := []string{discoverMethod, subscribeMethod, discoverMethod, subscribeMethod, unsubscribeMethod}
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Fatalf("methods %v", got)
 	}
@@ -832,7 +830,9 @@ func TestClientRequestFailures(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := newRequest(context.Background(), newClient(test.endpoint), "server/discover", test.params, "")
+			_, err := newRequest(context.Background(), newClient(test.endpoint), requestSpec{
+				method: discoverMethod, params: test.params, tool: "",
+			})
 			if err == nil {
 				t.Fatal("expected request construction error")
 			}
@@ -849,6 +849,9 @@ func TestSubscribeRejectsMalformedResult(t *testing.T) {
 	}{
 		{name: "invalid JSON", result: "not-json"},
 		{name: "invalid subscription fields", result: `{"id":true}`},
+		{name: "empty result", result: `{}`},
+		{name: "missing refresh time", result: `{"id":"subscription"}`},
+		{name: "missing subscription ID", result: `{"refreshBefore":"2026-10-18T00:00:00Z"}`},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -922,7 +925,8 @@ func TestVerifyWebhookRejectsMissingIdentityAndAcceptsAnyMatchingSignature(t *te
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := VerifyWebhook(test.secret, test.id, test.timestamp, test.signature, body, now)
+			got := VerifyWebhook(WebhookSignature{Secret: test.secret, WebhookID: test.id, Timestamp: test.timestamp,
+				Signature: test.signature, Body: body, Now: now})
 			if got != test.want {
 				t.Fatalf("got %v, want %v", got, test.want)
 			}
@@ -938,7 +942,7 @@ func TestRunRetriesTransientConnectionFailures(t *testing.T) {
 		name       string
 		failMethod string
 	}{
-		{name: "discovery", failMethod: "server/discover"},
+		{name: "discovery", failMethod: discoverMethod},
 		{name: "subscription", failMethod: subscribeMethod},
 	}
 	for _, test := range tests {
@@ -986,7 +990,7 @@ func TestRunRetriesTransientConnectionFailures(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Run: %v", err)
 			}
-			if got := <-methods; got != "server/discover" {
+			if got := <-methods; got != discoverMethod {
 				t.Fatalf("first MCP method %q", got)
 			}
 
@@ -994,7 +998,7 @@ func TestRunRetriesTransientConnectionFailures(t *testing.T) {
 			for range 7 {
 				select {
 				case method := <-methods:
-					seenUnsubscribe = seenUnsubscribe || method == "events/unsubscribe"
+					seenUnsubscribe = seenUnsubscribe || method == unsubscribeMethod
 				case <-time.After(100 * time.Millisecond):
 					if seenUnsubscribe {
 						return

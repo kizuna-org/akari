@@ -23,6 +23,9 @@ import (
 const (
 	protocolVersion     = "2026-07-28"
 	jsonRPCVersion      = "2.0"
+	discoverMethod      = "server/discover"
+	subscribeMethod     = "events/subscribe"
+	unsubscribeMethod   = "events/unsubscribe"
 	jsonRPCKey          = "jsonrpc"
 	metaKey             = "_meta"
 	argumentsKey        = "arguments"
@@ -38,10 +41,11 @@ const (
 )
 
 var (
-	errEndpointRequired = errors.New("discord MCP endpoint is required")
-	errToolDisabled     = errors.New("discord tool is not enabled")
-	errHTTPStatus       = errors.New("discord MCP returned a non-success HTTP status")
-	errRPC              = errors.New("discord MCP returned an RPC error")
+	errEndpointRequired = errors.New("discordmcp: endpoint is required")
+	errToolDisabled     = errors.New("discordmcp: tool is not enabled")
+	errHTTPStatus       = errors.New("discordmcp: non-success HTTP status")
+	errRPC              = errors.New("discordmcp: RPC error")
+	errSubscription     = errors.New("discordmcp: subscription response is missing id or refreshBefore")
 )
 
 type Client struct {
@@ -66,8 +70,14 @@ type toolResult struct {
 	IsError bool `json:"isError"`
 }
 
-func call(ctx context.Context, client *Client, method string, params any, tool string) (json.RawMessage, error) {
-	request, err := newRequest(ctx, client, method, params, tool)
+type requestSpec struct {
+	method string
+	params any
+	tool   string
+}
+
+func call(ctx context.Context, client *Client, spec requestSpec) (json.RawMessage, error) {
+	request, err := newRequest(ctx, client, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -88,17 +98,18 @@ func call(ctx context.Context, client *Client, method string, params any, tool s
 		client.clearSessionIfCurrent(request.Header.Get("Mcp-Session-Id"))
 	}
 
-	return decode(client, response, request.Header.Get("Mcp-Session-Id"), tool != "")
+	return decode(client, response, request.Header.Get("Mcp-Session-Id"), spec.tool != "")
 }
 
-func newRequest(ctx context.Context, client *Client, method string, params any, tool string) (*http.Request, error) {
+func newRequest(ctx context.Context, client *Client, spec requestSpec) (*http.Request, error) {
 	if client.Endpoint == "" {
 		return nil, errEndpointRequired
 	}
 
 	id := client.next.Add(1)
 
-	body, err := json.Marshal(map[string]any{jsonRPCKey: jsonRPCVersion, "id": id, "method": method, "params": params})
+	body, err := json.Marshal(map[string]any{jsonRPCKey: jsonRPCVersion, "id": id,
+		"method": spec.method, "params": spec.params})
 	if err != nil {
 		return nil, err
 	}
@@ -110,11 +121,11 @@ func newRequest(ctx context.Context, client *Client, method string, params any, 
 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Mcp-Method", method)
+	req.Header.Set("Mcp-Method", spec.method)
 	req.Header.Set("Mcp-Protocol-Version", protocolVersion)
 
-	if tool != "" {
-		req.Header.Set("Mcp-Name", tool)
+	if spec.tool != "" {
+		req.Header.Set("Mcp-Name", spec.tool)
 	}
 
 	if client.Token != "" {
@@ -177,7 +188,7 @@ func (c *Client) Discover(ctx context.Context) error {
 	defer cancel()
 
 	params := map[string]any{metaKey: map[string]any{protocolMetaKey: protocolVersion}}
-	_, err := call(requestCtx, c, "server/discover", params, "")
+	_, err := call(requestCtx, c, requestSpec{method: discoverMethod, params: params, tool: ""})
 
 	return err
 }
@@ -196,7 +207,7 @@ func (c *Client) CallTool(ctx context.Context, name string, args map[string]any)
 		metaKey:      map[string]any{protocolMetaKey: protocolVersion},
 	}
 
-	return call(requestCtx, c, "tools/call", params, name)
+	return call(requestCtx, c, requestSpec{method: "tools/call", params: params, tool: name})
 }
 
 type Event struct {
@@ -224,9 +235,13 @@ func (c *Client) Subscribe(ctx context.Context, callbackURL, secret string, args
 		metaKey:      map[string]any{protocolMetaKey: protocolVersion},
 	}
 
-	raw, err := call(requestCtx, c, "events/subscribe", params, "")
+	raw, err := call(requestCtx, c, requestSpec{method: subscribeMethod, params: params, tool: ""})
 	if err == nil {
 		err = json.Unmarshal(raw, &sub)
+	}
+
+	if err == nil && (sub.ID == "" || sub.RefreshBefore.IsZero()) {
+		err = errSubscription
 	}
 
 	return sub, err
@@ -252,22 +267,31 @@ func (c *Client) clearSessionIfCurrent(requestSession string) {
 	c.mu.Unlock()
 }
 
+type WebhookSignature struct {
+	Secret    string
+	WebhookID string
+	Timestamp string
+	Signature string
+	Body      []byte
+	Now       time.Time
+}
+
 // VerifyWebhook validates the Discord MCP v1 signature over id.timestamp.body.
-func VerifyWebhook(secret, webhookID, timestamp, signature string, body []byte, now time.Time) bool {
-	if secret == "" || webhookID == "" {
+func VerifyWebhook(input WebhookSignature) bool {
+	if input.Secret == "" || input.WebhookID == "" {
 		return false
 	}
 
-	seconds, err := strconv.ParseInt(timestamp, 10, 64)
-	if err != nil || seconds < now.Unix()-300 || seconds > now.Unix()+300 {
+	seconds, err := strconv.ParseInt(input.Timestamp, 10, 64)
+	if err != nil || seconds < input.Now.Unix()-300 || seconds > input.Now.Unix()+300 {
 		return false
 	}
 
-	mac := hmac.New(sha256.New, []byte(secret))
-	_, _ = mac.Write([]byte(webhookID + "." + timestamp + "." + string(body)))
+	mac := hmac.New(sha256.New, []byte(input.Secret))
+	_, _ = mac.Write([]byte(input.WebhookID + "." + input.Timestamp + "." + string(input.Body)))
 
 	expected := "v1," + base64.StdEncoding.EncodeToString(mac.Sum(nil))
-	for candidate := range strings.FieldsSeq(signature) {
+	for candidate := range strings.FieldsSeq(input.Signature) {
 		if hmac.Equal([]byte(candidate), []byte(expected)) {
 			return true
 		}

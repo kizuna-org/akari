@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	errArguments     = errors.New("expected a destination and content")
-	errDestination   = errors.New("destination is required")
-	errContent       = errors.New("content is required")
-	errConfiguration = errors.New("discord MCP adapter configuration is incomplete")
+	errArguments     = errors.New("discordmcp: expected a destination and content")
+	errDestination   = errors.New("discordmcp: destination is required")
+	errContent       = errors.New("discordmcp: content is required")
+	errConfiguration = errors.New("discordmcp: adapter configuration is incomplete")
 )
 
 const operationArgumentCount = 2
@@ -111,7 +111,8 @@ func handleWebhook(adapter *Adapter, writer http.ResponseWriter, request *http.R
 	timestamp := request.Header.Get("Webhook-Timestamp")
 	signature := request.Header.Get("Webhook-Signature")
 
-	if !VerifyWebhook(adapter.Secret, id, timestamp, signature, data, now()) {
+	if !VerifyWebhook(WebhookSignature{Secret: adapter.Secret, WebhookID: id, Timestamp: timestamp,
+		Signature: signature, Body: data, Now: now()}) {
 		http.Error(writer, "invalid signature", http.StatusUnauthorized)
 
 		return
@@ -223,7 +224,7 @@ func (a *Adapter) unsubscribe(parent context.Context, args map[string]any) {
 		"delivery":   map[string]string{"mode": "webhook", "url": a.CallbackURL},
 		metaKey:      map[string]any{protocolMetaKey: protocolVersion},
 	}
-	_, _ = call(ctx, a.Client, "events/unsubscribe", params, "")
+	_, _ = call(ctx, a.Client, requestSpec{method: unsubscribeMethod, params: params, tool: ""})
 }
 
 func sleep(ctx context.Context, d time.Duration) bool {
