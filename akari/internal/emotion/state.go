@@ -129,6 +129,8 @@ func Respond(state State, appraisal Appraisal, reactivity, empathy float64) (Sta
 	}
 
 	result := state.Clone()
+	result.Feelings = merge(nil, result.Feelings)
+	result.Readiness = merge(nil, result.Readiness)
 	result.Feelings = merge(result.Feelings, scaled(appraisal.Feelings, reactivity))
 	result.Feelings = merge(result.Feelings, scaled(appraisal.Others, reactivity*empathy))
 	result.Readiness = merge(result.Readiness, scaled(appraisal.Readiness, reactivity))

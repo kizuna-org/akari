@@ -11,6 +11,31 @@ import (
 
 const testSpace = "test"
 
+func TestRespondNormalizesRestoredDuplicates(t *testing.T) {
+	t.Parallel()
+
+	point := meaning.Point{Text: "recover", Space: testSpace, Vector: []float64{1}}
+	state := State{
+		Feelings:  []Feeling{{Meaning: point, Strength: 0.8}, {Meaning: point, Strength: 0.4}},
+		Readiness: []Feeling{{Meaning: point, Strength: 0.8}, {Meaning: point, Strength: 0.4}},
+		Mood:      Mood{}, At: time.Unix(100, 0),
+	}
+	appraisal := Appraisal{
+		Feelings: []Feeling{{Meaning: point, Strength: 0.2}},
+		Others:   nil, Readiness: []Feeling{{Meaning: point, Strength: 0.2}}, MoodDelta: Mood{},
+	}
+
+	result, err := Respond(state, appraisal, 1, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(result.Feelings) != 1 || result.Feelings[0].Strength != 1 ||
+		len(result.Readiness) != 1 || result.Readiness[0].Strength != 1 {
+		t.Fatalf("normalized response = %+v", result)
+	}
+}
+
 func TestMixedEmotionsAndContinuity(t *testing.T) {
 	t.Parallel()
 
