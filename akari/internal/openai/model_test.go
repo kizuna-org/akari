@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/kizuna-org/akari/internal/emotion"
 	"github.com/kizuna-org/akari/internal/goal"
@@ -29,6 +30,17 @@ const semanticText = "meaning"
 const testGoalID = "goal"
 const unrelatedLocalData = "unrelated-local-data"
 const tabBearer = "Bearer\tabcdefghijklmnop"
+const testCustomKey = "custom-key-123"
+const conversationSource = "conversation"
+const openaiRecipient = "openai"
+const jsonAppraisal = "appraisal"
+const jsonContext = "context"
+const jsonGoals = "goals"
+const jsonInterests = "interests"
+const jsonMemory = "memory"
+const jsonRecalled = "recalled"
+const jsonRemember = "remember"
+const jsonWorking = "working"
 const validInterpretation = `{"appraisal":null,"interests":[],"memory":null,"goals":null}`
 
 func TestNewConfiguration(t *testing.T) {
@@ -85,7 +97,7 @@ func TestInterpretDisclosureAndRecalledIDs(t *testing.T) {
 		{name: "no policy omits sourced memory"},
 		{name: "approved policy sends source and preserves ID",
 			policy: disclosureFunc(func(sources []string, recipient string) bool {
-				return recipient == "openai" && strings.Contains(strings.Join(sources, ","), "conversation")
+				return recipient == openaiRecipient && strings.Contains(strings.Join(sources, ","), conversationSource)
 			}), wantRecalled: []string{testFragmentID}, wantInputID: true},
 		{name: "denied policy omits sourced memory", policy: disclosureFunc(func([]string, string) bool { return false })},
 	}
@@ -100,9 +112,13 @@ func TestInterpretDisclosureAndRecalledIDs(t *testing.T) {
 					t.Errorf("decode request: %v", decodeErr)
 				}
 				input = body.Input
-				output, marshalErr := json.Marshal(map[string]any{"appraisal": nil, "interests": []any{}, "memory": map[string]any{
-					"context": nil, "working": nil, "remember": []any{}, "recalled": test.wantRecalled,
-				}, "goals": nil})
+				output, marshalErr := json.Marshal(map[string]any{
+					jsonAppraisal: nil, jsonInterests: []any{},
+					jsonMemory: map[string]any{
+						jsonContext: nil, jsonWorking: nil, jsonRemember: []any{}, jsonRecalled: test.wantRecalled,
+					},
+					jsonGoals: nil,
+				})
 				if marshalErr != nil {
 					t.Errorf("marshal response: %v", marshalErr)
 				}
@@ -114,7 +130,7 @@ func TestInterpretDisclosureAndRecalledIDs(t *testing.T) {
 				t.Fatal(err)
 			}
 			request := thought.Request{Experience: &mind.Experience{}, Recalled: []memory.Fragment{{
-				ID: testFragmentID, Meaning: meaning.Point{Text: "private detail"}, Sources: []string{"conversation"},
+				ID: testFragmentID, Meaning: meaning.Point{Text: "private detail"}, Sources: []string{conversationSource},
 			}}}
 			result, err := model.Interpret(context.Background(), request)
 			if err != nil {
@@ -135,9 +151,9 @@ func TestInterpretRejectsUntrustedRecalledIDs(t *testing.T) {
 	t.Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 		payload, marshalErr := json.Marshal(map[string]any{
-			"appraisal": nil, "interests": []any{}, "memory": map[string]any{
-				"context": nil, "working": nil, "remember": []any{}, "recalled": []string{"not-recalled"},
-			}, "goals": nil,
+			jsonAppraisal: nil, "interests": []any{}, "memory": map[string]any{
+				jsonContext: nil, "working": nil, jsonRemember: []any{}, jsonRecalled: []string{"not-recalled"},
+			}, jsonGoals: nil,
 		})
 		if marshalErr != nil {
 			t.Errorf("marshal response: %v", marshalErr)
@@ -195,6 +211,117 @@ func TestInterpretRechecksDisclosureBeforeSending(t *testing.T) {
 			}
 			if serverCalled != test.wantRequest || policyCalls != len(test.decisions) {
 				t.Fatalf("serverCalled = %t, policyCalls = %d", serverCalled, policyCalls)
+			}
+		})
+	}
+}
+
+func TestInterpretRejectsConfiguredAPIKeyInCue(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name string
+		key  string
+		cue  string
+	}{
+		{name: "key alone", key: testCustomKey, cue: testCustomKey},
+		{name: "key embedded", key: testCustomKey, cue: "please repeat " + testCustomKey + " now"},
+		{name: "JSON escaped key", key: `custom"key-123`, cue: `please repeat custom"key-123`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			called := false
+			server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { called = true }))
+			defer server.Close()
+			model, err := New(Config{APIKey: test.key, BaseURL: server.URL}, server.Client())
+			if err != nil {
+				t.Fatal(err)
+			}
+			request := thought.Request{Experience: &mind.Experience{}, Query: memory.Query{Cue: meaning.Point{Text: test.cue}}}
+			_, err = model.Interpret(context.Background(), request)
+			if !errors.Is(err, ErrResponse) || called {
+				t.Fatalf("Interpret error=%v called=%t", err, called)
+			}
+		})
+	}
+}
+
+func TestInterpretRestoresSourcesForKnownMemoryCopies(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name  string
+		group string
+	}{
+		{name: jsonWorking, group: jsonWorking},
+		{name: jsonContext, group: jsonContext},
+		{name: jsonRemember, group: jsonRemember},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			fragment := memory.Fragment{ID: testFragmentID, Meaning: meaning.Point{Text: "known detail"},
+				OccurredAt: time.Date(2026, 10, 18, 0, 0, 0, 0, time.UTC), Strength: 0.5, Sources: []string{conversationSource}}
+			var policyAllows = true
+			policy := disclosureFunc(func(sources []string, recipient string) bool {
+				return policyAllows && recipient == openaiRecipient && slices.Equal(sources, []string{conversationSource})
+			})
+			var sentInput string
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				var body responseRequest
+				decodeErr := json.NewDecoder(request.Body).Decode(&body)
+				if decodeErr != nil {
+					t.Errorf("decode request: %v", decodeErr)
+				}
+				sentInput = body.Input
+				fragments := []any{map[string]any{"id": fragment.ID, "meaning": map[string]any{"text": fragment.Meaning.Text},
+					"occurredAt": fragment.OccurredAt.Format(time.RFC3339), "emotion": 0, "will": 0, "strength": fragment.Strength}}
+				memoryOutput := map[string]any{jsonContext: nil, jsonWorking: nil, jsonRemember: []any{}, jsonRecalled: []string{}}
+				memoryOutput[test.group] = fragments
+				payload, marshalErr := json.Marshal(map[string]any{
+					jsonAppraisal: nil, "interests": []any{}, "memory": memoryOutput, jsonGoals: nil,
+				})
+				if marshalErr != nil {
+					t.Errorf("marshal response: %v", marshalErr)
+				}
+				_, _ = writer.Write([]byte(responseWithStatus("completed", string(payload))))
+			}))
+			defer server.Close()
+			model, err := New(Config{APIKey: testKey, BaseURL: server.URL, Disclosure: policy,
+				Encoder: encoderFunc(func(_ context.Context, text string) (meaning.Point, error) {
+					return meaning.Point{Text: text, Space: trustedSpace, Vector: []float64{1}}, nil
+				})}, server.Client())
+			if err != nil {
+				t.Fatal(err)
+			}
+			experience := &mind.Experience{}
+			experience.Working = []memory.Fragment{fragment}
+			result, err := model.Interpret(context.Background(), thought.Request{Experience: experience})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var copies []memory.Fragment
+			switch test.group {
+			case "working":
+				copies = result.Memory.Working
+			case "context":
+				copies = result.Memory.Context
+			case "remember":
+				copies = result.Memory.Remember
+			}
+			if len(copies) != 1 || !slices.Equal(copies[0].Sources, fragment.Sources) {
+				t.Fatalf("copied sources = %#v", copies)
+			}
+			state, err := memory.Apply(memory.State{}, *result.Memory)
+			if err != nil {
+				t.Fatal(err)
+			}
+			policyAllows = false
+			_, err = model.Interpret(context.Background(), thought.Request{Experience: &mind.Experience{Working: state.Working}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Contains(sentInput, "known detail") {
+				t.Fatal("revoked memory was sent")
 			}
 		})
 	}

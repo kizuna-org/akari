@@ -361,7 +361,7 @@ func (model *Model) Interpret(ctx context.Context, request thought.Request) (tho
 	if err != nil {
 		return thought.Interpretation{}, ErrResponse
 	}
-	if credentialMarker.Match(input) || containsCredentialString(input) {
+	if credentialMarker.Match(input) || containsCredentialString(input, model.key) {
 		return thought.Interpretation{}, ErrResponse
 	}
 	// Recheck immediately before transmission because sharing policy can change
@@ -422,6 +422,7 @@ func (model *Model) Interpret(ctx context.Context, request thought.Request) (tho
 	if !validRecalledIDs(interpretation.Memory, allowedIDs) || model.encodeInterpretation(ctx, &interpretation) != nil {
 		return thought.Interpretation{}, ErrResponse
 	}
+	restoreSources(interpretation.Memory, request.Experience.Context, request.Experience.Working, request.Recalled)
 
 	return interpretation, nil
 }
@@ -532,6 +533,27 @@ func validRecalledIDs(change *memory.Change, allowed map[string]struct{}) bool {
 	return true
 }
 
+func restoreSources(change *memory.Change, groups ...[]memory.Fragment) {
+	if change == nil {
+		return
+	}
+	sourcesByID := make(map[string][]string)
+	for _, group := range groups {
+		for _, fragment := range group {
+			if len(fragment.Sources) > 0 {
+				sourcesByID[fragment.ID] = slices.Clone(fragment.Sources)
+			}
+		}
+	}
+	for _, output := range [][]memory.Fragment{change.Context, change.Working, change.Remember} {
+		for index := range output {
+			if sources, exists := sourcesByID[output[index].ID]; exists {
+				output[index].Sources = slices.Clone(sources)
+			}
+		}
+	}
+}
+
 //nolint:cyclop,gocognit // It visits each semantic point-bearing field once by domain group.
 func (model *Model) encodeInterpretation(ctx context.Context, interpretation *thought.Interpretation) error {
 	if interpretation.Appraisal != nil {
@@ -616,7 +638,7 @@ func (encoder encoderFunc) Encode(ctx context.Context, text string) (meaning.Poi
 	return encoder(ctx, text)
 }
 
-func containsCredentialString(encoded []byte) bool {
+func containsCredentialString(encoded []byte, configuredKeys ...string) bool {
 	decoder := json.NewDecoder(strings.NewReader(string(encoded)))
 	decoder.UseNumber()
 	var input any
@@ -624,25 +646,38 @@ func containsCredentialString(encoded []byte) bool {
 		return true
 	}
 
-	return scanCredentialValue(input)
+	return scanCredentialValue(input, configuredKeys...)
 }
 
-func scanCredentialValue(value any) bool {
+//nolint:cyclop // The recursive walk checks both values and object keys.
+func scanCredentialValue(value any, configuredKeys ...string) bool {
 	switch item := value.(type) {
 	case string:
-		return credentialMarker.MatchString(item)
+		return credentialMarker.MatchString(item) || containsConfiguredKey(item, configuredKeys)
 	case []any:
-		if slices.ContainsFunc(item, scanCredentialValue) {
-			return true
+		for _, nested := range item {
+			if scanCredentialValue(nested, configuredKeys...) {
+				return true
+			}
 		}
 	case map[string]any:
 		for key, nested := range item {
-			if credentialMarker.MatchString(key) {
+			if credentialMarker.MatchString(key) || containsConfiguredKey(key, configuredKeys) {
 				return true
 			}
-			if scanCredentialValue(nested) {
+			if scanCredentialValue(nested, configuredKeys...) {
 				return true
 			}
+		}
+	}
+
+	return false
+}
+
+func containsConfiguredKey(value string, configuredKeys []string) bool {
+	for _, key := range configuredKeys {
+		if key != "" && strings.Contains(value, key) {
+			return true
 		}
 	}
 
