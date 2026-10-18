@@ -54,6 +54,7 @@ type task struct { //nolint:containedctx // Lifecycle ownership, not request con
 	delivered bool
 	adopting  bool
 	completed chan struct{}
+	retired   chan struct{}
 }
 
 // Supervisor bounds running AND unresolved work so completed results cannot grow without limit.
@@ -102,6 +103,7 @@ func (supervisor *Supervisor) Start(identity string, runner Runner) (Token, erro
 		ctx: ctx, cancel: cancel, token: token,
 		proposal: mind.Proposal{ID: "", Reads: nil, Writes: nil}, err: nil, delivered: false, adopting: false,
 		completed: make(chan struct{}),
+		retired:   make(chan struct{}),
 	}
 	supervisor.tasks[identity] = work
 	snapshot := supervisor.workspace.Snapshot()
@@ -277,6 +279,7 @@ func (supervisor *Supervisor) take(token Token) (Result, error) {
 		return Result{}, ErrToken
 	}
 	work.delivered = true
+	close(work.retired)
 
 	return Result{Token: token, Proposal: work.proposal.Clone(), Err: work.err}, nil
 }
@@ -316,6 +319,7 @@ func (supervisor *Supervisor) run(work *task, snapshot mind.Snapshot, runner Run
 
 	select {
 	case supervisor.ready <- work.token:
+	case <-work.retired:
 	case <-supervisor.ctx.Done():
 	}
 }

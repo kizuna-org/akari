@@ -165,7 +165,9 @@ func TestCompletionOutcomes(t *testing.T) {
 	}
 }
 
-//nolint:cyclop,exhaustruct,nlreturn,noinlineerr,wsl,wsl_v5 // Exercise each token-routing outcome in a shared fixture.
+// Exercise each token-routing outcome in a shared fixture.
+//
+//nolint:cyclop,exhaustruct,gocognit,nlreturn,noinlineerr,wsl,wsl_v5
 func TestWaitRoutesExactCompletionToken(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
@@ -210,6 +212,21 @@ func TestWaitRoutesExactCompletionToken(t *testing.T) {
 				assertError(t, err, context.Canceled)
 				supervisor.Cancel("own")
 				close(blocked)
+				result, err := supervisor.Wait(t.Context(), own)
+				if err != nil || result.Token != own {
+					t.Fatalf("Wait canceled generation = %+v, %v", result, err)
+				}
+				if err := supervisor.Discard(own); err != nil {
+					t.Fatal(err)
+				}
+				result = next(t, supervisor)
+				if result.Token != other {
+					t.Fatalf("next token = %+v, want unrelated %+v", result.Token, other)
+				}
+				if err := supervisor.Discard(other); err != nil {
+					t.Fatal(err)
+				}
+
 				return
 			}
 			close(blocked)
@@ -228,6 +245,44 @@ func TestWaitRoutesExactCompletionToken(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestWaitAcceptRetiresCompletionPublishersWithoutNext(t *testing.T) {
+	t.Parallel()
+
+	supervisor, _ := newSupervisor(t, 1)
+	for range 20 {
+		token, err := supervisor.Start("reused", func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
+			return mind.Proposal{ID: "", Reads: map[string]uint64{"a": snapshot.Items["a"].Version},
+				Writes: map[string]string{"a": "a"}}, nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		result, err := supervisor.Wait(t.Context(), token)
+		if err != nil || result.Token != token {
+			t.Fatalf("Wait = %+v, %v", result, err)
+		}
+
+		_, err = supervisor.Accept(token)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	workersDone := make(chan struct{})
+
+	go func() {
+		supervisor.workers.Wait()
+		close(workersDone)
+	}()
+
+	select {
+	case <-workersDone:
+	case <-time.After(testTimeout):
+		t.Fatal("resolved completion publishers remained blocked without a Next consumer")
 	}
 }
 
