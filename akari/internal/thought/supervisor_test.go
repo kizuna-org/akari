@@ -194,7 +194,7 @@ func TestReservedCompletionCannotBeClaimedByNext(t *testing.T) {
 
 // Exercise each token-routing outcome in a shared fixture.
 //
-//nolint:cyclop,exhaustruct,gocognit,nlreturn,noinlineerr,wsl,wsl_v5 // Table shares a token-routing fixture.
+//nolint:cyclop,exhaustruct,gocognit,nlreturn,noinlineerr,wsl,wsl_v5
 func TestWaitRoutesExactCompletionToken(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
