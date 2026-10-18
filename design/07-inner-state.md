@@ -114,11 +114,16 @@ Gatewayの読み取り専用Sessionと組み合わせ、予測を実経験や長
 外部LLMの初期接続先はOpenAI Responses API、モデルは`gpt-6-luna`です。`internal/openai`が
 プロバイダー中立な`thought.Model`を実装し、Responses APIへ`store=false`で送ります。
 設定はモデルID、APIキー、APIベースURLを受け取り、既定モデルは`gpt-6-luna`です。
-リクエストには現在の発話、内面状態、選択済み想起だけを含め、共有文脈全体・管理情報・人格設定・
+リクエストには現在の発話、意味座標を除く内面状態、選択済み想起だけを含め、共有文脈全体・管理情報・人格設定・
 未選択の記憶・秘密合意を送りません。APIキーはAuthorizationヘッダーだけに置き、ログや本文へ含めません。
 既知形式の資格情報らしい入力は送信前に拒否します。任意形式の秘密や生成文への混入を保証して検出する
 機密出所追跡・出力検査はSAFE-01の後続です。APIキー未設定のホストはこのアダプターを構成せず起動できます。
-OpenAI APIデータは既定で学習に使われず、不正利用監視ログは最大30日保持されます。
+Responses APIには厳格な出力JSON Schemaを送り、`appraisal`・`interests`・`memory`・`goals`の全項目と各ネスト型を固定します。
+goalの`desires`・`adopt`・`claims`はキー付き配列で受け、ローカルでドメインのmapへ変換します。`completed`以外の応答を採用せず、既定HTTPクライアントの期限は45秒です。
+APIベースURLはHTTPSを要求し、平文HTTPはloopbackに限ります。出所のある想起は現在の共有ポリシーが`openai`への開示を許す場合だけ送り、
+ポリシーがない場合は想起を省きます。応答中の`memory.recalled`は送信した想起IDだけを受理し、記憶アクセス記録へそのIDを維持します。
+モデルの意味座標は信頼せず、返された意味文を設定済み`meaning.Encoder`でローカル符号化します。encoderが未設定・失敗・無効な座標を返す場合は応答全体を拒否します。
+OpenAI APIデータは既定で学習に使われません。標準の不正利用監視ログは最大30日保持されますが、法律上の義務やサービス保護が必要な場合は例外があります。
 決定時点の価格は入力100万tokensあたり$0.10、出力100万tokensあたり$0.50です。
 詳細は[モデル一覧](https://developers.openai.com/api/docs/models)と[APIデータ利用方針](https://developers.openai.com/api/docs/guides/your-data)を参照してください。
 会話媒体からモデルを呼ぶホスト配線はRT-01との統合後に行います。実API・実資格情報・有料サービスは使用せず、
