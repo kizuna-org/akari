@@ -111,6 +111,16 @@ func (session *Session) Next(ctx context.Context) (thought.Result, error) {
 	return session.supervisor.Next(ctx)
 }
 
+func (session *Session) Discard(ctx context.Context, token thought.Token) error {
+	_, end, err := session.begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer end()
+
+	return session.supervisor.Discard(token)
+}
+
 func (session *Session) Cancel(identity string) { session.supervisor.Cancel(identity) }
 
 func (session *Session) Accept(ctx context.Context, token thought.Token, intents []continuity.Intent) (uint64, error) {
