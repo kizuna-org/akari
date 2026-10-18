@@ -394,7 +394,7 @@
       ],
       "id": "DEV-MCP",
       "title": "Akari MCPとREST API",
-      "description": "タスクCRUDとGit文書の8ツールをStreamable HTTPで公開し、実クライアントで検証する。",
+      "description": "タスクCRUDとGit文書の9ツールをStreamable HTTPで公開し、実クライアントで検証する。",
       "status": "done"
     }
   ]

@@ -228,6 +228,7 @@
               <div class="task-actions">
                 <button id="tasks-refresh" class="quiet-button" type="button">↻ 更新</button>
                 <button id="tasks-export" class="quiet-button" type="button">JSON出力</button>
+                <button id="decision-new" class="quiet-button" type="button">＋ 判断待ちを追加</button>
                 <button id="task-new" class="primary" type="button">＋ タスクを追加</button>
               </div>
             </div>
@@ -258,7 +259,7 @@
               </div>
               <label for="task-notes">進捗・判断待ちの理由・メモ</label><textarea id="task-notes" rows="4" maxlength="8000" placeholder="次にすること、決まった内容、PR番号など"></textarea>
               <label for="task-references">関連する仕様・設計（複数選択可）</label><select id="task-references" multiple size="5"></select>
-              <p class="hint">初期タスクは確定仕様と未実装項目を整理したものです。仕様の原文は関連資料で確認してください。</p>
+              <p class="hint">判断待ちは相談事項の記録です。ここで追加・完了にしても、確定仕様の変更や承認にはなりません。</p>
               <p id="task-form-error" role="alert" hidden></p>
               <div class="task-form-actions"><button id="task-delete" type="button" class="quiet-button">タスクを削除</button><button id="task-save" type="submit" class="primary">保存する</button></div>
             </form>

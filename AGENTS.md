@@ -1,5 +1,10 @@
 # Development Guidelines
 
+## Development Task Tracking
+
+- Use the Akari MCP task tools (`tasks_list`, `tasks_get`, `tasks_update`) as the source of truth when checking or updating development tasks. Do not infer the current task list from GitHub issues, local files, or the console when MCP is available.
+- Before starting implementation from a task, read its details and referenced docs/design through Akari MCP and confirm prerequisites/status. Keep decision or blocked tasks unassigned until their dependency is resolved.
+
 ## Priority Rules
 
 ### Workspace Setup

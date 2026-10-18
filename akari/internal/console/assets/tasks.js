@@ -103,16 +103,16 @@
     node.append(label);
     return node;
   }
-  function edit(task) {
+  function edit(task, initialStatus = "todo", initialCategory = "runtime") {
     editing = task?.id || null;
     formRevision = task?.version || board.revision;
     $("task-form").reset();
     $("task-dialog-title").textContent = editing ? "タスクを編集" : "タスクを追加";
     $("task-id").textContent = editing || "保存時にIDを発行します";
     for (const field of ["title", "description", "notes"]) $(`task-${field}`).value = task?.[field] || "";
-    $("task-status").value = task?.status || "todo";
+    $("task-status").value = task?.status || initialStatus;
     $("task-priority").value = task?.priority || "medium";
-    $("task-category").value = task?.category || "runtime";
+    $("task-category").value = task?.category || initialCategory;
     $("task-delete").hidden = !editing;
     $("task-references").replaceChildren();
     const references = new Set(task?.references || []);
@@ -160,6 +160,7 @@
     } catch (err) { announce(err.message, true, true); }
   });
   $("task-new").addEventListener("click", () => edit(null));
+  $("decision-new").addEventListener("click", () => edit(null, "decision", "decision"));
   $("task-cancel").addEventListener("click", () => $("task-dialog").close());
   $("task-dialog").addEventListener("cancel", (event) => { if (busy) event.preventDefault(); });
   for (const id of ["task-search", "task-filter-status", "task-filter-priority", "task-filter-category"]) $(id).addEventListener("input", render);
