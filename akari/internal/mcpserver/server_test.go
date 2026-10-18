@@ -12,6 +12,11 @@ import (
 	"github.com/kizuna-org/akari/internal/docrepo"
 )
 
+const (
+	taskStatusKey = "status"
+	taskTitleKey  = "title"
+)
+
 func TestMCPClientControlsTheSharedWorkspace(t *testing.T) {
 	t.Parallel()
 
@@ -47,15 +52,33 @@ func TestMCPClientControlsTheSharedWorkspace(t *testing.T) {
 
 			tools, err := session.ListTools(t.Context(), nil)
 			must(t, err)
-			check(t, len(tools.Tools) == 8, "MCP tool discovery failed")
+			check(t, len(tools.Tools) == 9, "MCP tool discovery failed")
 
 			board := call[development.Board](t, session, "tasks_list", map[string]any{})
 			check(t, len(board.Tasks) > 20, "seed tasks not available over MCP")
-			filtered := call[development.Board](t, session, "tasks_list", map[string]any{"status": "decision",
+			filtered := call[development.Board](t, session, "tasks_list", map[string]any{taskStatusKey: decisionStatus,
 				"priority": "high"})
 			check(t, len(filtered.Tasks) > 0 && len(filtered.Tasks) < len(board.Tasks), "task filters did not apply")
+			decisionBoard := call[development.Board](t, session, "decisions_create", map[string]any{
+				taskTitleKey: "MCP judgment pending", "description": "Needs user input",
+				"references": []string{"design/README.md"},
+			})
+			decision := findTitle(t, decisionBoard, "MCP judgment pending")
+			check(t, decision.Status == decisionStatus && decision.Category == decisionStatus && decision.Version == 1,
+				"decision tool did not create a judgment-pending task")
 
-			created := call[development.Board](t, session, "tasks_create", map[string]any{"title": "MCP controlled task"})
+			judgments := call[development.Board](t, session, "tasks_list", map[string]any{taskStatusKey: decisionStatus})
+			check(t, len(judgments.Tasks) > len(filtered.Tasks),
+				"judgment-pending task was not discoverable through the status filter")
+
+			directDecisionBoard := call[development.Board](t, session, "tasks_create", map[string]any{
+				taskTitleKey: "MCP status decision", taskStatusKey: decisionStatus,
+			})
+			check(t, findTitle(t, directDecisionBoard, "MCP status decision").Status == decisionStatus,
+				"tasks_create did not accept decision status")
+			failure(t, session, "decisions_create", map[string]any{taskTitleKey: ""})
+
+			created := call[development.Board](t, session, "tasks_create", map[string]any{taskTitleKey: "MCP controlled task"})
 			task := findTitle(t, created, "MCP controlled task")
 			check(t, task.Version == 1 && task.Status == "todo", "task defaults not applied")
 			task.Status = "in_progress"

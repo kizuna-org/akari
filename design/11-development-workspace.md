@@ -10,7 +10,7 @@ Akari自身の目標・内面・outboxとは別の開発者用データです。
 - 未着手 / 進行中 / 保留・ブロック / 判断待ち / 完了のボードと集計、JSON出力。
 - コンソールとMCPが同じDBを読み書きし、再起動・プロセス強制終了後も保存済みの更新を復元。
 - Markdownの閲覧・追加・編集。保存時にローカルGitコミットを作成し、以前の本文を履歴に保持。
-- MCPのツール一覧取得と、タスク・文書を操作する8ツール。
+- MCPのツール一覧取得と、タスク・文書を操作する9ツール。判断待ちを専用ツールからも追加できる。
 
 初期タスクは確定仕様と未実装項目を整理した雛形で、DBの初期化時だけ登録します。
 その後はコンソールやAPIの編集が正本になり、再起動・再ビルドで雛形に戻しません。
@@ -135,7 +135,8 @@ Codexを起動する環境の`AKARI_MCP_TOKEN`へ管理用コードを設定し�
 |---|---|
 | `tasks_list` | 一覧と版の取得。status / priorityで絞り込み |
 | `tasks_get` | idでタスクを取得 |
-| `tasks_create` | タイトルを指定して追加。状態todo・優先度medium・分類runtimeが既定 |
+| `tasks_create` | タイトルを指定して追加。状態todo・優先度medium・分類runtimeが既定。`status=decision`で判断待ちも記録可能 |
+| `decisions_create` | 判断待ちを追加。状態decision・分類decisionが既定。相談事項の記録であり、仕様を承認・変更しない |
 | `tasks_update` | 取得したTaskのversionを残して編集し、taskとして送る |
 | `tasks_delete` | idとexpectedVersionで削除 |
 | `documents_list` | `revision`と`documents`を返す。文書が0件でもGit HEADを取得可能 |
@@ -164,7 +165,7 @@ Akari自身のChannelによる並列思考と行為のGatewayは、開発タス�
 ## 検証
 
 SQLiteの保存復元・不正schema・競合・不正入力、Git履歴・競合・パス制限をテストします。
-公式MCPクライアントで初期化・8ツールの発見・CRUD・Git保存を実際のHTTP通信で確認します。
+公式MCPクライアントで初期化・9ツールの発見・タスクCRUD・判断待ち追加・Git保存を実際のHTTP通信で確認します。
 ブラウザではコンソールとMCPの変更共有、下書き保持、JSON出力、Markdown編集、モバイル、
 SIGKILL後の復元、認証切れ後の下書き復帰、保存中の閉じる操作の抑止、空の文書一覧からの追加、
 ログアウトと外部リクエストなしを検証します。

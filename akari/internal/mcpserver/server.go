@@ -23,7 +23,16 @@ type identityInput struct {
 type createInput struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description,omitempty"`
-	Status      string   `json:"status,omitempty"`
+	Status      string   `json:"status,omitempty"      jsonschema:"Optional status; use decision for judgment pending"`
+	Priority    string   `json:"priority,omitempty"`
+	Category    string   `json:"category,omitempty"`
+	Notes       string   `json:"notes,omitempty"`
+	References  []string `json:"references,omitempty"`
+}
+
+type decisionCreateInput struct {
+	Title       string   `json:"title"`
+	Description string   `json:"description,omitempty"`
 	Priority    string   `json:"priority,omitempty"`
 	Category    string   `json:"category,omitempty"`
 	Notes       string   `json:"notes,omitempty"`
@@ -46,6 +55,8 @@ type documentInput struct {
 type writeInput struct {
 	Document docrepo.Document `json:"document" jsonschema:"Markdown with the repository revision read before editing"`
 }
+
+const decisionStatus = "decision"
 
 func New(tasks *development.Store, documents *docrepo.Repository) http.Handler {
 	implementation := new(mcp.Implementation)
@@ -124,25 +135,21 @@ func registerTaskReaders(server *mcp.Server, store *development.Store) {
 func registerTaskWriters(server *mcp.Server, store *development.Store) {
 	mcp.AddTool(server, tool("tasks_create",
 		"Create a developer-owned task. This records work; it does not start a worker or "+
-			"approve a specification.", false),
+			"approve a specification. Set status to decision to record a judgment-waiting item.", false),
 		func(ctx context.Context, _ *mcp.CallToolRequest, input createInput) (*mcp.CallToolResult, development.Board, error) {
-			if input.Status == "" {
-				input.Status = "todo"
-			}
+			board, err := createTask(ctx, store, input.Title, input.Description, input.Status, input.Priority,
+				input.Category, input.Notes, input.References, "todo", "runtime")
 
-			if input.Priority == "" {
-				input.Priority = "medium"
-			}
-
-			if input.Category == "" {
-				input.Category = "runtime"
-			}
-
-			task := development.Task{ID: "", Version: 0, Title: input.Title, Description: input.Description,
-				Status: input.Status, Priority: input.Priority, Category: input.Category, Notes: input.Notes,
-				References: input.References}
-			board, err := store.Change(ctx, development.Mutation{Operation: development.Create, Task: task,
-				ID: "", ExpectedRevision: 0, ExpectedVersion: 0})
+			return nil, board, err
+		})
+	mcp.AddTool(server, tool("decisions_create",
+		"Record a developer-owned item needing judgment. Creates status=decision and records the question; "+
+			"it does not approve or change a confirmed specification.", false),
+		func(ctx context.Context, _ *mcp.CallToolRequest, input decisionCreateInput) (
+			*mcp.CallToolResult, development.Board, error,
+		) {
+			board, err := createTask(ctx, store, input.Title, input.Description, decisionStatus, input.Priority,
+				input.Category, input.Notes, input.References, "decision", "decision")
 
 			return nil, board, err
 		})
@@ -166,6 +173,28 @@ func registerTaskWriters(server *mcp.Server, store *development.Store) {
 
 			return nil, board, err
 		})
+}
+
+func createTask(ctx context.Context, store *development.Store, title, description, status, priority, category,
+	notes string, references []string, defaultStatus, defaultCategory string,
+) (development.Board, error) {
+	if status == "" {
+		status = defaultStatus
+	}
+
+	if priority == "" {
+		priority = "medium"
+	}
+
+	if category == "" {
+		category = defaultCategory
+	}
+
+	task := development.Task{ID: "", Version: 0, Title: title, Description: description, Status: status,
+		Priority: priority, Category: category, Notes: notes, References: references}
+
+	return store.Change(ctx, development.Mutation{Operation: development.Create, ID: "", Task: task,
+		ExpectedRevision: 0, ExpectedVersion: 0})
 }
 
 func registerDocuments(server *mcp.Server, repository *docrepo.Repository) {

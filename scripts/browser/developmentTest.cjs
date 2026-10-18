@@ -84,6 +84,18 @@ const assert = require("node:assert/strict");
     await page.locator("#task-filter-status").selectOption("active");
     await page.screenshot({ path: join(artifacts, "development-tasks.png"), fullPage: true });
 
+    await page.locator("#decision-new").click();
+    assert.equal(await page.locator("#task-status").inputValue(), "decision");
+    await page.locator("#task-title").fill("Console judgment pending");
+    await page.locator("#task-description").fill("A decision can be recorded directly from the console.");
+    await page.locator("#task-save").click();
+    await page.locator("#task-dialog").waitFor({ state: "hidden" });
+    const decisionBoard = await mcp("tasks_list", { status: "decision" });
+    assert.ok(decisionBoard.tasks.some((task) => task.title === "Console judgment pending"));
+    await page.locator("#task-filter-status").selectOption("decision");
+    assert.ok(await page.locator(".task-column-decision .task-card").filter({ hasText: "Console judgment pending" }).count());
+    await page.locator("#task-filter-status").selectOption("active");
+
     await page.locator("#task-new").click();
     const title = '<img src="https://invalid.example/task"> API task';
     await page.locator("#task-title").fill(title);
