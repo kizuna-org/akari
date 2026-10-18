@@ -30,6 +30,7 @@ const (
 	testUnsubscribe    = "events/unsubscribe"
 	oldTestSession     = "old-session"
 	newTestSession     = "new-session"
+	testDestination    = "discord:channel-1"
 )
 
 func newClient(endpoint string) *Client {
@@ -263,7 +264,7 @@ func TestGatewayReportsMCPToolFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	destination := "discord:channel-1"
+	destination := testDestination
 	session := gateway.Open(false, action.Scope{AllowedDestinations: []string{destination},
 		ReadyRecipients: []string{destination}})
 	pending, err := session.Plan(context.Background(), sendToolName,
@@ -361,6 +362,9 @@ func TestClientDelayedSuccessDoesNotOverwriteRecoveredSession(t *testing.T) {
 
 	firstStarted := make(chan struct{})
 	releaseFirst := make(chan struct{})
+	var releaseFirstOnce sync.Once
+	releaseBlockedFirst := func() { releaseFirstOnce.Do(func() { close(releaseFirst) }) }
+	defer releaseBlockedFirst()
 	var toolRequests atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch request.Header.Get("Mcp-Method") {
@@ -402,7 +406,7 @@ func TestClientDelayedSuccessDoesNotOverwriteRecoveredSession(t *testing.T) {
 	if client.session != newTestSession {
 		t.Fatalf("recovered session %q, want %q", client.session, newTestSession)
 	}
-	close(releaseFirst)
+	releaseBlockedFirst()
 	err = <-firstDone
 	if err != nil {
 		t.Fatal(err)
@@ -448,6 +452,49 @@ func TestDiscoveryAndSubscriptionRequestsHaveDeadlines(t *testing.T) {
 				t.Fatalf("request error %v, want deadline", err)
 			}
 		})
+	}
+}
+
+//nolint:wsl,wsl_v5 // Keep the timeout, unknown outcome, and no-replay assertions together.
+func TestGatewayToolTimeoutIsUnknownAndDoesNotReplaySend(t *testing.T) {
+	t.Parallel()
+
+	var toolRequests atomic.Int32
+	releaseServer := make(chan struct{})
+	var releaseServerOnce sync.Once
+	defer releaseServerOnce.Do(func() { close(releaseServer) })
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Header.Get("Mcp-Method") == testToolCallMethod {
+			toolRequests.Add(1)
+			<-releaseServer
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client := newClient(server.URL)
+	client.Timeout = 10 * time.Millisecond
+	adapter := newAdapter(client, "", "", nil, nil)
+	gateway, err := action.New(adapter.Tools(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	destination := testDestination
+	session := gateway.Open(false, action.Scope{AllowedDestinations: []string{destination},
+		ReadyRecipients: []string{destination}})
+	pending, err := session.Plan(context.Background(), sendToolName,
+		[]byte(`{"channel_id":"channel-1","content":"hello"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	observed, err := pending.Execute(context.Background())
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("execution error %v, want deadline", err)
+	}
+	if observed.Status != action.Unknown {
+		t.Fatalf("status %s, want unknown", observed.Status)
+	}
+	if got := toolRequests.Load(); got != 1 {
+		t.Fatalf("tool requests %d, want one request without replay", got)
 	}
 }
 
@@ -586,7 +633,7 @@ func TestGatewayCapabilities(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	allowedDestinations := []string{"discord:channel-1", "discord:message-1"}
+	allowedDestinations := []string{testDestination, "discord:message-1"}
 	session := gateway.Open(false, action.Scope{
 		AllowedDestinations: allowedDestinations,
 		ReadyRecipients:     allowedDestinations,

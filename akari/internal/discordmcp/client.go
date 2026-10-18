@@ -187,13 +187,16 @@ func (c *Client) CallTool(ctx context.Context, name string, args map[string]any)
 		return nil, errToolDisabled
 	}
 
+	requestCtx, cancel := context.WithTimeout(ctx, c.timeout())
+	defer cancel()
+
 	params := map[string]any{
 		nameKey:      name,
 		argumentsKey: args,
 		metaKey:      map[string]any{protocolMetaKey: protocolVersion},
 	}
 
-	return call(ctx, c, "tools/call", params, name)
+	return call(requestCtx, c, "tools/call", params, name)
 }
 
 type Event struct {
