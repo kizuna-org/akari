@@ -30,6 +30,8 @@ const (
 	testDestination    = "discord:channel-1"
 )
 
+var errRetryTest = errors.New("retry me")
+
 func newClient(endpoint string) *Client {
 	return &Client{
 		Endpoint: endpoint, Token: "", HTTP: nil,
@@ -45,7 +47,7 @@ func newAdapter(
 ) *Adapter {
 	return &Adapter{
 		Client: client, CallbackURL: callbackURL, Secret: secret,
-		Handler: handler, Now: now,
+		Handler: handler, Now: now, eventsMu: sync.Mutex{}, events: nil,
 	}
 }
 
@@ -226,6 +228,7 @@ func TestClientToolErrorPreservesPayload(t *testing.T) {
 		{name: "successful tool result", result: `{"content":[{"type":"text","text":"ok"}]}`,
 			wantErr: false, wantResult: `{"content":[{"type":"text","text":"ok"}]}`},
 		{name: "tool failure", result: `{"isError":true,"content":[{"type":"text","text":"denied"}]}`, wantErr: true, wantResult: `{"isError":true,"content":[{"type":"text","text":"denied"}]}`},
+		{name: "null result", result: jsonNull, wantErr: true, wantResult: jsonNull},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -247,12 +250,25 @@ func TestClientToolErrorPreservesPayload(t *testing.T) {
 	}
 }
 
-//nolint:wsl,wsl_v5 // This is an end-to-end Gateway assertion around one fake MCP response.
+//nolint:cyclop,wsl,wsl_v5 // This is an end-to-end Gateway assertion around one fake MCP response.
 func TestGatewayReportsMCPToolFailure(t *testing.T) {
 	t.Parallel()
 
 	const payload = `{"isError":true,"content":[{"type":"text","text":"Discord rejected message"}]}`
-	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		var input struct {
+			Params struct {
+				Arguments map[string]any `json:"arguments"`
+			} `json:"params"`
+		}
+		decodeErr := json.NewDecoder(request.Body).Decode(&input)
+		if decodeErr != nil {
+			t.Errorf("decode MCP request: %v", decodeErr)
+		}
+		if len(input.Params.Arguments) != operationArgumentCount ||
+			input.Params.Arguments["content"] != "hello" || input.Params.Arguments["channel_id"] != "channel-1" {
+			t.Errorf("untrusted MCP arguments = %#v", input.Params.Arguments)
+		}
 		_, _ = writer.Write([]byte(`{"result":` + payload + `}`))
 	}))
 	t.Cleanup(server.Close)
@@ -264,9 +280,11 @@ func TestGatewayReportsMCPToolFailure(t *testing.T) {
 	}
 	destination := testDestination
 	session := gateway.Open(false, action.Scope{AllowedDestinations: []string{destination},
-		ReadyRecipients: []string{destination}})
-	pending, err := session.Plan(context.Background(), sendToolName,
-		[]byte(`{"channel_id":"channel-1","content":"hello"}`))
+		ReadyRecipients: []string{destination}, Disclosure: func(sources []string, target string) bool {
+			return len(sources) == 1 && sources[0] == "private-memory" && target == destination
+		}})
+	pending, err := session.PlanWithSources(context.Background(), sendToolName,
+		[]byte(`{"channel_id":"channel-1","content":"hello"}`), []string{"private-memory"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -800,6 +818,7 @@ func TestRunRejectsIncompleteConfiguration(t *testing.T) {
 		adapter *Adapter
 	}{
 		{name: "missing client", adapter: newAdapter(nil, "callback", testSecret, nil, nil)},
+		{name: "missing endpoint", adapter: newAdapter(newClient(""), "callback", testSecret, nil, nil)},
 		{name: "missing callback", adapter: newAdapter(newClient("endpoint"), "", testSecret, nil, nil)},
 		{name: "missing secret", adapter: newAdapter(newClient("endpoint"), "callback", "", nil, nil)},
 	}
@@ -812,6 +831,67 @@ func TestRunRejectsIncompleteConfiguration(t *testing.T) {
 				t.Fatalf("error %v", err)
 			}
 		})
+	}
+}
+
+//nolint:nlreturn,noinlineerr,wsl,wsl_v5 // Exercise retries and duplicate delivery with one stateful handler.
+func TestAdapterDeduplicatesCompletedEventsAndRetriesFailures(t *testing.T) {
+	t.Parallel()
+
+	var calls atomic.Int32
+	adapter := newAdapter(nil, "", testSecret, func(context.Context, Event) error {
+		if calls.Add(1) == 1 {
+			return errRetryTest
+		}
+		return nil
+	}, nil)
+	event := Event{ID: "same-event", Name: messageEventName, Payload: nil}
+	now := time.Now()
+	if err := adapter.deliver(context.Background(), event, now); err == nil {
+		t.Fatal("first delivery should fail")
+	}
+	if err := adapter.deliver(context.Background(), event, now); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	if err := adapter.deliver(context.Background(), event, now); err != nil {
+		t.Fatalf("duplicate: %v", err)
+	}
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("handler calls %d, want 2", got)
+	}
+}
+
+//nolint:wsl,wsl_v5 // Synchronize concurrent duplicate deliveries explicitly.
+func TestAdapterCoordinatesConcurrentDuplicateEvents(t *testing.T) {
+	t.Parallel()
+
+	started := make(chan struct{})
+	release := make(chan struct{})
+	var calls atomic.Int32
+	adapter := newAdapter(nil, "", testSecret, func(context.Context, Event) error {
+		calls.Add(1)
+		close(started)
+		<-release
+
+		return nil
+	}, nil)
+	event := Event{ID: "concurrent-event", Name: messageEventName, Payload: nil}
+	first := make(chan error, 1)
+	go func() { first <- adapter.deliver(context.Background(), event, time.Now()) }()
+	<-started
+	second := make(chan error, 1)
+	go func() { second <- adapter.deliver(context.Background(), event, time.Now()) }()
+	close(release)
+	err := <-first
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = <-second
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("handler calls %d, want 1", got)
 	}
 }
 
@@ -892,6 +972,24 @@ func TestPrepareRejectsMalformedAndWronglyTypedArguments(t *testing.T) {
 				t.Fatal("invalid arguments accepted")
 			}
 		})
+	}
+}
+
+//nolint:wsl,wsl_v5 // Both tool preparations are compared in one compact assertion.
+func TestDiscordMessageOperationsShareConflictKey(t *testing.T) {
+	t.Parallel()
+
+	tools := newAdapter(nil, "", "", nil, nil).Tools()
+	reply, err := tools[replyToolName]([]byte(`{"message_id":"message-1","content":"reply"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	send, err := tools[sendToolName]([]byte(`{"channel_id":"channel-1","content":"send"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reply.ConflictKey == "" || reply.ConflictKey != send.ConflictKey {
+		t.Fatalf("conflict keys reply=%q send=%q", reply.ConflictKey, send.ConflictKey)
 	}
 }
 

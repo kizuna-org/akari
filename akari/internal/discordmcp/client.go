@@ -46,7 +46,10 @@ var (
 	errHTTPStatus       = errors.New("discordmcp: non-success HTTP status")
 	errRPC              = errors.New("discordmcp: RPC error")
 	errSubscription     = errors.New("discordmcp: subscription response is missing id or refreshBefore")
+	errToolResult       = errors.New("discordmcp: tool result is missing")
 )
+
+const jsonNull = "null"
 
 type Client struct {
 	Endpoint string
@@ -143,6 +146,7 @@ func newRequest(ctx context.Context, client *Client, spec requestSpec) (*http.Re
 	return req, nil
 }
 
+//nolint:cyclop,wsl,wsl_v5 // Response checks intentionally follow protocol validation order.
 func decode(client *Client, response *http.Response, requestSession string, isToolCall bool) (json.RawMessage, error) {
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return nil, fmt.Errorf("%w: %d", errHTTPStatus, response.StatusCode)
@@ -168,6 +172,9 @@ func decode(client *Client, response *http.Response, requestSession string, isTo
 	}
 
 	if isToolCall {
+		if len(envelope.Result) == 0 || string(envelope.Result) == jsonNull {
+			return envelope.Result, errToolResult
+		}
 		var result toolResult
 
 		err = json.Unmarshal(envelope.Result, &result)

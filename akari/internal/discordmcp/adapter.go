@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/kizuna-org/akari/internal/action"
@@ -35,7 +36,17 @@ type Adapter struct {
 	Secret      string
 	Handler     func(context.Context, Event) error
 	Now         func() time.Time
+	eventsMu    sync.Mutex
+	events      map[string]*eventDelivery
 }
+
+type eventDelivery struct {
+	done    chan struct{}
+	err     error
+	expires time.Time
+}
+
+const maxRememberedEvents = 4096
 
 // Tools returns the two explicitly selected speech capabilities. Other
 // discovered Discord tools are intentionally never registered.
@@ -72,7 +83,7 @@ func prepare(adapter *Adapter, tool, destinationArg, contentArg string) action.P
 		return action.Operation{
 			Impact:      action.Speech,
 			Destination: "discord:" + destination,
-			ConflictKey: "discord:" + destination,
+			ConflictKey: "discord:messages",
 			Call: func(ctx context.Context) ([]byte, error) {
 				result, err := adapter.Client.CallTool(ctx, tool, map[string]any{destinationArg: destination, contentArg: content})
 
@@ -143,14 +154,14 @@ func handleWebhook(adapter *Adapter, writer http.ResponseWriter, request *http.R
 		return
 	}
 
-	if envelope.Name != messageEventName || adapter.Handler == nil {
+	if envelope.Name != messageEventName || envelope.ID == "" || adapter.Handler == nil {
 		http.Error(writer, "unsupported event", http.StatusBadRequest)
 
 		return
 	}
 
-	err = adapter.Handler(request.Context(), envelope.Event)
-	if err != nil {
+	deliveryErr := adapter.deliver(request.Context(), envelope.Event, now())
+	if deliveryErr != nil {
 		http.Error(writer, "event handler failed", http.StatusServiceUnavailable)
 
 		return
@@ -159,10 +170,55 @@ func handleWebhook(adapter *Adapter, writer http.ResponseWriter, request *http.R
 	writer.WriteHeader(http.StatusNoContent)
 }
 
+//nolint:cyclop,funcorder,wsl,wsl_v5,nlreturn // Keep deduplication state transitions atomic and local.
+func (a *Adapter) deliver(ctx context.Context, event Event, now time.Time) error {
+	a.eventsMu.Lock()
+	if a.events == nil {
+		a.events = make(map[string]*eventDelivery)
+	}
+	for id, delivery := range a.events {
+		if !delivery.expires.After(now) {
+			delete(a.events, id)
+		}
+	}
+	if existing := a.events[event.ID]; existing != nil {
+		a.eventsMu.Unlock()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-existing.done:
+			return existing.err
+		}
+	}
+	if len(a.events) >= maxRememberedEvents {
+		// Evict the earliest expiry to keep memory bounded.
+		var oldestID string
+		var oldest time.Time
+		for id, delivery := range a.events {
+			if oldestID == "" || delivery.expires.Before(oldest) {
+				oldestID, oldest = id, delivery.expires
+			}
+		}
+		delete(a.events, oldestID)
+	}
+	delivery := &eventDelivery{done: make(chan struct{}), err: nil, expires: now.Add(time.Hour)}
+	a.events[event.ID] = delivery
+	a.eventsMu.Unlock()
+
+	delivery.err = a.Handler(ctx, event)
+	a.eventsMu.Lock()
+	if delivery.err != nil {
+		delete(a.events, event.ID)
+	}
+	close(delivery.done)
+	a.eventsMu.Unlock()
+	return delivery.err
+}
+
 // Run subscribes, refreshes before expiry, and retries transient disconnects
 // with bounded backoff. Cancellation stops retries and attempts unsubscribe.
 func (a *Adapter) Run(ctx context.Context, args map[string]any) error {
-	if a.Client == nil || a.CallbackURL == "" || a.Secret == "" {
+	if a.Client == nil || a.Client.Endpoint == "" || a.CallbackURL == "" || a.Secret == "" {
 		return errConfiguration
 	}
 	defer a.unsubscribe(ctx, args)

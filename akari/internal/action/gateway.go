@@ -127,6 +127,14 @@ type Pending struct {
 }
 
 func (session *Session) Plan(ctx context.Context, name string, arguments []byte) (*Pending, error) {
+	return session.PlanWithSources(ctx, name, arguments, nil)
+}
+
+// PlanWithSources attaches trusted runtime provenance to the prepared operation.
+// Callers must derive sources from content context, never from model arguments.
+func (session *Session) PlanWithSources(
+	ctx context.Context, name string, arguments []byte, trustedSources []string,
+) (*Pending, error) {
 	contextErr := ctx.Err()
 	if contextErr != nil {
 		return nil, contextErr
@@ -142,7 +150,7 @@ func (session *Session) Plan(ctx context.Context, name string, arguments []byte)
 		return nil, err
 	}
 
-	operation.Sources = slices.Clone(operation.Sources)
+	operation.Sources = mergeSources(operation.Sources, trustedSources)
 
 	validationErr := session.check(operation)
 	if validationErr != nil {
@@ -161,6 +169,17 @@ func (session *Session) Plan(ctx context.Context, name string, arguments []byte)
 			Destination: operation.Destination, ConflictKey: operation.ConflictKey,
 			Sources: slices.Clone(operation.Sources), NeedsApproval: needsApproval},
 	}, nil
+}
+
+func mergeSources(adapterSources, trustedSources []string) []string {
+	result := slices.Clone(adapterSources)
+	for _, source := range trustedSources {
+		if !slices.Contains(result, source) {
+			result = append(result, source)
+		}
+	}
+
+	return result
 }
 
 func (session *Session) check(operation Operation) error {
