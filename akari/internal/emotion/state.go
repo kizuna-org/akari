@@ -3,6 +3,7 @@ package emotion
 
 import (
 	"math"
+	"slices"
 	"time"
 
 	"github.com/kizuna-org/akari/internal/meaning"
@@ -116,15 +117,38 @@ func Respond(state State, appraisal Appraisal, reactivity, empathy float64) (Sta
 	}
 
 	result := state.Clone()
-	result.Feelings = scaled(appraisal.Feelings, reactivity)
-	result.Feelings = append(result.Feelings, scaled(appraisal.Others, reactivity*empathy)...)
-	result.Readiness = scaled(appraisal.Readiness, reactivity)
+	result.Feelings = merge(result.Feelings, scaled(appraisal.Feelings, reactivity))
+	result.Feelings = merge(result.Feelings, scaled(appraisal.Others, reactivity*empathy))
+	result.Readiness = merge(result.Readiness, scaled(appraisal.Readiness, reactivity))
 
 	for index, delta := range appraisal.MoodDelta {
 		result.Mood[index] = math.Max(-1, math.Min(1, result.Mood[index]+delta*reactivity))
 	}
 
 	return result, nil
+}
+
+// Preparation measures how strongly current action readiness matches a possible
+// action cue. It is a deliberation input and never grants Gateway authority.
+func Preparation(readiness []Feeling, cue meaning.Point) (float64, error) {
+	value := 0.0
+
+	for _, feeling := range readiness {
+		similarity, err := meaning.Similarity(feeling.Meaning, cue)
+		if err != nil {
+			return 0, err
+		}
+
+		value += similarity * feeling.Strength
+	}
+
+	return value, nil
+}
+
+// Express returns an outward-facing copy scaled by the fixed personality axis.
+// The internally felt state is never reduced by a low expression setting.
+func Express(feelings []Feeling, degree float64) []Feeling {
+	return scaled(feelings, degree)
 }
 
 func scaled(feelings []Feeling, scale float64) []Feeling {
@@ -135,4 +159,31 @@ func scaled(feelings []Feeling, scale float64) []Feeling {
 	}
 
 	return result
+}
+
+func merge(current, incoming []Feeling) []Feeling {
+	result := CloneFeelings(current)
+
+	for _, next := range incoming {
+		merged := false
+
+		for index := range result {
+			if sameMeaning(result[index].Meaning, next.Meaning) {
+				result[index].Strength = math.Min(1, result[index].Strength+next.Strength)
+				merged = true
+
+				break
+			}
+		}
+
+		if !merged {
+			result = append(result, next)
+		}
+	}
+
+	return result
+}
+
+func sameMeaning(left, right meaning.Point) bool {
+	return left.Text == right.Text && left.Space == right.Space && slices.Equal(left.Vector, right.Vector)
 }

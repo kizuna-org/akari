@@ -88,6 +88,93 @@ func TestInnerContinuity(t *testing.T) {
 	}
 }
 
+func TestEmotionShapesMultiTurnJudgmentPreparationAndExpression(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name       string
+		expression float64
+	}{
+		{name: "restrained expression", expression: 0.2},
+		{name: "open expression", expression: 0.9},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			instant := time.Unix(100, 0)
+			config := persona.Default()
+			config.Vector[persona.Expression] = test.expression
+			workspace := innerWorkspace(t, config, 100, func() time.Time { return instant })
+			topic := semantic("conversation")
+			update := freshUpdate(workspace)
+			update.Appraisal = &emotion.Appraisal{
+				Feelings: []emotion.Feeling{{Meaning: topic, Strength: 1}}, Others: nil,
+				Readiness: []emotion.Feeling{{Meaning: topic, Strength: 1}}, MoodDelta: emotion.Mood{0.5, 0, 0},
+			}
+			update.Interests = []interest.Focus{{ID: "conversation", Target: topic, Affinity: 1}}
+			commitInner(t, workspace, update, nil)
+
+			first := workspace.Snapshot().Experience
+			firstSalience, firstPreparation := emotionMeasures(t, first, topic)
+			assertFirstEmotionExperience(t, first, test.expression, firstSalience, firstPreparation)
+
+			instant = instant.Add(time.Hour)
+			update = freshUpdate(workspace)
+			update.Appraisal = &emotion.Appraisal{
+				Feelings: []emotion.Feeling{{Meaning: topic, Strength: 0.5}}, Others: nil,
+				Readiness: []emotion.Feeling{{Meaning: topic, Strength: 0.5}}, MoodDelta: emotion.Mood{-0.2, 0, 0},
+			}
+			commitInner(t, workspace, update, nil)
+
+			later := workspace.Snapshot().Experience
+			laterSalience, laterPreparation := emotionMeasures(t, later, topic)
+			assertLaterEmotionExperience(t, first, later, test.expression, firstSalience, laterSalience, laterPreparation)
+		})
+	}
+}
+
+func emotionMeasures(t *testing.T, experience *Experience, topic meaning.Point) (float64, float64) {
+	t.Helper()
+
+	salience, err := interest.SalienceWithEmotion(experience.Interests, topic, experience.Emotion.Mood,
+		experience.Emotion.Feelings, experience.Fatigue)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	preparation, err := emotion.Preparation(experience.Emotion.Readiness, topic)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return salience, preparation
+}
+
+func assertFirstEmotionExperience(t *testing.T, experience *Experience, expression, salience, preparation float64) {
+	t.Helper()
+
+	wantExpression := 0.6 * expression
+	if experience.Emotion.Feelings[0].Strength != 0.6 ||
+		math.Abs(experience.Expression[0].Strength-wantExpression) > 1e-9 || salience <= 1 || preparation != 0.6 {
+		t.Fatalf("first turn did not preserve inner effects: experience=%+v salience=%v preparation=%v",
+			experience, salience, preparation)
+	}
+}
+
+func assertLaterEmotionExperience(
+	t *testing.T, first, later *Experience, expression, firstSalience, laterSalience, preparation float64,
+) {
+	t.Helper()
+
+	if len(later.Emotion.Feelings) != 1 || later.Emotion.Feelings[0].Strength != 0.6 ||
+		later.Emotion.Mood[0] >= first.Emotion.Mood[0] || laterSalience >= firstSalience ||
+		math.Abs(preparation-0.6) > 1e-9 ||
+		math.Abs(later.Expression[0].Strength-0.6*expression) > 1e-9 {
+		t.Fatalf("later turn lost or contradicted prior inner state: experience=%+v salience=%v preparation=%v",
+			later, laterSalience, preparation)
+	}
+}
+
 func TestAtomicInnerRejection(t *testing.T) {
 	t.Parallel()
 
