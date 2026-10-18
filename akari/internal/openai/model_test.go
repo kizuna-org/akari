@@ -27,6 +27,7 @@ const testKey = "test-secret-key"
 const testFragmentID = "fragment-1"
 const trustedSpace = "trusted-v1"
 const semanticText = "meaning"
+const jsonText = "text"
 const testGoalID = "goal"
 const unrelatedLocalData = "unrelated-local-data"
 const tabBearer = "Bearer\tabcdefghijklmnop"
@@ -279,7 +280,8 @@ func TestInterpretRestoresSourcesForKnownMemoryCopies(t *testing.T) {
 					t.Errorf("decode request: %v", decodeErr)
 				}
 				sentInput = body.Input
-				fragments := []any{map[string]any{"id": providerCopyID, semanticText: map[string]any{"text": fragment.Meaning.Text},
+				fragmentData := map[string]any{jsonText: fragment.Meaning.Text}
+				fragments := []any{map[string]any{"id": providerCopyID, semanticText: fragmentData,
 					jsonOccurredAt: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339),
 					jsonEmotion:    0, jsonWill: 0, jsonStrength: fragment.Strength}}
 				memoryOutput := map[string]any{jsonContext: nil, jsonWorking: nil, jsonRemember: []any{}, jsonRecalled: []string{}}
