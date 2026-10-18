@@ -26,12 +26,16 @@ const (
 	testResultKey      = "result"
 	testDiscoverMethod = "server/discover"
 	testMentionArg     = "direct_bot_mention"
+	testToolCallMethod = "tools/call"
+	testUnsubscribe    = "events/unsubscribe"
+	oldTestSession     = "old-session"
+	newTestSession     = "new-session"
 )
 
 func newClient(endpoint string) *Client {
 	return &Client{
 		Endpoint: endpoint, Token: "", HTTP: nil,
-		mu: sync.Mutex{}, session: "", next: atomic.Uint64{},
+		mu: sync.Mutex{}, session: "", next: atomic.Uint64{}, Timeout: 0,
 	}
 }
 
@@ -208,6 +212,208 @@ func TestClientFailures(t *testing.T) {
 			t.Fatalf("error %v", err)
 		}
 	})
+}
+
+//nolint:lll,wsl,wsl_v5 // Keep the compact test matrix and fake response handling readable.
+func TestClientToolErrorPreservesPayload(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		result     string
+		wantErr    bool
+		wantResult string
+	}{
+		{name: "successful tool result", result: `{"content":[{"type":"text","text":"ok"}]}`,
+			wantErr: false, wantResult: `{"content":[{"type":"text","text":"ok"}]}`},
+		{name: "tool failure", result: `{"isError":true,"content":[{"type":"text","text":"denied"}]}`, wantErr: true, wantResult: `{"isError":true,"content":[{"type":"text","text":"denied"}]}`},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+				_, _ = writer.Write([]byte(`{"result":` + test.result + `}`))
+			}))
+			t.Cleanup(server.Close)
+
+			got, err := newClient(server.URL).CallTool(context.Background(), replyToolName, nil)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("error %v, wantErr %v", err, test.wantErr)
+			}
+			if string(got) != test.wantResult {
+				t.Fatalf("payload %s, want %s", got, test.wantResult)
+			}
+		})
+	}
+}
+
+//nolint:wsl,wsl_v5 // This is an end-to-end Gateway assertion around one fake MCP response.
+func TestGatewayReportsMCPToolFailure(t *testing.T) {
+	t.Parallel()
+
+	const payload = `{"isError":true,"content":[{"type":"text","text":"Discord rejected message"}]}`
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		_, _ = writer.Write([]byte(`{"result":` + payload + `}`))
+	}))
+	t.Cleanup(server.Close)
+
+	adapter := newAdapter(newClient(server.URL), "", "", nil, nil)
+	gateway, err := action.New(adapter.Tools(), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	destination := "discord:channel-1"
+	session := gateway.Open(false, action.Scope{AllowedDestinations: []string{destination},
+		ReadyRecipients: []string{destination}})
+	pending, err := session.Plan(context.Background(), sendToolName,
+		[]byte(`{"channel_id":"channel-1","content":"hello"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	observed, err := pending.Execute(context.Background())
+	if err == nil {
+		t.Fatal("tool failure reported success")
+	}
+	if observed.Status == action.Succeeded {
+		t.Fatalf("status %s", observed.Status)
+	}
+	if string(observed.Data) != payload {
+		t.Fatalf("payload %s, want %s", observed.Data, payload)
+	}
+}
+
+//nolint:wsl,wsl_v5 // Keep the session-recovery scenario in one fake-server test.
+func TestClientClearsRejectedSessionWithoutReplayingToolCall(t *testing.T) {
+	t.Parallel()
+
+	var methods []string
+	var sessions []string
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		methods = append(methods, request.Header.Get("Mcp-Method"))
+		sessions = append(sessions, request.Header.Get("Mcp-Session-Id"))
+		if request.Header.Get("Mcp-Method") == testToolCallMethod {
+			writer.WriteHeader(http.StatusNotFound)
+
+			return
+		}
+		writer.Header().Set("Mcp-Session-Id", "fresh")
+		_, _ = writer.Write([]byte(`{"result":{}}`))
+	}))
+	t.Cleanup(server.Close)
+
+	client := newClient(server.URL)
+	client.session = "expired"
+	_, err := client.CallTool(context.Background(), replyToolName, nil)
+	if !errors.Is(err, errHTTPStatus) {
+		t.Fatalf("tool call error %v", err)
+	}
+	if got := strings.Join(methods, ","); got != testToolCallMethod {
+		t.Fatalf("tool call replayed: %s", got)
+	}
+	if client.session != "" {
+		t.Fatalf("stale session remains: %q", client.session)
+	}
+	err = client.Discover(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(sessions, ","); got != "expired," {
+		t.Fatalf("session headers %q", got)
+	}
+	if client.session != "fresh" {
+		t.Fatalf("recovery session %q", client.session)
+	}
+}
+
+func TestClientClearsOnlyMatchingSession(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		requestSession string
+		currentSession string
+		wantSession    string
+	}{
+		{name: "matching failed session", requestSession: oldTestSession, currentSession: oldTestSession, wantSession: ""},
+		{name: "newer session retained", requestSession: oldTestSession,
+			currentSession: newTestSession, wantSession: newTestSession},
+		{name: "no session to clear", requestSession: "", currentSession: newTestSession, wantSession: newTestSession},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			client := newClient("endpoint")
+			client.session = test.currentSession
+			client.clearSessionIfCurrent(test.requestSession)
+
+			if client.session != test.wantSession {
+				t.Fatalf("session %q, want %q", client.session, test.wantSession)
+			}
+		})
+	}
+}
+
+func TestDiscoveryAndSubscriptionRequestsHaveDeadlines(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		call func(*Client) error
+	}{
+		{name: "discovery", call: func(client *Client) error { return client.Discover(context.Background()) }},
+		{name: "subscription", call: func(client *Client) error {
+			_, err := client.Subscribe(context.Background(), "callback", testSecret, nil)
+
+			return err
+		}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+				<-time.After(100 * time.Millisecond)
+
+				_, _ = writer.Write([]byte(`{"result":{}}`))
+			}))
+			t.Cleanup(server.Close)
+
+			client := newClient(server.URL)
+			client.Timeout = 10 * time.Millisecond
+			err := test.call(client)
+
+			if !errors.Is(err, context.DeadlineExceeded) {
+				t.Fatalf("request error %v, want deadline", err)
+			}
+		})
+	}
+}
+
+//nolint:wsl,wsl_v5 // Verify the deferred cleanup with one canceled lifecycle context.
+func TestRunUnsubscribesOnceWhenAlreadyCanceled(t *testing.T) {
+	t.Parallel()
+
+	var unsubscribeCount atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Header.Get("Mcp-Method") == testUnsubscribe {
+			unsubscribeCount.Add(1)
+		}
+		_, _ = writer.Write([]byte(`{"result":{}}`))
+	}))
+	t.Cleanup(server.Close)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	adapter := newAdapter(newClient(server.URL), "callback", testSecret, nil, nil)
+	err := adapter.Run(ctx, nil)
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if got := unsubscribeCount.Load(); got != 1 {
+		t.Fatalf("unsubscribe count %d, want 1", got)
+	}
 }
 
 func TestClientRequestAndSubscription(t *testing.T) {

@@ -164,6 +164,7 @@ func (a *Adapter) Run(ctx context.Context, args map[string]any) error {
 	if a.Client == nil || a.CallbackURL == "" || a.Secret == "" {
 		return errConfiguration
 	}
+	defer a.unsubscribe(ctx, args)
 
 	delay := time.Second
 
@@ -171,8 +172,6 @@ func (a *Adapter) Run(ctx context.Context, args map[string]any) error {
 		sub, err := a.connect(ctx, args)
 		if err != nil {
 			if !sleep(ctx, delay) {
-				a.unsubscribe(ctx, args)
-
 				break
 			}
 
@@ -184,8 +183,6 @@ func (a *Adapter) Run(ctx context.Context, args map[string]any) error {
 		delay = time.Second
 
 		if !waitUntilRefresh(ctx, sub.RefreshBefore) {
-			a.unsubscribe(ctx, args)
-
 			return nil
 		}
 	}

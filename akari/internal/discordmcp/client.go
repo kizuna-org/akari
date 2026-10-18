@@ -34,6 +34,7 @@ const (
 	sendToolName        = "discord_send_message"
 	mcpMaxResponseBytes = 4 << 20
 	defaultEventTTL     = time.Hour
+	requestTimeout      = 10 * time.Second
 )
 
 var (
@@ -47,6 +48,7 @@ type Client struct {
 	Endpoint string
 	Token    string
 	HTTP     *http.Client
+	Timeout  time.Duration
 	mu       sync.Mutex
 	session  string
 	next     atomic.Uint64
@@ -58,6 +60,10 @@ type resultEnvelope struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
 	} `json:"error"`
+}
+
+type toolResult struct {
+	IsError bool `json:"isError"`
 }
 
 func call(ctx context.Context, client *Client, method string, params any, tool string) (json.RawMessage, error) {
@@ -78,7 +84,11 @@ func call(ctx context.Context, client *Client, method string, params any, tool s
 
 	defer func() { _ = response.Body.Close() }()
 
-	return decode(client, response)
+	if response.StatusCode == http.StatusNotFound {
+		client.clearSessionIfCurrent(request.Header.Get("Mcp-Session-Id"))
+	}
+
+	return decode(client, response, tool != "")
 }
 
 func newRequest(ctx context.Context, client *Client, method string, params any, tool string) (*http.Request, error) {
@@ -122,7 +132,7 @@ func newRequest(ctx context.Context, client *Client, method string, params any, 
 	return req, nil
 }
 
-func decode(client *Client, response *http.Response) (json.RawMessage, error) {
+func decode(client *Client, response *http.Response, isToolCall bool) (json.RawMessage, error) {
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return nil, fmt.Errorf("%w: %d", errHTTPStatus, response.StatusCode)
 	}
@@ -144,12 +154,28 @@ func decode(client *Client, response *http.Response) (json.RawMessage, error) {
 		return nil, fmt.Errorf("%w %d: %s", errRPC, envelope.Error.Code, envelope.Error.Message)
 	}
 
+	if isToolCall {
+		var result toolResult
+
+		err = json.Unmarshal(envelope.Result, &result)
+		if err != nil {
+			return envelope.Result, err
+		}
+
+		if result.IsError {
+			return envelope.Result, fmt.Errorf("%w: MCP tool returned isError", errRPC)
+		}
+	}
+
 	return envelope.Result, nil
 }
 
 func (c *Client) Discover(ctx context.Context) error {
+	requestCtx, cancel := context.WithTimeout(ctx, c.timeout())
+	defer cancel()
+
 	params := map[string]any{metaKey: map[string]any{protocolMetaKey: protocolVersion}}
-	_, err := call(ctx, c, "server/discover", params, "")
+	_, err := call(requestCtx, c, "server/discover", params, "")
 
 	return err
 }
@@ -180,6 +206,9 @@ type subscription struct {
 }
 
 func (c *Client) Subscribe(ctx context.Context, callbackURL, secret string, args map[string]any) (subscription, error) {
+	requestCtx, cancel := context.WithTimeout(ctx, c.timeout())
+	defer cancel()
+
 	var sub subscription
 
 	params := map[string]any{
@@ -190,12 +219,32 @@ func (c *Client) Subscribe(ctx context.Context, callbackURL, secret string, args
 		metaKey:      map[string]any{protocolMetaKey: protocolVersion},
 	}
 
-	raw, err := call(ctx, c, "events/subscribe", params, "")
+	raw, err := call(requestCtx, c, "events/subscribe", params, "")
 	if err == nil {
 		err = json.Unmarshal(raw, &sub)
 	}
 
 	return sub, err
+}
+
+func (c *Client) timeout() time.Duration {
+	if c.Timeout > 0 {
+		return c.Timeout
+	}
+
+	return requestTimeout
+}
+
+func (c *Client) clearSessionIfCurrent(requestSession string) {
+	if requestSession == "" {
+		return
+	}
+
+	c.mu.Lock()
+	if c.session == requestSession {
+		c.session = ""
+	}
+	c.mu.Unlock()
 }
 
 // VerifyWebhook validates the Discord MCP v1 signature over id.timestamp.body.
