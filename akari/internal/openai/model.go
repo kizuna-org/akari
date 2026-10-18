@@ -548,8 +548,6 @@ func restoreMemoryMetadata(change *memory.Change, request thought.Request, allow
 	if change == nil {
 		return
 	}
-	change.Context = preserveWithheldFragments(change.Context, request.Experience.Context, allowedContext)
-	change.Working = preserveWithheldFragments(change.Working, request.Experience.Working, allowedWorking)
 	capacity := len(request.Experience.Context) + len(request.Experience.Working) + len(request.Recalled)
 	trusted := make([]memory.Fragment, 0, capacity)
 	trusted = appendAllowedFragments(trusted, request.Experience.Context, allowedContext)
@@ -569,6 +567,8 @@ func restoreMemoryMetadata(change *memory.Change, request thought.Request, allow
 	restoreMemoryGroup(change.Context, metadataByID, metadataByText, instant)
 	restoreMemoryGroup(change.Working, metadataByID, metadataByText, instant)
 	restoreMemoryGroup(change.Remember, metadataByID, metadataByText, instant)
+	change.Context = preserveWithheldFragments(change.Context, request.Experience.Context, allowedContext)
+	change.Working = preserveWithheldFragments(change.Working, request.Experience.Working, allowedWorking)
 }
 
 func trustedTime(request thought.Request) time.Time {
@@ -593,7 +593,7 @@ func restoreFragmentMetadata(fragment *memory.Fragment, metadataByID map[string]
 	metadataByText map[string][]memory.Fragment, instant time.Time) {
 	if original, exists := metadataByID[fragment.ID]; exists {
 		fragment.OccurredAt = original.OccurredAt
-		fragment.Sources = slices.Clone(original.Sources)
+		fragment.Sources = mergeSources(append([]memory.Fragment{original}, metadataByText[fragment.Meaning.Text]...))
 		fragment.Accesses = original.Accesses
 
 		return
@@ -624,34 +624,61 @@ func appendAllowedFragments(destination, fragments []memory.Fragment, allowedIDs
 }
 
 func preserveWithheldFragments(output, original []memory.Fragment, allowedIDs []string) []memory.Fragment {
-	if output == nil {
+	withheld, withheldText := findWithheldFragments(original, allowedIDs)
+	if output == nil && len(withheld) == 0 {
 		return nil
 	}
+	result := memory.CloneFragments(output)
+	seen := make(map[string]struct{}, len(output)+len(withheld))
+	filtered := make([]memory.Fragment, 0, len(result)+len(withheld))
+	for _, fragment := range result {
+		if original, exists := withheld[fragment.ID]; exists {
+			filtered = append(filtered, memory.CloneFragments([]memory.Fragment{original})[0])
+			seen[original.ID] = struct{}{}
+
+			continue
+		}
+		if _, privateCopy := withheldText[fragment.Meaning.Text]; privateCopy {
+			continue
+		}
+		filtered = append(filtered, fragment)
+	}
+	for id, fragment := range withheld {
+		if _, exists := seen[id]; !exists {
+			filtered = append(filtered, memory.CloneFragments([]memory.Fragment{fragment})[0])
+			seen[fragment.ID] = struct{}{}
+		}
+	}
+
+	return filtered
+}
+
+func findWithheldFragments(
+	original []memory.Fragment, allowedIDs []string,
+) (map[string]memory.Fragment, map[string]struct{}) {
 	allowed := make(map[string]struct{}, len(allowedIDs))
 	for _, id := range allowedIDs {
 		allowed[id] = struct{}{}
 	}
 	withheld := make(map[string]memory.Fragment)
+	withheldText := make(map[string]struct{})
+	allowedText := make(map[string]struct{})
 	for _, fragment := range original {
-		if _, sent := allowed[fragment.ID]; !sent {
-			withheld[fragment.ID] = fragment
+		if _, sent := allowed[fragment.ID]; sent {
+			allowedText[fragment.Meaning.Text] = struct{}{}
 		}
 	}
-	result := memory.CloneFragments(output)
-	seen := make(map[string]struct{}, len(output)+len(withheld))
-	for index := range result {
-		if fragment, exists := withheld[result[index].ID]; exists {
-			result[index] = memory.CloneFragments([]memory.Fragment{fragment})[0]
-			seen[fragment.ID] = struct{}{}
+	for _, fragment := range original {
+		if _, sent := allowed[fragment.ID]; sent {
+			continue
 		}
-	}
-	for id, fragment := range withheld {
-		if _, exists := seen[id]; !exists {
-			result = append(result, memory.CloneFragments([]memory.Fragment{fragment})[0])
+		withheld[fragment.ID] = fragment
+		if _, disclosedCopy := allowedText[fragment.Meaning.Text]; !disclosedCopy {
+			withheldText[fragment.Meaning.Text] = struct{}{}
 		}
 	}
 
-	return result
+	return withheld, withheldText
 }
 
 func mergeSources(matches []memory.Fragment) []string {

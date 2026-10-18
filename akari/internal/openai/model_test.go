@@ -41,6 +41,12 @@ const jsonMemory = "memory"
 const jsonRecalled = "recalled"
 const jsonRemember = "remember"
 const jsonWorking = "working"
+const jsonOccurredAt = "occurredAt"
+const jsonEmotion = "emotion"
+const jsonStrength = "strength"
+const jsonWill = "will"
+const sharedDetail = "shared detail"
+const providerCopyID = "provider-copy"
 const validInterpretation = `{"appraisal":null,"interests":[],"memory":null,"goals":null}`
 
 func TestNewConfiguration(t *testing.T) {
@@ -273,9 +279,9 @@ func TestInterpretRestoresSourcesForKnownMemoryCopies(t *testing.T) {
 					t.Errorf("decode request: %v", decodeErr)
 				}
 				sentInput = body.Input
-				fragments := []any{map[string]any{"id": "provider-copy", "meaning": map[string]any{"text": fragment.Meaning.Text},
-					"occurredAt": time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339),
-					"emotion":    0, "will": 0, "strength": fragment.Strength}}
+				fragments := []any{map[string]any{"id": providerCopyID, semanticText: map[string]any{"text": fragment.Meaning.Text},
+					jsonOccurredAt: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339),
+					jsonEmotion:    0, jsonWill: 0, jsonStrength: fragment.Strength}}
 				memoryOutput := map[string]any{jsonContext: nil, jsonWorking: nil, jsonRemember: []any{}, jsonRecalled: []string{}}
 				memoryOutput[test.group] = fragments
 				payload, marshalErr := json.Marshal(map[string]any{
@@ -357,7 +363,9 @@ func TestInterpretPreservesWithheldShortTermFragments(t *testing.T) {
 		output := map[string]any{"appraisal": nil, "interests": []any{}, "goals": nil,
 			"memory": map[string]any{"context": nil, "working": []any{
 				map[string]any{"id": "copy-id", "meaning": map[string]string{"text": public.Meaning.Text},
-					"occurredAt": instant.Add(time.Hour).Format(time.RFC3339), "emotion": 0, "will": 0, "strength": 1},
+					jsonOccurredAt: instant.Add(time.Hour).Format(time.RFC3339), jsonEmotion: 0, jsonWill: 0, jsonStrength: 1},
+				map[string]any{"id": "private-copy", "meaning": map[string]string{"text": private.Meaning.Text},
+					jsonOccurredAt: instant.Add(time.Hour).Format(time.RFC3339), jsonEmotion: 0, jsonWill: 0, jsonStrength: 1},
 			}, "remember": []any{}, "recalled": []string{}}}
 		encoded, err := json.Marshal(output)
 		if err != nil {
@@ -386,8 +394,61 @@ func TestInterpretPreservesWithheldShortTermFragments(t *testing.T) {
 	}
 	if len(result.Memory.Working) != 2 || result.Memory.Working[1].ID != private.ID ||
 		result.Memory.Working[1].Meaning.Text != private.Meaning.Text ||
-		!slices.Equal(result.Memory.Working[1].Sources, private.Sources) {
+		!slices.Equal(result.Memory.Working[1].Sources, private.Sources) ||
+		!result.Memory.Working[1].OccurredAt.Equal(private.OccurredAt) {
 		t.Fatalf("withheld fragment was not preserved: %#v", result.Memory.Working)
+	}
+}
+
+func TestRestoreMemoryMetadataMergesExactTextProvenanceWhenIDIsReused(t *testing.T) {
+	t.Parallel()
+
+	instant := time.Date(2026, 10, 18, 2, 0, 0, 0, time.UTC)
+	unsourced := memory.Fragment{ID: "reused-id", Meaning: meaning.Point{Text: sharedDetail},
+		OccurredAt: instant, Strength: 0.5}
+	sourced := memory.Fragment{ID: "source-id", Meaning: meaning.Point{Text: sharedDetail},
+		OccurredAt: instant.Add(-time.Hour), Strength: 0.5, Sources: []string{"approved-source"}}
+	change := &memory.Change{Context: nil, Working: []memory.Fragment{{ID: unsourced.ID,
+		Meaning: meaning.Point{Text: sourced.Meaning.Text}, OccurredAt: instant.Add(time.Hour), Strength: 1}},
+		Remember: nil}
+	request := thought.Request{Experience: &mind.Experience{Working: []memory.Fragment{unsourced, sourced}},
+		Query: memory.Query{At: instant.Add(2 * time.Hour)}}
+
+	restoreMemoryMetadata(change, request, nil, []string{unsourced.ID, sourced.ID}, nil)
+	if len(change.Working) != 1 || !slices.Equal(change.Working[0].Sources, sourced.Sources) ||
+		!change.Working[0].OccurredAt.Equal(unsourced.OccurredAt) {
+		t.Fatalf("restored reused ID metadata = %#v", change.Working)
+	}
+}
+
+func TestRestoreMemoryMetadataKeepsSameTextWithDifferentDisclosure(t *testing.T) {
+	t.Parallel()
+
+	instant := time.Date(2026, 10, 18, 2, 0, 0, 0, time.UTC)
+	point := meaning.Point{Text: sharedDetail}
+	private := memory.Fragment{ID: "private-id", Meaning: point, OccurredAt: instant.Add(-time.Hour),
+		Strength: 0.5, Sources: []string{"private-source"}}
+	public := memory.Fragment{ID: "public-id", Meaning: point, OccurredAt: instant,
+		Strength: 0.5, Sources: []string{"public-source"}}
+	change := &memory.Change{Context: nil,
+		Working:  []memory.Fragment{{ID: "provider-copy", Meaning: point, OccurredAt: instant.Add(time.Hour), Strength: 1}},
+		Remember: nil}
+	request := thought.Request{Experience: &mind.Experience{Working: []memory.Fragment{private, public}},
+		Query: memory.Query{At: instant.Add(2 * time.Hour)}}
+
+	restoreMemoryMetadata(change, request, nil, []string{public.ID}, nil)
+	if len(change.Working) != 2 {
+		t.Fatalf("same-text memory fragments = %#v", change.Working)
+	}
+	byID := make(map[string]memory.Fragment, len(change.Working))
+	for _, fragment := range change.Working {
+		byID[fragment.ID] = fragment
+	}
+	if !slices.Equal(byID["provider-copy"].Sources, public.Sources) ||
+		!byID["provider-copy"].OccurredAt.Equal(public.OccurredAt) ||
+		!slices.Equal(byID[private.ID].Sources, private.Sources) ||
+		!byID[private.ID].OccurredAt.Equal(private.OccurredAt) {
+		t.Fatalf("same-text provenance was mixed: %#v", byID)
 	}
 }
 
