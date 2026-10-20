@@ -107,8 +107,34 @@ func (session *Session) Start(identity string, runner thought.Runner) (thought.T
 	return session.supervisor.Start(identity, runner)
 }
 
+// StartReserved binds completion ownership to the generation-specific runtime waiter.
+func (session *Session) StartReserved(identity string, runner thought.Runner) (thought.Token, error) {
+	session.mu.Lock()
+	defer session.mu.Unlock()
+
+	if session.closing || session.ctx.Err() != nil {
+		return thought.Token{}, ErrClosed
+	}
+
+	return session.supervisor.StartReserved(identity, runner)
+}
+
 func (session *Session) Next(ctx context.Context) (thought.Result, error) {
 	return session.supervisor.Next(ctx)
+}
+
+func (session *Session) Wait(ctx context.Context, token thought.Token) (thought.Result, error) {
+	return session.supervisor.Wait(ctx, token)
+}
+
+func (session *Session) Discard(ctx context.Context, token thought.Token) error {
+	_, end, err := session.begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer end()
+
+	return session.supervisor.Discard(token)
 }
 
 func (session *Session) Cancel(identity string) { session.supervisor.Cancel(identity) }
@@ -151,6 +177,21 @@ func (session *Session) Dispatch(ctx context.Context, identity string) (action.O
 	defer end()
 
 	return session.owner.Dispatch(operation, identity)
+}
+
+// Operate runs a synchronous external operation under Session shutdown tracking.
+func (session *Session) Operate(ctx context.Context, operation func(context.Context) error) error {
+	if operation == nil {
+		return ErrConfig
+	}
+
+	operationCtx, end, err := session.begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer end()
+
+	return operation(operationCtx)
 }
 
 // Approve is an administrative runtime capability, never supplied to a thinking Channel.

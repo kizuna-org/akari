@@ -41,6 +41,7 @@ type Intent struct {
 	ID        string
 	Tool      string
 	Arguments []byte
+	Sources   []string
 }
 
 type Record struct {

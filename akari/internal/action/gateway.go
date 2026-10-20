@@ -127,6 +127,14 @@ type Pending struct {
 }
 
 func (session *Session) Plan(ctx context.Context, name string, arguments []byte) (*Pending, error) {
+	return session.PlanWithSources(ctx, name, arguments, nil)
+}
+
+// PlanWithSources binds trusted runtime provenance to an operation without
+// placing that provenance in tool arguments.
+func (session *Session) PlanWithSources(
+	ctx context.Context, name string, arguments []byte, trustedSources []string,
+) (*Pending, error) {
 	contextErr := ctx.Err()
 	if contextErr != nil {
 		return nil, contextErr
@@ -142,7 +150,7 @@ func (session *Session) Plan(ctx context.Context, name string, arguments []byte)
 		return nil, err
 	}
 
-	operation.Sources = slices.Clone(operation.Sources)
+	operation.Sources = mergeSources(operation.Sources, trustedSources)
 
 	validationErr := session.check(operation)
 	if validationErr != nil {
@@ -161,6 +169,21 @@ func (session *Session) Plan(ctx context.Context, name string, arguments []byte)
 			Destination: operation.Destination, ConflictKey: operation.ConflictKey,
 			Sources: slices.Clone(operation.Sources), NeedsApproval: needsApproval},
 	}, nil
+}
+
+func mergeSources(operationSources, trustedSources []string) []string {
+	if len(operationSources)+len(trustedSources) == 0 {
+		return nil
+	}
+
+	merged := make([]string, 0, len(operationSources)+len(trustedSources))
+	for _, source := range append(slices.Clone(operationSources), trustedSources...) {
+		if source != "" && !slices.Contains(merged, source) {
+			merged = append(merged, source)
+		}
+	}
+
+	return merged
 }
 
 func (session *Session) check(operation Operation) error {

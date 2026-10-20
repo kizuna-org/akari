@@ -3,6 +3,7 @@ package thought
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -44,14 +45,19 @@ type Result struct {
 }
 
 // The task owns its cancellation lifetime across Start, Cancel and completion.
-type task struct { //nolint:containedctx // Lifecycle ownership, not request context propagation.
+//
+//nolint:containedctx // Lifecycle ownership, not request context propagation.
+type task struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	token     Token
 	proposal  mind.Proposal
 	err       error
 	delivered bool
+	reserved  bool
 	adopting  bool
+	completed chan struct{}
+	retired   chan struct{}
 }
 
 // Supervisor bounds running AND unresolved work so completed results cannot grow without limit.
@@ -85,64 +91,85 @@ func New(ctx context.Context, workspace Workspace, capacity int) (*Supervisor, e
 
 // Start creates a new generation. Resource capacity is not persona's consciousness width.
 func (supervisor *Supervisor) Start(identity string, runner Runner) (Token, error) {
-	supervisor.mu.Lock()
-	defer supervisor.mu.Unlock()
-
-	err := supervisor.canStart(identity, runner)
-	if err != nil {
-		return Token{}, err
-	}
-
-	supervisor.generation++
-	ctx, cancel := context.WithCancel(supervisor.ctx)
-	token := Token{Channel: identity, Generation: supervisor.generation}
-	work := &task{
-		ctx: ctx, cancel: cancel, token: token,
-		proposal: mind.Proposal{ID: "", Reads: nil, Writes: nil}, err: nil, delivered: false, adopting: false,
-	}
-	supervisor.tasks[identity] = work
-	snapshot := supervisor.workspace.Snapshot()
-	supervisor.workers.Add(1)
-
-	go supervisor.run(work, snapshot, runner)
-
-	return token, nil
+	return supervisor.start(identity, runner, false)
 }
 
-// Named results let recovery return a failure instead of terminating the process.
-//
-//nolint:nonamedreturns // Panic recovery writes the returned error.
-func evaluate(ctx context.Context, snapshot mind.Snapshot, runner Runner) (proposal mind.Proposal, err error) {
-	defer func() {
-		if recover() != nil {
-			err = ErrPanic
-		}
+// StartReserved gives the exact-generation waiter exclusive ownership of the completion.
+func (supervisor *Supervisor) StartReserved(identity string, runner Runner) (Token, error) {
+	return supervisor.start(identity, runner, true)
+}
+
+// Recovery converts runner panics into a failure result instead of terminating the process.
+func evaluate(ctx context.Context, snapshot mind.Snapshot, runner Runner) (mind.Proposal, error) {
+	var proposal mind.Proposal
+
+	var runErr error
+
+	func() {
+		defer func() {
+			if recover() != nil {
+				proposal = mind.Proposal{ID: "", Reads: nil, Writes: nil}
+				runErr = ErrPanic
+			}
+		}()
+
+		proposal, runErr = runner(ctx, snapshot)
 	}()
 
-	return runner(ctx, snapshot)
+	return proposal, runErr
 }
 
 // Next returns a frozen proposal; Accept uses the private stored copy, not this preview.
 func (supervisor *Supervisor) Next(ctx context.Context) (Result, error) {
-	contextErr := ctx.Err()
-	if contextErr != nil {
-		return Result{}, contextErr
-	}
+	for {
+		contextErr := ctx.Err()
+		if contextErr != nil {
+			return Result{}, contextErr
+		}
 
-	rootErr := supervisor.ctx.Err()
-	if rootErr != nil {
-		return Result{}, rootErr
+		rootErr := supervisor.ctx.Err()
+		if rootErr != nil {
+			return Result{}, rootErr
+		}
+
+		select {
+		case token := <-supervisor.ready:
+			if supervisor.reserved(token) {
+				continue
+			}
+
+			result, err := supervisor.take(token)
+
+			if errors.Is(err, ErrToken) {
+				continue
+			}
+
+			return result, err
+		case <-supervisor.ctx.Done():
+			return Result{}, supervisor.ctx.Err()
+		case <-ctx.Done():
+			return Result{}, ctx.Err()
+		}
 	}
+}
+
+// Wait returns one exact generation without consuming another Channel's completion.
+//
+//nolint:wsl,wsl_v5 // Token lookup, unlock, and notification snapshot are one critical-section operation.
+func (supervisor *Supervisor) Wait(ctx context.Context, token Token) (Result, error) {
+	supervisor.mu.Lock()
+	work, exists := supervisor.tasks[token.Channel]
+	if !exists || work.token != token {
+		supervisor.mu.Unlock()
+
+		return Result{}, ErrToken
+	}
+	completed := work.completed
+	supervisor.mu.Unlock()
 
 	select {
-	case token := <-supervisor.ready:
-		supervisor.mu.Lock()
-		defer supervisor.mu.Unlock()
-
-		work := supervisor.tasks[token.Channel]
-		work.delivered = true
-
-		return Result{Token: token, Proposal: work.proposal.Clone(), Err: work.err}, nil
+	case <-completed:
+		return supervisor.take(token)
 	case <-supervisor.ctx.Done():
 		return Result{}, supervisor.ctx.Err()
 	case <-ctx.Done():
@@ -239,6 +266,58 @@ func (supervisor *Supervisor) Close(ctx context.Context) error {
 	}
 }
 
+func (supervisor *Supervisor) start(identity string, runner Runner, reserved bool) (Token, error) {
+	supervisor.mu.Lock()
+	defer supervisor.mu.Unlock()
+
+	err := supervisor.canStart(identity, runner)
+	if err != nil {
+		return Token{}, err
+	}
+
+	supervisor.generation++
+	ctx, cancel := context.WithCancel(supervisor.ctx)
+	token := Token{Channel: identity, Generation: supervisor.generation}
+	work := &task{
+		ctx: ctx, cancel: cancel, token: token,
+		proposal: mind.Proposal{ID: "", Reads: nil, Writes: nil}, err: nil, delivered: false,
+		reserved: reserved, adopting: false,
+		completed: make(chan struct{}),
+		retired:   make(chan struct{}),
+	}
+	supervisor.tasks[identity] = work
+	snapshot := supervisor.workspace.Snapshot()
+	supervisor.workers.Add(1)
+
+	go supervisor.run(work, snapshot, runner)
+
+	return token, nil
+}
+
+func (supervisor *Supervisor) reserved(token Token) bool {
+	supervisor.mu.Lock()
+	defer supervisor.mu.Unlock()
+
+	work, exists := supervisor.tasks[token.Channel]
+
+	return exists && work.token == token && work.reserved
+}
+
+//nolint:wsl,wsl_v5 // Marking delivery follows the guarded token lookup.
+func (supervisor *Supervisor) take(token Token) (Result, error) {
+	supervisor.mu.Lock()
+	defer supervisor.mu.Unlock()
+
+	work, exists := supervisor.tasks[token.Channel]
+	if !exists || work.token != token || work.delivered {
+		return Result{}, ErrToken
+	}
+	work.delivered = true
+	close(work.retired)
+
+	return Result{Token: token, Proposal: work.proposal.Clone(), Err: work.err}, nil
+}
+
 func (supervisor *Supervisor) canStart(identity string, runner Runner) error {
 	contextErr := supervisor.ctx.Err()
 	if contextErr != nil {
@@ -269,10 +348,12 @@ func (supervisor *Supervisor) run(work *task, snapshot mind.Snapshot, runner Run
 	supervisor.mu.Lock()
 	work.proposal = proposal.Clone()
 	work.err = err
+	close(work.completed)
 	supervisor.mu.Unlock()
 
 	select {
 	case supervisor.ready <- work.token:
+	case <-work.retired:
 	case <-supervisor.ctx.Done():
 	}
 }
