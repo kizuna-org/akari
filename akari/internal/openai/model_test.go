@@ -25,6 +25,8 @@ import (
 const defaultCaseName = "defaults"
 const testKey = "test-secret-key"
 const testFragmentID = "fragment-1"
+const privateID = "private-id"
+const publicID = "public-id"
 const trustedSpace = "trusted-v1"
 const semanticText = "meaning"
 const jsonText = "text"
@@ -48,6 +50,7 @@ const jsonStrength = "strength"
 const jsonWill = "will"
 const sharedDetail = "shared detail"
 const providerCopyID = "provider-copy"
+const privateCopyID = "private-copy"
 const validInterpretation = `{"appraisal":null,"interests":[],"memory":null,"goals":null}`
 
 func TestNewConfiguration(t *testing.T) {
@@ -350,9 +353,9 @@ func TestInterpretPreservesWithheldShortTermFragments(t *testing.T) {
 	t.Parallel()
 
 	instant := time.Date(2026, 10, 18, 2, 0, 0, 0, time.UTC)
-	private := memory.Fragment{ID: "private-id", Meaning: meaning.Point{Text: "private note"},
+	private := memory.Fragment{ID: privateID, Meaning: meaning.Point{Text: "private note"},
 		OccurredAt: instant.Add(-time.Hour), Strength: 1, Sources: []string{"private-conversation"}}
-	public := memory.Fragment{ID: "public-id", Meaning: meaning.Point{Text: "public note"},
+	public := memory.Fragment{ID: publicID, Meaning: meaning.Point{Text: "public note"},
 		OccurredAt: instant.Add(-time.Minute), Strength: 1, Sources: []string{"public-conversation"}}
 	var requestInput string
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -366,7 +369,7 @@ func TestInterpretPreservesWithheldShortTermFragments(t *testing.T) {
 			"memory": map[string]any{"context": nil, "working": []any{
 				map[string]any{"id": "copy-id", "meaning": map[string]string{"text": public.Meaning.Text},
 					jsonOccurredAt: instant.Add(time.Hour).Format(time.RFC3339), jsonEmotion: 0, jsonWill: 0, jsonStrength: 1},
-				map[string]any{"id": "private-copy", "meaning": map[string]string{"text": private.Meaning.Text},
+				map[string]any{"id": privateCopyID, "meaning": map[string]string{"text": private.Meaning.Text},
 					jsonOccurredAt: instant.Add(time.Hour).Format(time.RFC3339), jsonEmotion: 0, jsonWill: 0, jsonStrength: 1},
 			}, "remember": []any{}, "recalled": []string{}}}
 		encoded, err := json.Marshal(output)
@@ -420,6 +423,32 @@ func TestRestoreMemoryMetadataMergesExactTextProvenanceWhenIDIsReused(t *testing
 	if len(change.Working) != 1 || !slices.Equal(change.Working[0].Sources, sourced.Sources) ||
 		!change.Working[0].OccurredAt.Equal(unsourced.OccurredAt) {
 		t.Fatalf("restored reused ID metadata = %#v", change.Working)
+	}
+}
+
+func TestRestoreMemoryMetadataFiltersWithheldCopiesAcrossGroupsAndPreservesNull(t *testing.T) {
+	t.Parallel()
+
+	private := memory.Fragment{ID: privateID, Meaning: meaning.Point{Text: "shared text"},
+		OccurredAt: time.Unix(100, 0), Sources: []string{"private-source"}}
+	public := memory.Fragment{ID: publicID, Meaning: meaning.Point{Text: "shared text"},
+		OccurredAt: time.Unix(200, 0), Sources: []string{"public-source"}}
+	request := thought.Request{Experience: &mind.Experience{Working: []memory.Fragment{private, public}}}
+	change := &memory.Change{
+		Context: []memory.Fragment{{ID: privateCopyID, Meaning: private.Meaning}},
+		Working: nil,
+		Remember: []memory.Fragment{{ID: "remember-copy", Meaning: private.Meaning},
+			{ID: "public-copy", Meaning: public.Meaning}},
+	}
+
+	restoreMemoryMetadata(change, request, nil, []string{public.ID}, nil)
+	if len(change.Context) != 1 || change.Context[0].ID != privateCopyID ||
+		len(change.Remember) != 2 || change.Remember[0].ID != "remember-copy" ||
+		change.Remember[1].ID != "public-copy" {
+		t.Fatalf("filtered memory groups context=%#v remember=%#v", change.Context, change.Remember)
+	}
+	if change.Working != nil {
+		t.Fatalf("null working group became a replacement: %#v", change.Working)
 	}
 }
 
