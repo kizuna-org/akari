@@ -29,13 +29,14 @@ func (err fault) Error() string { return string(err) }
 type Input struct {
 	ID      string
 	Content string
+	Sources []string
 }
 
 // RunnerFactory builds a thought runner for one input.
 type RunnerFactory func(Input) thought.Runner
 
-// Sink delivers only an adopted response.
-type Sink func(context.Context, Input, string) error
+// DeliveryPlanner creates a trusted outbox intent; it does not execute the action.
+type DeliveryPlanner func(Input, string) (continuity.Intent, error)
 
 const (
 	inputKey    = "interaction/input"
@@ -46,7 +47,7 @@ const (
 type Loop struct {
 	session           *lifecycle.Session
 	runner            RunnerFactory
-	sink              Sink
+	delivery          DeliveryPlanner
 	mu                sync.Mutex
 	paused            bool
 	pauseSeq          uint64
@@ -58,15 +59,16 @@ type Loop struct {
 	cancelInteraction func()
 }
 
-func New(session *lifecycle.Session, runner RunnerFactory, sink Sink) (*Loop, error) {
-	if session == nil || runner == nil || sink == nil {
+func New(session *lifecycle.Session, runner RunnerFactory, delivery DeliveryPlanner) (*Loop, error) {
+	if session == nil || runner == nil || delivery == nil {
 		return nil, ErrConfig
 	}
 	gate := make(chan struct{}, 1)
 	gate <- struct{}{}
 
-	return &Loop{session: session, runner: runner, sink: sink, mu: sync.Mutex{}, paused: false, pauseSeq: 0, closed: false,
-		changed: make(chan struct{}), closedCh: make(chan struct{}), gate: gate, cleanup: nil,
+	return &Loop{session: session, runner: runner, delivery: delivery, mu: sync.Mutex{}, paused: false,
+		pauseSeq: 0, closed: false, changed: make(chan struct{}), closedCh: make(chan struct{}),
+		gate: gate, cleanup: nil,
 		cancelInteraction: func() { session.Cancel("interaction") }}, nil
 }
 
@@ -179,6 +181,12 @@ func (loop *Loop) Handle(ctx context.Context, input Input) error {
 	}
 	runner := loop.runner(input)
 	loop.mu.Lock()
+	callerErr := ctx.Err()
+	if callerErr != nil {
+		loop.mu.Unlock()
+
+		return callerErr
+	}
 	if loop.closed {
 		loop.mu.Unlock()
 
@@ -213,13 +221,20 @@ func (loop *Loop) Handle(ctx context.Context, input Input) error {
 	if response == "" {
 		return ErrResponse
 	}
-	if _, err = loop.session.Accept(ctx, token, []continuity.Intent{}); err != nil {
+	intent, err := loop.delivery(input, response)
+	if err != nil {
+		return err
+	}
+	if intent.ID == "" || intent.Tool == "" || len(intent.Arguments) == 0 {
+		return continuity.ErrAction
+	}
+	intent.Sources = append(intent.Sources, input.Sources...)
+	if _, err = loop.session.Accept(ctx, token, []continuity.Intent{intent}); err != nil {
 		return loop.resolveInterruption(ctx, pauseSeq, err)
 	}
+	_, err = loop.session.Dispatch(ctx, intent.ID)
 
-	return loop.session.Operate(ctx, func(deliveryCtx context.Context) error {
-		return loop.sink(deliveryCtx, input, response)
-	})
+	return err
 }
 
 // wait observes Close even when the runner ignores the cancellation it receives.
@@ -295,34 +310,35 @@ func (loop *Loop) acquire(ctx context.Context) error {
 func (loop *Loop) release() { loop.gate <- struct{}{} }
 
 func (loop *Loop) awaitCleanup(ctx context.Context) error {
-	loop.mu.Lock()
-	cleanup := loop.cleanup
-	changed := loop.changed
-	closed := loop.closed
-	loop.mu.Unlock()
-	if closed {
-		return lifecycle.ErrClosed
-	}
-	if cleanup == nil {
-		return nil
-	}
-	select {
-	case <-cleanup:
+	for {
 		loop.mu.Lock()
-		if loop.cleanup == cleanup {
-			loop.cleanup = nil
-		}
+		cleanup := loop.cleanup
+		changed := loop.changed
+		closed := loop.closed
 		loop.mu.Unlock()
-
-		return nil
-	case <-changed:
-		if err := loop.awaitOpen(ctx); err != nil {
-			return err
+		if closed {
+			return lifecycle.ErrClosed
 		}
+		if cleanup == nil {
+			return nil
+		}
+		select {
+		case <-cleanup:
+			loop.mu.Lock()
+			if loop.cleanup == cleanup {
+				loop.cleanup = nil
+			}
+			loop.mu.Unlock()
 
-		return loop.awaitCleanup(ctx)
-	case <-ctx.Done():
-		return ctx.Err()
+			return nil
+		case <-changed:
+			if err := loop.awaitOpen(ctx); err != nil {
+				return err
+			}
+
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
 }
 

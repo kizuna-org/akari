@@ -3,6 +3,7 @@ package runtime
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,12 +15,16 @@ import (
 	"github.com/kizuna-org/akari/internal/action"
 	"github.com/kizuna-org/akari/internal/continuity"
 	"github.com/kizuna-org/akari/internal/lifecycle"
+	"github.com/kizuna-org/akari/internal/memory"
 	"github.com/kizuna-org/akari/internal/mind"
 	"github.com/kizuna-org/akari/internal/persistence"
 	"github.com/kizuna-org/akari/internal/thought"
 )
 
 const fakeProposalID = "fake"
+const testDeliveryTool = "runtime.test_delivery"
+
+type testSink func(context.Context, Input, string) error
 
 //nolint:cyclop,gocognit // The table covers success and invalid-input behavior through one lifecycle fixture.
 func TestLoopHandleAndLifecycle(t *testing.T) {
@@ -36,9 +41,14 @@ func TestLoopHandleAndLifecycle(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			session := newSession(t)
 			var deliveredMu sync.Mutex
 			var delivered []string
+			session := newSession(t, func(_ context.Context, input Input, response string) error {
+				deliveredMu.Lock()
+				defer deliveredMu.Unlock()
+				delivered = append(delivered, input.ID+":"+response)
+				return nil
+			})
 			loop, err := New(session, func(input Input) thought.Runner {
 				return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
 					key := inputKey
@@ -52,13 +62,7 @@ func TestLoopHandleAndLifecycle(t *testing.T) {
 					return mind.Proposal{ID: fakeProposalID, Reads: reads,
 						Writes: map[string]string{responseStateKey: "echo: " + input.Content}}, nil
 				}
-			}, func(_ context.Context, input Input, response string) error {
-				deliveredMu.Lock()
-				defer deliveredMu.Unlock()
-				delivered = append(delivered, input.ID+":"+response)
-
-				return nil
-			})
+			}, testDeliveryIntent)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -90,27 +94,64 @@ func TestLoopHandleAndLifecycle(t *testing.T) {
 	}
 }
 
+func TestLoopDeliveryChecksTrustedSourcesBeforeDispatch(t *testing.T) {
+	t.Parallel()
+
+	var dispatched atomic.Int32
+	session := newSession(t, func(context.Context, Input, string) error {
+		dispatched.Add(1)
+		return nil
+	})
+	loop, err := New(session, func(Input) thought.Runner {
+		return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
+			return mind.Proposal{ID: fakeProposalID,
+				Reads: map[string]uint64{inputKey: snapshot.Items[inputKey].Version,
+					responseKey: snapshot.Items[responseKey].Version},
+				Writes: map[string]string{responseKey: "private response"}}, nil
+		}
+	}, testDeliveryIntent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot := session.Snapshot()
+	_, err = session.Adopt(t.Context(), mind.Proposal{ID: "private-agreement", Reads: nil, Writes: nil,
+		Inner: &mind.Update{Expected: snapshot.Experience.Versions,
+			Memory: &memory.Change{Context: nil, Working: nil, Remember: nil, Recalled: nil,
+				Agreements: []memory.Agreement{{Conversation: "private-memory", Recipients: nil}}},
+			Goals: nil, Interests: nil, Appraisal: nil, Load: 0, Rest: 0, Advance: false}, Prediction: false}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = loop.Handle(t.Context(), Input{ID: "private", Content: "private context", Sources: []string{"private-memory"}})
+	if !errors.Is(err, action.ErrDisclosure) {
+		t.Fatalf("Handle error = %v, want disclosure rejection", err)
+	}
+	if dispatched.Load() != 0 {
+		t.Fatal("private response reached the delivery adapter")
+	}
+}
+
 func TestSessionCloseDrainsBlockedResponseDelivery(t *testing.T) {
 	t.Parallel()
 
-	session := newSession(t)
 	deliveryStarted := make(chan struct{})
 	deliveryCanceled := make(chan struct{})
 	releaseDelivery := make(chan struct{})
+	session := newSession(t, func(ctx context.Context, _ Input, _ string) error {
+		close(deliveryStarted)
+		<-ctx.Done()
+		close(deliveryCanceled)
+		<-releaseDelivery
+		return nil
+	})
 	loop, err := New(session, func(input Input) thought.Runner {
 		return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
 			return mind.Proposal{ID: fakeProposalID, Reads: map[string]uint64{
 				inputKey: snapshot.Items[inputKey].Version, responseKey: snapshot.Items[responseKey].Version,
 			}, Writes: map[string]string{responseKey: input.ID}}, nil
 		}
-	}, func(ctx context.Context, _ Input, _ string) error {
-		close(deliveryStarted)
-		<-ctx.Done()
-		close(deliveryCanceled)
-		<-releaseDelivery
-
-		return nil
-	})
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,9 +180,14 @@ func TestSessionCloseDrainsBlockedResponseDelivery(t *testing.T) {
 //nolint:noinlineerr // Each operation's error is asserted inline for clarity.
 func TestPauseResumeAndClose(t *testing.T) {
 	t.Parallel()
-	session := newSession(t)
 	started := make(chan struct{})
 	var calls atomic.Int32
+	session := newSession(t, func(_ context.Context, _ Input, response string) error {
+		if response != "resumed" {
+			t.Errorf("response = %q", response)
+		}
+		return nil
+	})
 	loop, err := New(session, func(Input) thought.Runner {
 		return func(ctx context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
 			if calls.Add(1) == 1 {
@@ -158,13 +204,7 @@ func TestPauseResumeAndClose(t *testing.T) {
 			return mind.Proposal{ID: fakeProposalID, Reads: reads,
 				Writes: map[string]string{responseKey: "resumed"}}, nil
 		}
-	}, func(_ context.Context, _ Input, response string) error {
-		if response != "resumed" {
-			t.Errorf("response = %q", response)
-		}
-
-		return nil
-	})
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,13 +238,16 @@ func TestPauseResumeAndClose(t *testing.T) {
 func TestPauseCancelsBeforeResumeAdmitsNewInteraction(t *testing.T) {
 	t.Parallel()
 
-	session := newSession(t)
 	firstStarted := make(chan struct{})
 	secondStarted := make(chan struct{})
 	resumeEntered := make(chan struct{})
 	cancelEntered := make(chan struct{})
 	releaseCancel := make(chan struct{})
 	delivered := make(chan struct{})
+	session := newSession(t, func(context.Context, Input, string) error {
+		close(delivered)
+		return nil
+	})
 	var cancelGate sync.Once
 	var releaseGate sync.Once
 	var calls atomic.Int32
@@ -225,10 +268,7 @@ func TestPauseCancelsBeforeResumeAdmitsNewInteraction(t *testing.T) {
 					responseKey: snapshot.Items[responseKey].Version},
 				Writes: map[string]string{responseKey: "resumed"}}, nil
 		}
-	}, func(context.Context, Input, string) error {
-		close(delivered)
-		return nil
-	})
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -310,7 +350,7 @@ func TestCallerCancellationReleasesInteractionSlot(t *testing.T) {
 				inputKey: snapshot.Items[inputKey].Version, responseKey: snapshot.Items[responseKey].Version,
 			}, Writes: map[string]string{responseKey: "after cancellation"}}, nil
 		}
-	}, func(context.Context, Input, string) error { return nil })
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +388,7 @@ func TestRunSourceLifecycle(t *testing.T) {
 				return func(context.Context, mind.Snapshot) (mind.Proposal, error) {
 					return mind.Proposal{ID: "unused", Reads: nil, Writes: nil, Inner: nil, Prediction: false}, nil
 				}
-			}, func(context.Context, Input, string) error { return nil })
+			}, testDeliveryIntent)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -375,7 +415,7 @@ func TestRunRechecksCloseAfterAwaitOpen(t *testing.T) {
 		return func(context.Context, mind.Snapshot) (mind.Proposal, error) {
 			return mind.Proposal{}, nil
 		}
-	}, func(context.Context, Input, string) error { return nil })
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -411,7 +451,7 @@ func TestLoopFailureOutcomes(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			session := newSession(t)
+			session := newSession(t, func(context.Context, Input, string) error { return test.sinkError })
 			loop, err := New(session, func(input Input) thought.Runner {
 				return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
 					if input.Content == "model-error" {
@@ -426,7 +466,7 @@ func TestLoopFailureOutcomes(t *testing.T) {
 						responseKey: snapshot.Items[responseKey].Version,
 					}, Writes: map[string]string{responseKey: "answer"}}, nil
 				}
-			}, func(context.Context, Input, string) error { return test.sinkError })
+			}, testDeliveryIntent)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -445,14 +485,14 @@ func TestLoopFailureOutcomes(t *testing.T) {
 func TestLoopConfigurationAndPausedCancellation(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name      string
-		noSession bool
-		noRunner  bool
-		noSink    bool
+		name       string
+		noSession  bool
+		noRunner   bool
+		noDelivery bool
 	}{
-		{name: "missing session", noSession: true, noRunner: false, noSink: false},
-		{name: "missing runner", noSession: false, noRunner: true, noSink: false},
-		{name: "missing sink", noSession: false, noRunner: false, noSink: true},
+		{name: "missing session", noSession: true, noRunner: false, noDelivery: false},
+		{name: "missing runner", noSession: false, noRunner: true, noDelivery: false},
+		{name: "missing delivery planner", noSession: false, noRunner: false, noDelivery: true},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -469,8 +509,8 @@ func TestLoopConfigurationAndPausedCancellation(t *testing.T) {
 			if test.noRunner {
 				runner = nil
 			}
-			sink := Sink(func(context.Context, Input, string) error { return nil })
-			if test.noSink {
+			sink := DeliveryPlanner(testDeliveryIntent)
+			if test.noDelivery {
 				sink = nil
 			}
 			_, err := New(session, runner, sink)
@@ -484,7 +524,7 @@ func TestLoopConfigurationAndPausedCancellation(t *testing.T) {
 		return func(context.Context, mind.Snapshot) (mind.Proposal, error) {
 			return mind.Proposal{ID: "", Reads: nil, Writes: nil, Inner: nil, Prediction: false}, nil
 		}
-	}, func(context.Context, Input, string) error { return nil })
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -499,9 +539,12 @@ func TestLoopConfigurationAndPausedCancellation(t *testing.T) {
 
 func TestRunContinuesAfterPauseAndResume(t *testing.T) {
 	t.Parallel()
-	session := newSession(t)
 	started := make(chan struct{})
 	secondDelivered := make(chan struct{})
+	session := newSession(t, func(context.Context, Input, string) error {
+		close(secondDelivered)
+		return nil
+	})
 	var calls atomic.Int32
 	loop, err := New(session, func(Input) thought.Runner {
 		return func(ctx context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
@@ -517,11 +560,7 @@ func TestRunContinuesAfterPauseAndResume(t *testing.T) {
 					responseKey: snapshot.Items[responseKey].Version},
 				Writes: map[string]string{responseKey: "after resume"}}, nil
 		}
-	}, func(context.Context, Input, string) error {
-		close(secondDelivered)
-
-		return nil
-	})
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -547,11 +586,14 @@ func TestRunContinuesAfterPauseAndResume(t *testing.T) {
 func TestRunWaitsForResumeWhenPauseInterruptsRunnerFactory(t *testing.T) {
 	t.Parallel()
 
-	session := newSession(t)
 	factoryStarted := make(chan struct{})
 	releaseFactory := make(chan struct{})
 	var factoryCalls atomic.Int32
 	delivered := make(chan string, 2)
+	session := newSession(t, func(_ context.Context, _ Input, response string) error {
+		delivered <- response
+		return nil
+	})
 	loop, err := New(session, func(input Input) thought.Runner {
 		if factoryCalls.Add(1) == 1 {
 			close(factoryStarted)
@@ -563,10 +605,7 @@ func TestRunWaitsForResumeWhenPauseInterruptsRunnerFactory(t *testing.T) {
 					responseKey: snapshot.Items[responseKey].Version},
 				Writes: map[string]string{responseKey: input.ID}}, nil
 		}
-	}, func(_ context.Context, _ Input, response string) error {
-		delivered <- response
-		return nil
-	})
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -599,7 +638,7 @@ func TestRunCloseWakesIdleInputSource(t *testing.T) {
 		return func(context.Context, mind.Snapshot) (mind.Proposal, error) {
 			return mind.Proposal{}, nil
 		}
-	}, func(context.Context, Input, string) error { return nil })
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -625,7 +664,7 @@ func TestRunCloseCancelsActiveThought(t *testing.T) {
 			<-ctx.Done()
 			return mind.Proposal{}, ctx.Err()
 		}
-	}, func(context.Context, Input, string) error { return nil })
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -667,7 +706,7 @@ func TestCloseUnblocksWaitWhenRunnerIgnoresCancellation(t *testing.T) {
 						inputKey: snapshot.Items[inputKey].Version, responseKey: snapshot.Items[responseKey].Version,
 					}, Writes: map[string]string{responseKey: "late response"}}, test.runnerErr
 				}
-			}, func(context.Context, Input, string) error { return nil })
+			}, testDeliveryIntent)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -707,7 +746,7 @@ func TestLoopWaitsForItsOwnCompletionAndBoundsWorkspace(t *testing.T) {
 					responseKey: snapshot.Items[responseKey].Version},
 				Writes: map[string]string{responseKey: "answer"}}, nil
 		}
-	}, func(context.Context, Input, string) error { return nil })
+	}, testDeliveryIntent)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -736,10 +775,12 @@ func TestLoopLifecycleTransitionDuringRunnerFactoryPreventsAdmission(t *testing.
 	tests := []struct {
 		name       string
 		transition func(*Loop)
+		cancel     bool
 		want       error
 	}{
 		{name: "pause", transition: (*Loop).Pause, want: context.Canceled},
 		{name: "close", transition: (*Loop).Close, want: lifecycle.ErrClosed},
+		{name: "caller cancellation", cancel: true, want: context.Canceled},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -755,14 +796,20 @@ func TestLoopLifecycleTransitionDuringRunnerFactoryPreventsAdmission(t *testing.
 					runnerCalls.Add(1)
 					return mind.Proposal{}, nil
 				}
-			}, func(context.Context, Input, string) error { return nil })
+			}, testDeliveryIntent)
 			if err != nil {
 				t.Fatal(err)
 			}
 			done := make(chan error, 1)
-			go func() { done <- loop.Handle(t.Context(), Input{ID: "race", Content: "x"}) }()
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			go func() { done <- loop.Handle(ctx, Input{ID: "race", Content: "x"}) }()
 			<-factoryStarted
-			test.transition(loop)
+			if test.cancel {
+				cancel()
+			} else {
+				test.transition(loop)
+			}
 			close(releaseFactory)
 			handleErr := <-done
 			if !errors.Is(handleErr, test.want) {
@@ -775,6 +822,55 @@ func TestLoopLifecycleTransitionDuringRunnerFactoryPreventsAdmission(t *testing.
 				t.Fatal("runner started after lifecycle transition")
 			}
 		})
+	}
+}
+
+func TestCleanupWaitHandlesRepeatedLifecycleNotificationsIteratively(t *testing.T) {
+	t.Parallel()
+
+	session := newSession(t)
+	runnerStarted := make(chan struct{})
+	releaseRunner := make(chan struct{})
+	var calls atomic.Int32
+	loop, err := New(session, func(Input) thought.Runner {
+		if calls.Add(1) == 1 {
+			return func(context.Context, mind.Snapshot) (mind.Proposal, error) {
+				close(runnerStarted)
+				<-releaseRunner
+				return mind.Proposal{}, nil
+			}
+		}
+		return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
+			return mind.Proposal{ID: fakeProposalID,
+				Reads: map[string]uint64{inputKey: snapshot.Items[inputKey].Version,
+					responseKey: snapshot.Items[responseKey].Version},
+				Writes: map[string]string{responseKey: "after cleanup"}}, nil
+		}
+	}, testDeliveryIntent)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	first := make(chan error, 1)
+	go func() { first <- loop.Handle(ctx, Input{ID: "first", Content: "cancel"}) }()
+	<-runnerStarted
+	cancel()
+	if err := <-first; !errors.Is(err, context.Canceled) {
+		t.Fatalf("first Handle error = %v", err)
+	}
+	second := make(chan error, 1)
+	go func() { second <- loop.Handle(t.Context(), Input{ID: "second", Content: "continue"}) }()
+	for range 1000 {
+		loop.Resume()
+	}
+	close(releaseRunner)
+	select {
+	case err := <-second:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("second Handle did not resume after cleanup")
 	}
 }
 
@@ -793,18 +889,19 @@ func TestLoopSerializationWaitObservesCancellationAndClose(t *testing.T) {
 			t.Parallel()
 			sinkStarted := make(chan struct{})
 			releaseSink := make(chan struct{})
-			loop, err := New(newSession(t), func(Input) thought.Runner {
+			session := newSession(t, func(context.Context, Input, string) error {
+				close(sinkStarted)
+				<-releaseSink
+				return nil
+			})
+			loop, err := New(session, func(Input) thought.Runner {
 				return func(_ context.Context, snapshot mind.Snapshot) (mind.Proposal, error) {
 					return mind.Proposal{ID: fakeProposalID,
 						Reads: map[string]uint64{inputKey: snapshot.Items[inputKey].Version,
 							responseKey: snapshot.Items[responseKey].Version},
 						Writes: map[string]string{responseKey: "answer"}}, nil
 				}
-			}, func(context.Context, Input, string) error {
-				close(sinkStarted)
-				<-releaseSink
-				return nil
-			})
+			}, testDeliveryIntent)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -835,18 +932,43 @@ func TestLoopSerializationWaitObservesCancellationAndClose(t *testing.T) {
 }
 
 //nolint:noinlineerr // Cleanup reports errors through the test handle.
-func newSession(t *testing.T) *lifecycle.Session {
+func newSession(t *testing.T, sinks ...testSink) *lifecycle.Session {
 	t.Helper()
+	sink := testSink(func(context.Context, Input, string) error { return nil })
+	if len(sinks) > 0 {
+		sink = sinks[0]
+	}
 	store, err := persistence.New(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
-	gateway, err := action.New(nil, 1)
+	tools := map[string]action.Prepare{
+		testDeliveryTool: func(raw []byte) (action.Operation, error) {
+			var arguments struct {
+				InputID      string `json:"inputId"`
+				InputContent string `json:"inputContent"`
+				Destination  string `json:"destination"`
+				Response     string `json:"response"`
+			}
+			if err := json.Unmarshal(raw, &arguments); err != nil {
+				return action.Operation{}, err
+			}
+			return action.Operation{Impact: action.Speech, Destination: arguments.Destination,
+				ConflictKey: arguments.Destination,
+				Call: func(ctx context.Context) ([]byte, error) {
+					return nil, sink(ctx, Input{ID: arguments.InputID, Content: arguments.InputContent}, arguments.Response)
+				}, CallWithKey: nil, Sources: nil}, nil
+		},
+	}
+	gateway, err := action.New(tools, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	config := lifecycle.FoundationConfig()
 	config.State.Inner.Clock = func() time.Time { return time.Unix(100, 0).UTC() }
+	config.State.Scope = func(mind.Snapshot) action.Scope {
+		return action.Scope{AllowedDestinations: []string{"test:recipient"}, ReadyRecipients: []string{"test:recipient"}}
+	}
 	session, err := lifecycle.Open(t.Context(), store, gateway, config)
 	if err != nil {
 		t.Fatal(err)
@@ -860,4 +982,16 @@ func newSession(t *testing.T) *lifecycle.Session {
 	})
 
 	return session
+}
+
+func testDeliveryIntent(input Input, response string) (continuity.Intent, error) {
+	arguments, err := json.Marshal(map[string]string{
+		"inputId": input.ID, "inputContent": input.Content, "destination": "test:recipient", "response": response,
+	})
+	if err != nil {
+		return continuity.Intent{}, err
+	}
+
+	return continuity.Intent{ID: "interaction/response/" + input.ID, Tool: testDeliveryTool,
+		Arguments: arguments, Sources: append([]string{}, input.Sources...)}, nil
 }

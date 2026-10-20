@@ -425,7 +425,7 @@ func (owner *Owner) plan(ctx context.Context, next *Frame, workspace *mind.Works
 			return ErrAction
 		}
 
-		pending, err := session.Plan(ctx, intent.Tool, intent.Arguments)
+		pending, err := session.PlanWithSources(ctx, intent.Tool, intent.Arguments, intent.Sources)
 		if err != nil {
 			return err
 		}
@@ -443,7 +443,9 @@ func (owner *Owner) reprepare(ctx context.Context, record Record) (*action.Pendi
 	scope := owner.config.Scope(owner.Snapshot())
 	scope.Disclosure = owner.AllowsDisclosure
 
-	pending, err := owner.gateway.Open(false, scope).Plan(ctx, record.Command.Tool, record.Command.Arguments)
+	pending, err := owner.gateway.Open(false, scope).PlanWithSources(
+		ctx, record.Command.Tool, record.Command.Arguments, record.Command.Sources,
+	)
 	if err != nil {
 		return nil, err
 	}

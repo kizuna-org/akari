@@ -69,7 +69,7 @@ func proposal() mind.Proposal {
 }
 
 func intents() []continuity.Intent {
-	return []continuity.Intent{{ID: actionID, Tool: toolName, Arguments: []byte("target")}}
+	return []continuity.Intent{{ID: actionID, Tool: toolName, Arguments: []byte("target"), Sources: nil}}
 }
 
 func TestNormalStopRestoresStateAndRejectsDuplicate(t *testing.T) {
