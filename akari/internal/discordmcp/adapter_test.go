@@ -48,6 +48,7 @@ func newAdapter(
 	return &Adapter{
 		Client: client, CallbackURL: callbackURL, Secret: secret,
 		Handler: handler, Now: now, eventsMu: sync.Mutex{}, events: nil,
+		maxEvents: 0,
 	}
 }
 
@@ -892,6 +893,76 @@ func TestAdapterCoordinatesConcurrentDuplicateEvents(t *testing.T) {
 	}
 	if got := calls.Load(); got != 1 {
 		t.Fatalf("handler calls %d, want 1", got)
+	}
+}
+
+//nolint:cyclop,gocognit,wsl,wsl_v5 // Both capacity and expiry must preserve active deduplication entries.
+func TestAdapterDedupDoesNotEvictInFlightEvents(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		capacity     int
+		extraAt      time.Time
+		wantCapacity bool
+	}{
+		{name: "full with active event", capacity: 1, extraAt: time.Now(), wantCapacity: true},
+		{name: "expired active event", capacity: 2, extraAt: time.Now().Add(2 * time.Hour), wantCapacity: false},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			started := make(chan struct{})
+			duplicateStarted := make(chan struct{})
+			release := make(chan struct{})
+			var activeCalls atomic.Int32
+			adapter := newAdapter(nil, "", testSecret, func(_ context.Context, event Event) error {
+				if event.ID == "active" {
+					if activeCalls.Add(1) == 1 {
+						close(started)
+					} else {
+						close(duplicateStarted)
+					}
+					<-release
+				}
+
+				return nil
+			}, nil)
+			adapter.maxEvents = test.capacity
+			event := Event{ID: "active", Name: messageEventName, Payload: nil}
+			first := make(chan error, 1)
+			go func() { first <- adapter.deliver(context.Background(), event, time.Now()) }()
+			<-started
+
+			extraErr := adapter.deliver(context.Background(), Event{ID: "other", Name: messageEventName,
+				Payload: nil}, test.extraAt)
+			if test.wantCapacity && !errors.Is(extraErr, errEventCapacity) {
+				t.Fatalf("extra event error = %v, want capacity", extraErr)
+			}
+			if !test.wantCapacity && extraErr != nil {
+				t.Fatalf("extra event error = %v", extraErr)
+			}
+
+			duplicate := make(chan error, 1)
+			go func() { duplicate <- adapter.deliver(context.Background(), event, test.extraAt) }()
+			select {
+			case <-duplicateStarted:
+				t.Fatal("in-flight event was dispatched twice")
+			case <-time.After(20 * time.Millisecond):
+			}
+			close(release)
+			err := <-first
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = <-duplicate
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := activeCalls.Load(); got != 1 {
+				t.Fatalf("active handler calls = %d, want 1", got)
+			}
+		})
 	}
 }
 

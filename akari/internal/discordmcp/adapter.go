@@ -17,6 +17,7 @@ var (
 	errDestination   = errors.New("discordmcp: destination is required")
 	errContent       = errors.New("discordmcp: content is required")
 	errConfiguration = errors.New("discordmcp: adapter configuration is incomplete")
+	errEventCapacity = errors.New("discordmcp: event deduplication capacity is full")
 )
 
 const operationArgumentCount = 2
@@ -38,12 +39,14 @@ type Adapter struct {
 	Now         func() time.Time
 	eventsMu    sync.Mutex
 	events      map[string]*eventDelivery
+	maxEvents   int
 }
 
 type eventDelivery struct {
-	done    chan struct{}
-	err     error
-	expires time.Time
+	done      chan struct{}
+	err       error
+	expires   time.Time
+	completed bool
 }
 
 const maxRememberedEvents = 4096
@@ -177,7 +180,7 @@ func (a *Adapter) deliver(ctx context.Context, event Event, now time.Time) error
 		a.events = make(map[string]*eventDelivery)
 	}
 	for id, delivery := range a.events {
-		if !delivery.expires.After(now) {
+		if delivery.completed && !delivery.expires.After(now) {
 			delete(a.events, id)
 		}
 	}
@@ -190,18 +193,27 @@ func (a *Adapter) deliver(ctx context.Context, event Event, now time.Time) error
 			return existing.err
 		}
 	}
-	if len(a.events) >= maxRememberedEvents {
+	capacity := a.maxEvents
+	if capacity == 0 {
+		capacity = maxRememberedEvents
+	}
+	if len(a.events) >= capacity {
 		// Evict the earliest expiry to keep memory bounded.
 		var oldestID string
 		var oldest time.Time
 		for id, delivery := range a.events {
-			if oldestID == "" || delivery.expires.Before(oldest) {
+			if delivery.completed && (oldestID == "" || delivery.expires.Before(oldest)) {
 				oldestID, oldest = id, delivery.expires
 			}
 		}
+		if oldestID == "" {
+			a.eventsMu.Unlock()
+
+			return errEventCapacity
+		}
 		delete(a.events, oldestID)
 	}
-	delivery := &eventDelivery{done: make(chan struct{}), err: nil, expires: now.Add(time.Hour)}
+	delivery := &eventDelivery{done: make(chan struct{}), err: nil, expires: time.Time{}, completed: false}
 	a.events[event.ID] = delivery
 	a.eventsMu.Unlock()
 
@@ -209,6 +221,13 @@ func (a *Adapter) deliver(ctx context.Context, event Event, now time.Time) error
 	a.eventsMu.Lock()
 	if delivery.err != nil {
 		delete(a.events, event.ID)
+	} else {
+		delivery.completed = true
+		completedAt := time.Now()
+		if a.Now != nil {
+			completedAt = a.Now()
+		}
+		delivery.expires = completedAt.Add(time.Hour)
 	}
 	close(delivery.done)
 	a.eventsMu.Unlock()
