@@ -171,15 +171,15 @@ func (session *Session) PlanWithSources(
 	}, nil
 }
 
-func mergeSources(adapterSources, trustedSources []string) []string {
-	result := slices.Clone(adapterSources)
+func mergeSources(operationSources, trustedSources []string) []string {
+	merged := slices.Clone(operationSources)
 	for _, source := range trustedSources {
-		if !slices.Contains(result, source) {
-			result = append(result, source)
+		if source != "" && !slices.Contains(merged, source) {
+			merged = append(merged, source)
 		}
 	}
 
-	return result
+	return merged
 }
 
 func (session *Session) check(operation Operation) error {
