@@ -34,7 +34,7 @@ func TestKnownMemoryDisclosure(t *testing.T) {
 			calls := new(atomic.Int32)
 			sources := []string{"private"}
 			gateway := newGateway(t, 1, func([]byte) (Operation, error) {
-				return Operation{Impact: Read, Destination: testDestination, ConflictKey: "", Sources: sources,
+				return Operation{Impact: Speech, Destination: testDestination, ConflictKey: testDestination, Sources: nil,
 					Call: func(ctx context.Context) ([]byte, error) {
 						calls.Add(1)
 
@@ -42,6 +42,7 @@ func TestKnownMemoryDisclosure(t *testing.T) {
 					}}, nil
 			})
 			scope := localScope()
+			scope.ReadyRecipients = []string{testDestination}
 			scope.Disclosure = workspace.AllowsDisclosure
 
 			if reason == missingPolicy {
@@ -52,7 +53,7 @@ func TestKnownMemoryDisclosure(t *testing.T) {
 				lockConversation(t, workspace)
 			}
 
-			pending, err := gateway.Open(false, scope).Plan(t.Context(), testTool, nil)
+			pending, err := gateway.Open(false, scope).PlanWithSources(t.Context(), testTool, nil, sources)
 			if reason == deniedDisclosure || reason == missingPolicy {
 				assertError(t, err, ErrDisclosure)
 

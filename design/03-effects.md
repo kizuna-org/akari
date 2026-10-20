@@ -71,3 +71,21 @@ predictionから承認トークンや外部更新の実行権限を引き継ぎ�
 外部送信後のtimeoutは「失敗」ではなく結果不明です。無条件で再試行しません。
 外部の冪等キーまたは照合APIがあれば復旧し、なければ状態を報告して確認へ回します。
 CLIの子プロセスも取消・timeoutで回収し、SDKの自動retryが錠を迂回しないようにします。
+
+## Discord MCP（MCP-01）
+
+初期の外部会話先は既存の Discord MCP Events サーバーです。Akari は
+`discord.message.created` の署名付き webhook 購読を受け取り、本文を含むイベントを
+会話処理へ渡します。購読期限の前に更新し、接続エラーは上限付き待機で再接続します。
+停止時は購読解除を試み、取消済みの処理を再送しません。Webhook の時刻と HMAC 署名を検証し、
+確認チャレンジには challenge を返します。
+
+Gateway に登録する送信作用は `discord_reply`（元メッセージへの返信）と
+`discord_send_message`（新規投稿）のみです。返信は `message_id`、新規投稿は `channel_id` を
+作用先として固定し、どちらも `content` と共に Gateway の発話境界へ渡します。
+他の一覧・検索・履歴・音声・イベント管理ツールは発見されても登録しません。
+購読範囲は運用側の Discord MCP principal とイベント購読引数で定まり、専用サーバーや
+チャンネルの作成を必要としません。
+
+このアダプターは MCP 接続・署名イベント受信・限定ツールの Gateway 登録を提供します。
+プロセスの host composition への起動接続は別の統合変更で行います。
