@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"net/url"
@@ -557,6 +558,12 @@ func restoreMemoryMetadata(change *memory.Change, request thought.Request, allow
 			trusted = append(trusted, fragment)
 		}
 	}
+	change.Context = filterWithheldCopies(change.Context, request.Experience.Context, allowedContext,
+		request.Experience.Working, allowedWorking, request.Recalled, allowedRecalled)
+	change.Working = filterWithheldCopies(change.Working, request.Experience.Context, allowedContext,
+		request.Experience.Working, allowedWorking, request.Recalled, allowedRecalled)
+	change.Remember = filterWithheldCopies(change.Remember, request.Experience.Context, allowedContext,
+		request.Experience.Working, allowedWorking, request.Recalled, allowedRecalled)
 	metadataByID := make(map[string]memory.Fragment, len(trusted))
 	metadataByText := make(map[string][]memory.Fragment, len(trusted))
 	for _, fragment := range trusted {
@@ -625,7 +632,7 @@ func appendAllowedFragments(destination, fragments []memory.Fragment, allowedIDs
 
 func preserveWithheldFragments(output, original []memory.Fragment, allowedIDs []string) []memory.Fragment {
 	withheld, withheldText := findWithheldFragments(original, allowedIDs)
-	if output == nil && len(withheld) == 0 {
+	if output == nil {
 		return nil
 	}
 	result := memory.CloneFragments(output)
@@ -651,6 +658,92 @@ func preserveWithheldFragments(output, original []memory.Fragment, allowedIDs []
 	}
 
 	return filtered
+}
+
+func filterWithheldCopies(
+	output, originalContext []memory.Fragment, allowedContext []string,
+	originalWorking []memory.Fragment, allowedWorking []string,
+	recalled []memory.Fragment, allowedRecalled map[string]struct{},
+) []memory.Fragment {
+	if output == nil {
+		return nil
+	}
+	withheldIDs, withheldText := withheldMemory(originalContext, allowedContext, originalWorking, allowedWorking,
+		recalled, allowedRecalled)
+	disclosedIDs := disclosedMemoryIDs(allowedContext, allowedWorking, allowedRecalled)
+	filtered := make([]memory.Fragment, 0, len(output))
+	for _, fragment := range output {
+		if _, privateID := withheldIDs[fragment.ID]; privateID {
+			continue
+		}
+		if _, privateText := withheldText[fragment.Meaning.Text]; privateText {
+			if _, trustedCopy := disclosedIDs[fragment.ID]; !trustedCopy {
+				continue
+			}
+		}
+		filtered = append(filtered, fragment)
+	}
+
+	return filtered
+}
+
+func withheldMemory(originalContext []memory.Fragment, allowedContext []string, originalWorking []memory.Fragment,
+	allowedWorking []string, recalled []memory.Fragment, allowedRecalled map[string]struct{},
+) (map[string]memory.Fragment, map[string]struct{}) {
+	withheldIDs, withheldText := findWithheldFragments(originalContext, allowedContext)
+	workingIDs, workingText := findWithheldFragments(originalWorking, allowedWorking)
+	mergeWithheld(withheldIDs, withheldText, workingIDs, workingText)
+	allowedRecallIDs := make([]string, 0, len(allowedRecalled))
+	for id := range allowedRecalled {
+		allowedRecallIDs = append(allowedRecallIDs, id)
+	}
+	recalledIDs, recalledText := findWithheldFragments(recalled, allowedRecallIDs)
+	mergeWithheld(withheldIDs, withheldText, recalledIDs, recalledText)
+	disclosedText := make(map[string]struct{})
+	collectDisclosedText(disclosedText, originalContext, allowedContext)
+	collectDisclosedText(disclosedText, originalWorking, allowedWorking)
+	for _, fragment := range recalled {
+		if _, allowed := allowedRecalled[fragment.ID]; allowed {
+			disclosedText[fragment.Meaning.Text] = struct{}{}
+		}
+	}
+	for text := range disclosedText {
+		delete(withheldText, text)
+	}
+
+	return withheldIDs, withheldText
+}
+
+func disclosedMemoryIDs(allowedContext, allowedWorking []string,
+	allowedRecalled map[string]struct{},
+) map[string]struct{} {
+	disclosed := make(map[string]struct{}, len(allowedContext)+len(allowedWorking)+len(allowedRecalled))
+	for _, ids := range [][]string{allowedContext, allowedWorking} {
+		for _, id := range ids {
+			disclosed[id] = struct{}{}
+		}
+	}
+	for id := range allowedRecalled {
+		disclosed[id] = struct{}{}
+	}
+
+	return disclosed
+}
+
+func collectDisclosedText(destination map[string]struct{}, fragments []memory.Fragment, allowedIDs []string) {
+	for _, fragment := range fragments {
+		if slices.Contains(allowedIDs, fragment.ID) {
+			destination[fragment.Meaning.Text] = struct{}{}
+		}
+	}
+}
+
+func mergeWithheld(
+	destinationIDs map[string]memory.Fragment, destinationText map[string]struct{},
+	sourceIDs map[string]memory.Fragment, sourceText map[string]struct{},
+) {
+	maps.Copy(destinationIDs, sourceIDs)
+	maps.Copy(destinationText, sourceText)
 }
 
 func findWithheldFragments(
