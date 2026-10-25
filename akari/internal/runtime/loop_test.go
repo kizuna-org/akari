@@ -825,6 +825,42 @@ func TestLoopLifecycleTransitionDuringRunnerFactoryPreventsAdmission(t *testing.
 	}
 }
 
+func TestAdmissionSequenceRequiresOpenLoop(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		transition func(*Loop)
+		want       error
+	}{
+		{name: "open"},
+		{name: "paused", transition: (*Loop).Pause, want: errPaused},
+		{name: "closed", transition: (*Loop).Close, want: lifecycle.ErrClosed},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			loop, err := New(newSession(t), func(Input) thought.Runner {
+				return func(context.Context, mind.Snapshot) (mind.Proposal, error) {
+					return mind.Proposal{}, nil
+				}
+			}, testDeliveryIntent)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if test.transition != nil {
+				test.transition(loop)
+			}
+			sequence, err := loop.admissionSequence()
+			if !errors.Is(err, test.want) {
+				t.Fatalf("admission sequence error = %v, want %v", err, test.want)
+			}
+			if test.want == nil && sequence != 0 {
+				t.Fatalf("initial pause sequence = %d, want 0", sequence)
+			}
+		})
+	}
+}
+
 func TestCleanupWaitHandlesRepeatedLifecycleNotificationsIteratively(t *testing.T) {
 	t.Parallel()
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"reflect"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -17,6 +18,8 @@ const (
 	testFile        = "file"
 	testPerson      = "person"
 	testTimeout     = 3 * time.Second
+	adapterSource   = "adapter"
+	trustedSource   = "trusted"
 )
 
 func TestConfiguration(t *testing.T) {
@@ -107,6 +110,41 @@ func TestPlanning(t *testing.T) {
 
 			if err == nil && pending.NeedsApproval() != test.approval {
 				t.Fatal("incorrect approval requirement")
+			}
+		})
+	}
+}
+
+func TestPlanWithSourcesPreservesAdapterSources(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		operation []string
+		trusted   []string
+		want      []string
+	}{
+		{name: "nil remains nil", operation: nil, trusted: nil, want: nil},
+		{name: "empty remains empty", operation: []string{}, trusted: nil, want: []string{}},
+		{name: "duplicates and empty adapter entries remain unchanged",
+			operation: []string{"", adapterSource, adapterSource},
+			trusted:   []string{"", adapterSource, trustedSource, trustedSource},
+			want:      []string{"", adapterSource, adapterSource, trustedSource}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			gateway := newGateway(t, 1, func([]byte) (Operation, error) {
+				return Operation{Impact: Read, Destination: testDestination, ConflictKey: "", Call: readCall,
+					Sources: test.operation}, nil
+			})
+			scope := localScope()
+			scope.Disclosure = func([]string, string) bool { return true }
+			pending, err := gateway.Open(false, scope).PlanWithSources(t.Context(), testTool, nil, test.trusted)
+			assertError(t, err, nil)
+
+			if !reflect.DeepEqual(pending.Command().Sources, test.want) {
+				t.Fatalf("command sources = %#v, want %#v", pending.Command().Sources, test.want)
 			}
 		})
 	}

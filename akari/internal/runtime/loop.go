@@ -169,9 +169,10 @@ func (loop *Loop) Handle(ctx context.Context, input Input) error {
 	if err := loop.awaitOpen(ctx); err != nil {
 		return err
 	}
-	loop.mu.Lock()
-	admissionPauseSeq := loop.pauseSeq
-	loop.mu.Unlock()
+	admissionPauseSeq, err := loop.admissionSequence()
+	if err != nil {
+		return err
+	}
 
 	snapshot := loop.session.Snapshot()
 	base := snapshot.Items[inputKey].Version
@@ -389,6 +390,19 @@ func (loop *Loop) transitionsSince(pauseSeq uint64) (bool, bool) {
 	defer loop.mu.Unlock()
 
 	return loop.closed, loop.pauseSeq != pauseSeq
+}
+
+func (loop *Loop) admissionSequence() (uint64, error) {
+	loop.mu.Lock()
+	defer loop.mu.Unlock()
+	if loop.closed {
+		return 0, lifecycle.ErrClosed
+	}
+	if loop.paused {
+		return 0, errors.Join(context.Canceled, errPaused)
+	}
+
+	return loop.pauseSeq, nil
 }
 
 func (loop *Loop) resolveInterruption(ctx context.Context, pauseSeq uint64, err error) error {
