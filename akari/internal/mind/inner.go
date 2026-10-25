@@ -32,6 +32,7 @@ const (
 // Experience is the subject's context: no configuration vector or full archival history.
 type Experience struct {
 	Emotion    emotion.State      `json:"emotion"`
+	Expression []emotion.Feeling  `json:"expression"`
 	Interests  []interest.Focus   `json:"interests"`
 	Goals      goal.State         `json:"goals"`
 	Context    []memory.Fragment  `json:"context"`
@@ -119,8 +120,9 @@ func (experience *Experience) Clone() *Experience {
 	}
 
 	return &Experience{
-		Emotion: experience.Emotion.Clone(), Interests: interest.Clone(experience.Interests),
-		Goals: experience.Goals.Clone(), Context: memory.CloneFragments(experience.Context),
+		Emotion: experience.Emotion.Clone(), Expression: emotion.CloneFeelings(experience.Expression),
+		Interests: interest.Clone(experience.Interests),
+		Goals:     experience.Goals.Clone(), Context: memory.CloneFragments(experience.Context),
 		Working: memory.CloneFragments(experience.Working), Agreements: memory.CloneAgreements(experience.Agreements),
 		Fatigue: experience.Fatigue, Versions: maps.Clone(experience.Versions),
 	}
@@ -242,7 +244,11 @@ func (state *innerState) experience() *Experience {
 	}
 
 	return &Experience{
-		Emotion: state.emotion.Clone(), Interests: interest.Clone(state.interests), Goals: state.goals.Clone(),
+		Emotion: state.emotion.Clone(),
+		Expression: emotion.Express(
+			state.emotion.Feelings, state.profile.Vector[persona.Expression],
+		),
+		Interests: interest.Clone(state.interests), Goals: state.goals.Clone(),
 		Context: memory.CloneFragments(state.memory.Context), Working: memory.CloneFragments(state.memory.Working),
 		Agreements: memory.CloneAgreements(state.memory.Agreements),
 		Fatigue:    state.fatigue, Versions: maps.Clone(state.versions),

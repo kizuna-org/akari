@@ -19,6 +19,7 @@ import (
 
 const capacityCase = "capacity"
 
+//nolint:cyclop,wsl,wsl_v5 // One shared continuity fixture checks quiet and reactive persona configurations.
 func TestInnerContinuity(t *testing.T) {
 	t.Parallel()
 
@@ -45,8 +46,14 @@ func TestInnerContinuity(t *testing.T) {
 			commitInner(t, workspace, update, nil)
 			experience := workspace.Snapshot().Experience
 
-			if experience.Emotion.Feelings[0].Strength != reactivity || experience.Fatigue != 0.5 ||
-				len(experience.Goals.Intentions) != 1 || len(experience.Emotion.Readiness) != 1 {
+			wantFeelingCount := 1
+			if reactivity <= 1e-6 {
+				wantFeelingCount = 0
+			}
+			if len(experience.Emotion.Feelings) != wantFeelingCount ||
+				(wantFeelingCount == 1 && experience.Emotion.Feelings[0].Strength != reactivity) ||
+				experience.Fatigue != 0.5 ||
+				len(experience.Goals.Intentions) != 1 || len(experience.Emotion.Readiness) != wantFeelingCount {
 				t.Fatal("fixed persona was replaced or adopted inner state was not retained")
 			}
 
@@ -60,7 +67,10 @@ func TestInnerContinuity(t *testing.T) {
 
 			checkpoint.Persona.Vector[persona.Reactivity] = 0.5
 			checkpoint.Archive.Day[0].Meaning.Vector[0] = 0
-			experience.Emotion.Feelings[0].Meaning.Vector[0] = 0
+			if wantFeelingCount == 1 {
+				experience.Emotion.Feelings[0].Meaning.Vector[0] = 0
+			}
+
 			experience.Goals.Intentions["promise"].Claims["work"] = "forged"
 			experience.Interests[0].Target.Vector[0] = 0
 			experience.Agreements[0].Recipients[0] = "bob"
@@ -71,7 +81,7 @@ func TestInnerContinuity(t *testing.T) {
 			commitInner(t, workspace, update.Clone(), nil)
 
 			latest := workspace.Snapshot().Experience
-			checkNextConversation(t, latest)
+			checkNextConversation(t, latest, reactivity)
 
 			instant = instant.Add(time.Hour)
 			update = freshUpdate(workspace)
@@ -80,11 +90,150 @@ func TestInnerContinuity(t *testing.T) {
 			commitInner(t, workspace, update, nil)
 
 			latest = workspace.Snapshot().Experience
-			if latest.Fatigue != 0 || latest.Emotion.Feelings[0].Strength != reactivity/2 ||
+			if latest.Fatigue != 0 || !hasExpectedDecay(latest.Emotion.Feelings, reactivity) ||
 				len(latest.Goals.Intentions) != 1 {
 				t.Fatal("rest, decay or persistent intention failed")
 			}
 		})
+	}
+}
+
+func hasExpectedDecay(feelings []emotion.Feeling, reactivity float64) bool {
+	if reactivity == 0 {
+		return len(feelings) == 0
+	}
+
+	return len(feelings) == 1 && feelings[0].Strength == reactivity/2
+}
+
+func TestEmotionShapesMultiTurnJudgmentPreparationAndExpression(t *testing.T) {
+	t.Parallel()
+
+	for _, test := range []struct {
+		name       string
+		expression float64
+	}{
+		{name: "restrained expression", expression: 0.2},
+		{name: "open expression", expression: 0.9},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			instant := time.Unix(100, 0)
+			config := persona.Default()
+			config.Vector[persona.Expression] = test.expression
+			workspace := innerWorkspace(t, config, 100, func() time.Time { return instant })
+			topic := semantic("conversation")
+			update := freshUpdate(workspace)
+			update.Appraisal = &emotion.Appraisal{
+				Feelings: []emotion.Feeling{{Meaning: topic, Strength: 1}}, Others: nil,
+				Readiness: []emotion.Feeling{{Meaning: topic, Strength: 1}}, MoodDelta: emotion.Mood{0.5, 0, 0},
+			}
+			update.Interests = []interest.Focus{{ID: "conversation", Target: topic, Affinity: 1}}
+			commitInner(t, workspace, update, nil)
+
+			first := workspace.Snapshot().Experience
+			firstSalience, firstPreparation := emotionMeasures(t, first, topic)
+			assertFirstEmotionExperience(t, first, emotionExperienceExpectation{
+				expression: test.expression, salience: firstSalience, preparation: firstPreparation,
+				firstSalience: 0, laterSalience: 0,
+			})
+
+			instant = instant.Add(time.Hour)
+			update = freshUpdate(workspace)
+			update.Appraisal = &emotion.Appraisal{
+				Feelings: []emotion.Feeling{{Meaning: topic, Strength: 0.5}}, Others: nil,
+				Readiness: []emotion.Feeling{{Meaning: topic, Strength: 0.5}}, MoodDelta: emotion.Mood{-0.2, 0, 0},
+			}
+			commitInner(t, workspace, update, nil)
+
+			later := workspace.Snapshot().Experience
+			laterSalience, laterPreparation := emotionMeasures(t, later, topic)
+			assertLaterEmotionExperience(t, first, later, emotionExperienceExpectation{
+				salience:   0,
+				expression: test.expression, firstSalience: firstSalience,
+				laterSalience: laterSalience, preparation: laterPreparation,
+			})
+		})
+	}
+}
+
+func TestExpiredAffectReleasesContentCapacity(t *testing.T) {
+	t.Parallel()
+
+	instant := time.Unix(100, 0)
+	workspace := innerWorkspace(t, persona.Default(), 2, func() time.Time { return instant })
+	update := freshUpdate(workspace)
+	update.Appraisal = &emotion.Appraisal{
+		Feelings: []emotion.Feeling{{Meaning: semantic("old feeling"), Strength: 1}},
+		Others:   nil, MoodDelta: emotion.Mood{},
+		Readiness: []emotion.Feeling{{Meaning: semantic("old readiness"), Strength: 1}},
+	}
+	commitInner(t, workspace, update, nil)
+
+	instant = instant.Add(64 * time.Hour)
+	update = freshUpdate(workspace)
+	update.Appraisal = &emotion.Appraisal{
+		Feelings: []emotion.Feeling{{Meaning: semantic("new feeling"), Strength: 1}},
+		Others:   nil, MoodDelta: emotion.Mood{},
+		Readiness: []emotion.Feeling{{Meaning: semantic("new readiness"), Strength: 1}},
+	}
+	commitInner(t, workspace, update, nil)
+
+	got := workspace.Snapshot().Experience.Emotion
+	if len(got.Feelings) != 1 || got.Feelings[0].Meaning.Text != "new feeling" ||
+		len(got.Readiness) != 1 || got.Readiness[0].Meaning.Text != "new readiness" {
+		t.Fatalf("expired entries were not reclaimed before capacity check: %+v", got)
+	}
+}
+
+func emotionMeasures(t *testing.T, experience *Experience, topic meaning.Point) (float64, float64) {
+	t.Helper()
+
+	salience, err := interest.SalienceWithEmotion(experience.Interests, topic, interest.EmotionalState{
+		Mood: experience.Emotion.Mood, Feelings: experience.Emotion.Feelings, Fatigue: experience.Fatigue,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	preparation, err := emotion.Preparation(experience.Emotion.Readiness, topic)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return salience, preparation
+}
+
+type emotionExperienceExpectation struct {
+	expression    float64
+	salience      float64
+	preparation   float64
+	firstSalience float64
+	laterSalience float64
+}
+
+func assertFirstEmotionExperience(t *testing.T, experience *Experience, expected emotionExperienceExpectation) {
+	t.Helper()
+
+	wantExpression := 0.6 * expected.expression
+	if experience.Emotion.Feelings[0].Strength != 0.6 ||
+		math.Abs(experience.Expression[0].Strength-wantExpression) > 1e-9 ||
+		expected.salience <= 1 || expected.preparation != 0.6 {
+		t.Fatalf("first turn did not preserve inner effects: experience=%+v salience=%v preparation=%v",
+			experience, expected.salience, expected.preparation)
+	}
+}
+
+func assertLaterEmotionExperience(t *testing.T, first, later *Experience, expected emotionExperienceExpectation) {
+	t.Helper()
+
+	if len(later.Emotion.Feelings) != 1 || later.Emotion.Feelings[0].Strength != 0.6 ||
+		later.Emotion.Mood[0] >= first.Emotion.Mood[0] || expected.laterSalience >= expected.firstSalience ||
+		math.Abs(expected.preparation-0.6) > 1e-9 ||
+		math.Abs(later.Expression[0].Strength-0.6*expected.expression) > 1e-9 {
+		t.Fatalf("later turn lost or contradicted prior inner state: experience=%+v salience=%v preparation=%v",
+			later, expected.laterSalience, expected.preparation)
 	}
 }
 
@@ -275,10 +424,11 @@ func assertInnerError(t *testing.T, got, want error) {
 	}
 }
 
-func checkNextConversation(t *testing.T, latest *Experience) {
+func checkNextConversation(t *testing.T, latest *Experience, reactivity float64) {
 	t.Helper()
 
-	if latest.Emotion.Feelings[0].Meaning.Vector[0] != 1 ||
+	if reactivity == 0 && len(latest.Emotion.Feelings) != 0 ||
+		reactivity != 0 && (len(latest.Emotion.Feelings) != 1 || latest.Emotion.Feelings[0].Meaning.Vector[0] != 1) ||
 		latest.Goals.Intentions["promise"].Claims["work"] != "finish" || len(latest.Working) != 1 || latest.Fatigue != 0.5 {
 		t.Fatal("next conversation reset or aliased the shared self")
 	}

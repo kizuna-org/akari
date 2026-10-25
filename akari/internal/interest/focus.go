@@ -4,6 +4,7 @@ package interest
 import (
 	"math"
 
+	"github.com/kizuna-org/akari/internal/emotion"
 	"github.com/kizuna-org/akari/internal/meaning"
 )
 
@@ -44,9 +45,25 @@ func Validate(foci []Focus) error {
 	return nil
 }
 
+// EmotionalState is the affective input applied while scoring interests.
+type EmotionalState struct {
+	Mood     emotion.Mood
+	Feelings []emotion.Feeling
+	Fatigue  float64
+}
+
 // Salience is one input to selection, never a replacement for goals, duties or safety.
 func Salience(foci []Focus, cue meaning.Point, pleasure, fatigue float64) (float64, error) {
-	value := 0.0
+	return SalienceWithEmotion(foci, cue, EmotionalState{
+		Mood: emotion.Mood{pleasure}, Feelings: nil, Fatigue: fatigue,
+	})
+}
+
+// SalienceWithEmotion applies mood broadly and current feelings to semantically
+// related interests. It remains one deliberation input alongside duties, goals
+// and safety.
+func SalienceWithEmotion(foci []Focus, cue meaning.Point, state EmotionalState) (float64, error) {
+	var value float64
 
 	for _, focus := range foci {
 		similarity, err := meaning.Similarity(focus.Target, cue)
@@ -54,8 +71,23 @@ func Salience(foci []Focus, cue meaning.Point, pleasure, fatigue float64) (float
 			return 0, err
 		}
 
-		value += math.Max(0, similarity) * focus.Affinity
+		focusValue := math.Max(0, similarity) * focus.Affinity
+
+		var emotionalValue float64
+
+		for _, feeling := range state.Feelings {
+			emotionalSimilarity, err := meaning.Similarity(feeling.Meaning, focus.Target)
+			if err != nil {
+				return 0, err
+			}
+
+			emotionalValue += math.Max(0, emotionalSimilarity) * feeling.Strength * focus.Affinity
+		}
+
+		focusValue += math.Max(0, similarity) * emotionalValue
+
+		value += focusValue
 	}
 
-	return value * math.Max(0, 1+pleasure) / (1 + fatigue), nil
+	return value * math.Max(0, 1+state.Mood[0]) / (1 + state.Fatigue), nil
 }
