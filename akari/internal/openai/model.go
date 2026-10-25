@@ -670,16 +670,13 @@ func filterWithheldCopies(
 	}
 	withheldIDs, withheldText := withheldMemory(originalContext, allowedContext, originalWorking, allowedWorking,
 		recalled, allowedRecalled)
-	disclosedIDs := disclosedMemoryIDs(allowedContext, allowedWorking, allowedRecalled)
 	filtered := make([]memory.Fragment, 0, len(output))
 	for _, fragment := range output {
 		if _, privateID := withheldIDs[fragment.ID]; privateID {
 			continue
 		}
 		if _, privateText := withheldText[fragment.Meaning.Text]; privateText {
-			if _, trustedCopy := disclosedIDs[fragment.ID]; !trustedCopy {
-				continue
-			}
+			continue
 		}
 		filtered = append(filtered, fragment)
 	}
@@ -712,22 +709,6 @@ func withheldMemory(originalContext []memory.Fragment, allowedContext []string, 
 	}
 
 	return withheldIDs, withheldText
-}
-
-func disclosedMemoryIDs(allowedContext, allowedWorking []string,
-	allowedRecalled map[string]struct{},
-) map[string]struct{} {
-	disclosed := make(map[string]struct{}, len(allowedContext)+len(allowedWorking)+len(allowedRecalled))
-	for _, ids := range [][]string{allowedContext, allowedWorking} {
-		for _, id := range ids {
-			disclosed[id] = struct{}{}
-		}
-	}
-	for id := range allowedRecalled {
-		disclosed[id] = struct{}{}
-	}
-
-	return disclosed
 }
 
 func collectDisclosedText(destination map[string]struct{}, fragments []memory.Fragment, allowedIDs []string) {

@@ -49,6 +49,9 @@ const jsonEmotion = "emotion"
 const jsonStrength = "strength"
 const jsonWill = "will"
 const sharedDetail = "shared detail"
+const privateDetail = "private detail"
+const privateSource = "private-source"
+const publicSource = "public-source"
 const providerCopyID = "provider-copy"
 const privateCopyID = "private-copy"
 const validInterpretation = `{"appraisal":null,"interests":[],"memory":null,"goals":null}`
@@ -140,7 +143,7 @@ func TestInterpretDisclosureAndRecalledIDs(t *testing.T) {
 				t.Fatal(err)
 			}
 			request := thought.Request{Experience: &mind.Experience{}, Recalled: []memory.Fragment{{
-				ID: testFragmentID, Meaning: meaning.Point{Text: "private detail"}, Sources: []string{conversationSource},
+				ID: testFragmentID, Meaning: meaning.Point{Text: privateDetail}, Sources: []string{conversationSource},
 			}}}
 			result, err := model.Interpret(context.Background(), request)
 			if err != nil {
@@ -213,7 +216,7 @@ func TestInterpretRechecksDisclosureBeforeSending(t *testing.T) {
 				t.Fatal(err)
 			}
 			request := thought.Request{Experience: &mind.Experience{}, Recalled: []memory.Fragment{{
-				ID: testFragmentID, Meaning: meaning.Point{Text: "private detail"}, Sources: []string{"conversation"},
+				ID: testFragmentID, Meaning: meaning.Point{Text: privateDetail}, Sources: []string{"conversation"},
 			}}}
 			_, err = model.Interpret(context.Background(), request)
 			if (err != nil) != test.wantError {
@@ -430,9 +433,9 @@ func TestRestoreMemoryMetadataFiltersWithheldCopiesAcrossGroupsAndPreservesNull(
 	t.Parallel()
 
 	private := memory.Fragment{ID: privateID, Meaning: meaning.Point{Text: "shared text"},
-		OccurredAt: time.Unix(100, 0), Sources: []string{"private-source"}}
+		OccurredAt: time.Unix(100, 0), Sources: []string{privateSource}}
 	public := memory.Fragment{ID: publicID, Meaning: meaning.Point{Text: "shared text"},
-		OccurredAt: time.Unix(200, 0), Sources: []string{"public-source"}}
+		OccurredAt: time.Unix(200, 0), Sources: []string{publicSource}}
 	request := thought.Request{Experience: &mind.Experience{Working: []memory.Fragment{private, public}}}
 	change := &memory.Change{
 		Context: []memory.Fragment{{ID: privateCopyID, Meaning: private.Meaning}},
@@ -458,9 +461,9 @@ func TestRestoreMemoryMetadataKeepsSameTextWithDifferentDisclosure(t *testing.T)
 	instant := time.Date(2026, 10, 18, 2, 0, 0, 0, time.UTC)
 	point := meaning.Point{Text: sharedDetail}
 	private := memory.Fragment{ID: "private-id", Meaning: point, OccurredAt: instant.Add(-time.Hour),
-		Strength: 0.5, Sources: []string{"private-source"}}
+		Strength: 0.5, Sources: []string{privateSource}}
 	public := memory.Fragment{ID: "public-id", Meaning: point, OccurredAt: instant,
-		Strength: 0.5, Sources: []string{"public-source"}}
+		Strength: 0.5, Sources: []string{publicSource}}
 	change := &memory.Change{Context: nil,
 		Working:  []memory.Fragment{{ID: "provider-copy", Meaning: point, OccurredAt: instant.Add(time.Hour), Strength: 1}},
 		Remember: nil}
@@ -480,6 +483,24 @@ func TestRestoreMemoryMetadataKeepsSameTextWithDifferentDisclosure(t *testing.T)
 		!slices.Equal(byID[private.ID].Sources, private.Sources) ||
 		!byID[private.ID].OccurredAt.Equal(private.OccurredAt) {
 		t.Fatalf("same-text provenance was mixed: %#v", byID)
+	}
+}
+
+func TestRestoreMemoryMetadataRejectsWithheldTextUnderDisclosedID(t *testing.T) {
+	t.Parallel()
+	instant := time.Date(2026, 10, 18, 2, 0, 0, 0, time.UTC)
+	private := memory.Fragment{ID: privateID, Meaning: meaning.Point{Text: privateDetail},
+		OccurredAt: instant, Strength: 0.5, Sources: []string{privateSource}}
+	public := memory.Fragment{ID: publicID, Meaning: meaning.Point{Text: "public detail"},
+		OccurredAt: instant, Strength: 0.5, Sources: []string{publicSource}}
+	change := &memory.Change{Context: nil, Working: nil, Remember: []memory.Fragment{{ID: public.ID,
+		Meaning: private.Meaning, OccurredAt: instant.Add(time.Hour), Strength: 1}}}
+	request := thought.Request{Experience: &mind.Experience{Working: []memory.Fragment{private, public}},
+		Query: memory.Query{At: instant.Add(2 * time.Hour)}}
+
+	restoreMemoryMetadata(change, request, nil, []string{public.ID}, nil)
+	if len(change.Remember) != 0 {
+		t.Fatalf("withheld text survived under disclosed ID: %#v", change.Remember)
 	}
 }
 
