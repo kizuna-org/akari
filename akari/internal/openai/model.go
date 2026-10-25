@@ -650,8 +650,11 @@ func preserveWithheldFragments(output, original []memory.Fragment, allowedIDs []
 		}
 		filtered = append(filtered, fragment)
 	}
-	for id, fragment := range withheld {
-		if _, exists := seen[id]; !exists {
+	for _, fragment := range original {
+		if _, isWithheld := withheld[fragment.ID]; !isWithheld {
+			continue
+		}
+		if _, exists := seen[fragment.ID]; !exists {
 			filtered = append(filtered, memory.CloneFragments([]memory.Fragment{fragment})[0])
 			seen[fragment.ID] = struct{}{}
 		}

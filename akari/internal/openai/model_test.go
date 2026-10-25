@@ -504,6 +504,27 @@ func TestRestoreMemoryMetadataRejectsWithheldTextUnderDisclosedID(t *testing.T) 
 	}
 }
 
+func TestRestoreMemoryMetadataPreservesWithheldMemoryOrder(t *testing.T) {
+	t.Parallel()
+	instant := time.Date(2026, 10, 18, 2, 0, 0, 0, time.UTC)
+	original := []memory.Fragment{
+		{ID: "private-first", Meaning: meaning.Point{Text: "first private detail"}, OccurredAt: instant},
+		{ID: "private-second", Meaning: meaning.Point{Text: "second private detail"}, OccurredAt: instant.Add(time.Second)},
+	}
+	change := &memory.Change{Context: nil, Working: []memory.Fragment{}, Remember: nil}
+	request := thought.Request{Experience: &mind.Experience{Working: original}, Query: memory.Query{At: instant}}
+
+	restoreMemoryMetadata(change, request, nil, nil, nil)
+	if len(change.Working) != len(original) {
+		t.Fatalf("working memory = %#v, want %#v", change.Working, original)
+	}
+	for index := range original {
+		if change.Working[index].ID != original[index].ID {
+			t.Fatalf("working memory order = %#v, want %#v", change.Working, original)
+		}
+	}
+}
+
 func TestInterpretAssignsTrustedTimeToNewMemory(t *testing.T) {
 	t.Parallel()
 
