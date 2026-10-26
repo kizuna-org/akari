@@ -94,7 +94,7 @@ func proposal(owner *continuity.Owner) mind.Proposal {
 }
 
 func intents() []continuity.Intent {
-	return []continuity.Intent{{ID: intentID, Tool: toolName, Arguments: []byte("target")}}
+	return []continuity.Intent{{ID: intentID, Tool: toolName, Arguments: []byte("target"), Sources: nil}}
 }
 
 func check(t *testing.T, err, expected error) {
@@ -324,7 +324,8 @@ func TestDurableParallelDispatchAndAdoption(t *testing.T) {
 				return nil, nil
 			})
 
-			work := append(intents(), continuity.Intent{ID: "work-2", Tool: toolName, Arguments: []byte("different")})
+			work := append(intents(), continuity.Intent{ID: "work-2", Tool: toolName,
+				Arguments: []byte("different"), Sources: nil})
 			_, err := owner.Adopt(t.Context(), proposal(owner), work)
 			check(t, err, nil)
 
