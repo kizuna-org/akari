@@ -98,7 +98,7 @@ jobs:
       - run: make -C akari build
       - uses: actions/setup-node@v6
         with:
-          node-version: '24.22.1'
+          node-version: '26.12.1'
           cache: npm
           cache-dependency-path: scripts/browser/package-lock.json
       - run: npm ci --ignore-scripts
